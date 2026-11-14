@@ -16,5 +16,23 @@
     "url": "https://www.nasa.gov/centers/johnson/pdf/160410main_space_training_fact_sheet.pdf",
     "image": null,
     "sample": true
+  },
+  {
+    "queryId": "zerog",
+    "foundOn": "2026-11-14",
+    "title": "Teachers experiment aboard NASA's \"Weightless Wonder\"",
+    "source": "nasa.gov",
+    "url": "https://www.nasa.gov/news-release/phoenix-teachers-to-experiment-aboard-nasas-weightless-wonder/",
+    "image": null,
+    "sample": true
+  },
+  {
+    "queryId": "zerog",
+    "foundOn": "2026-11-14",
+    "title": "Zero-G flights test NASA technology (1.8 g to 0 g)",
+    "source": "nasa.gov",
+    "url": "https://www.nasa.gov/centers-and-facilities/armstrong/relevant-environment-provides-testing-for-technology-payloads/",
+    "image": null,
+    "sample": true
   }
 ]

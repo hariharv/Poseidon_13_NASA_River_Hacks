@@ -1,0 +1,123 @@
+/* Odysseus: the flight sign at the top of the visor (Float! / Climbing / Power trouble).
+   Built on the shared tokens so it matches the HUD. */
+
+.odx-flight {
+  position: fixed;
+  left: 50%;
+  top: calc(max(4.5vh, 28px) + 104px);
+  transform: translateX(-50%);
+  z-index: 11;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  padding: 8px 18px 10px 10px;
+  border-radius: 22px;
+  background: rgba(13, 11, 38, 0.62);
+  backdrop-filter: blur(4px);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 243, 214, 0.16);
+  color: var(--cream);
+  pointer-events: none;
+  font-size: calc(16px * var(--ui-scale));
+  transition: box-shadow 200ms ease;
+}
+.odx-flight[hidden] {
+  display: none;
+}
+
+.odx-g {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 2.7em;
+  height: 2.7em;
+  border-radius: 50%;
+  font-family: var(--font-hud);
+  font-size: 0.95em;
+  background: var(--twill-2);
+  box-shadow: inset 0 0 0 3px var(--cream-dim);
+}
+.odx-words {
+  display: flex;
+  white-space: nowrap;
+  align-items: baseline;
+  gap: 10px;
+}
+.odx-phase {
+  font-family: var(--font-display);
+  font-size: 1.45em;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.odx-sub {
+  font-size: 0.95em;
+  color: var(--cream-dim);
+}
+.odx-timer {
+  position: relative;
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.odx-timer-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: inherit;
+  background: var(--cream);
+  transition: width 120ms linear;
+}
+
+/* Float: gold, it's the fun part */
+.odx-flight[data-kind='float'] .odx-phase {
+  color: var(--visor-gold);
+}
+.odx-flight[data-kind='float'] .odx-g {
+  background: var(--visor-gold);
+  color: var(--night);
+  box-shadow: 0 0 18px rgba(255, 193, 69, 0.6);
+  animation: odx-bob 2.4s ease-in-out infinite;
+}
+.odx-flight[data-kind='float'] .odx-timer-fill {
+  background: var(--visor-gold);
+}
+
+/* Heavy: suit orange, pressed down */
+.odx-flight[data-kind='heavy'] .odx-phase {
+  color: var(--suit-orange);
+}
+.odx-flight[data-kind='heavy'] .odx-g {
+  background: var(--suit-orange);
+  box-shadow: 0 4px 0 var(--suit-orange-dark);
+}
+.odx-flight[data-kind='heavy'] .odx-timer-fill {
+  background: var(--suit-orange);
+}
+
+/* Level flight */
+.odx-flight[data-kind='level'] .odx-phase {
+  color: var(--progress);
+}
+
+/* Power trouble */
+.odx-flight[data-kind='power'] {
+  box-shadow: inset 0 0 0 2px var(--alarm), 0 0 22px rgba(255, 77, 94, 0.45);
+}
+.odx-flight[data-kind='power'] .odx-phase {
+  color: #ff9aa5;
+}
+.odx-flight[data-kind='power'] .odx-g {
+  background: var(--alarm);
+}
+.odx-flight[data-kind='power'] .odx-timer-fill {
+  background: var(--alarm);
+}
+
+@keyframes odx-bob {
+  50% {
+    transform: translateY(-3px) rotate(-6deg);
+  }
+}

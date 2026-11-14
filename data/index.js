@@ -11,6 +11,11 @@ const PLACES = {
     title: 'The real training pool',
     text: "You just trained in a copy of NASA's *Neutral Buoyancy Laboratory* in Houston, Texas. Astronauts really practise spacewalks there.",
   },
+  zerog: {
+    eyebrow: 'Real world window',
+    title: 'The real zero-G plane',
+    text: "NASA really flies planes in big hills so people inside float, about 20 seconds at a time. One was called the *Weightless Wonder*; lots of people call them the *Vomit Comet*.",
+  },
 };
 
 export function createData() {

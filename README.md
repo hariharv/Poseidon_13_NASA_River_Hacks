@@ -58,6 +58,11 @@ Only edit your own folders. `CONTRACTS.md` is the one shared file; changing it n
   (202 × 102 × 40 ft). Swim to 3 broken panels and hold E to fix them; working burns oxygen 5× faster than
   floating (5× in Easy, 4× in Hard), and the air station refills you, slowly.
 
+- **Stage 2, Odysseus** (`stages/odysseus/`): the zero-G plane. The plane flies hills: heavy (1.8 g, lie still),
+  then about 20 s of floating. Catch the tools that float out of the toolbox; pushing yourself around burns
+  oxygen, gliding doesn't. Then a generator switches off: unplug the extra machines on the power panel so the
+  air machine and camera can run, and pick air first when the generator flickers down to 1 plug.
+
 ## Still placeholder
 
 - `data/storms.json` is empty until real DONKI rows are saved (never invent a storm).

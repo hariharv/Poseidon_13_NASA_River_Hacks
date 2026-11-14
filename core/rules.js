@@ -47,6 +47,58 @@ export const RULES = {
         stars: { speedySeconds: 40 },
       },
     },
+    odysseus: {
+      base: {
+        startOxygen: 100,
+        // Part 1: catch the floating tools
+        tools: 6,
+        heavySeconds: 7, // pull-up / pull-out: you feel about twice as heavy
+        floatSeconds: 22, // weightless time per hill (NASA: about 22-25 s)
+        heavyG: 1.8,
+        breathePerSec: 0.5, // oxygen used just by breathing
+        workPerSec: 2.2, // extra oxygen used while pushing yourself around
+        airMachinePerSec: 0.9, // fresh air made while the air machine has a plug
+        staleAirPerSec: 0.9, // extra oxygen lost while nothing is making fresh air
+        thrust: 3.4, // how hard a push speeds you up (m/s²)
+        maxSpeed: 3.6, // m/s
+        walkSpeed: 2.6, // m/s in level flight
+        grabRadius: 2.4, // metres from a tool to catch it
+        toolSpeed: 0.85, // how fast tools drift away from the toolbox
+        toolsShare: 60, // Progress from tools; the rest comes from the camera
+        // Part 2: power trouble
+        plugsLevel: 2, // plugs after the generator switches off
+        startPlugged: ['air', 'lights', 'fridge', 'music'], // what's plugged in when it switches off
+        plugsFlicker: 1, // plugs while the generator flickers
+        flickerAt: 80, // Progress when the flicker starts (null = no flicker)
+        flickerSeconds: 12,
+        uploadPerSec: 0.9, // Progress per second for each camera plug
+        lowOxygen: 35,
+        veryLowOxygen: 18,
+        stars: { safeAbove: 30, speedySeconds: 210 },
+      },
+      easy: {},
+      hard: {
+        tools: 8,
+        breathePerSec: 0.65,
+        workPerSec: 2.8,
+        airMachinePerSec: 0.8,
+        staleAirPerSec: 1.3,
+        toolSpeed: 1.2,
+        uploadPerSec: 0.75,
+        stars: { speedySeconds: 260 },
+      },
+      demo: {
+        startOxygen: 75,
+        tools: 3,
+        heavySeconds: 3.5,
+        floatSeconds: 14,
+        toolsShare: 60,
+        uploadPerSec: 6,
+        startPlugged: ['air', 'fridge', 'music'],
+        flickerAt: null,
+        stars: { speedySeconds: 60 },
+      },
+    },
   },
 };
 
