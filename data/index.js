@@ -16,6 +16,11 @@ const PLACES = {
     title: 'The real zero-G plane',
     text: "NASA really flies planes in big hills so people inside float, about 20 seconds at a time. One was called the *Weightless Wonder*; lots of people call them the *Vomit Comet*.",
   },
+  lab: {
+    eyebrow: 'Real world window',
+    title: "The station's real robot arm",
+    text: 'The space station really has a giant robot arm called *Canadarm2*. Astronauts steer it from the *Cupola* window, and it catches cargo ships and moves experiments, just like you did.',
+  },
 };
 
 export function createData() {

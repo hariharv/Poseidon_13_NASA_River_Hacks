@@ -34,5 +34,23 @@
     "url": "https://www.nasa.gov/centers-and-facilities/armstrong/relevant-environment-provides-testing-for-technology-payloads/",
     "image": null,
     "sample": true
+  },
+  {
+    "queryId": "lab",
+    "foundOn": "2026-11-14",
+    "title": "Canadarm2's data sheet",
+    "source": "asc-csa.gc.ca",
+    "url": "https://www.asc-csa.gc.ca/eng/iss/canadarm2/data-sheet.asp",
+    "image": null,
+    "sample": true
+  },
+  {
+    "queryId": "lab",
+    "foundOn": "2026-11-14",
+    "title": "Spot the Station: how fast does the station travel?",
+    "source": "nasa.gov",
+    "url": "https://www.nasa.gov/missions/station/spot-the-station-frequently-asked-questions/",
+    "image": null,
+    "sample": true
   }
 ]

@@ -99,6 +99,53 @@ export const RULES = {
         stars: { speedySeconds: 60 },
       },
     },
+    dioscuri: {
+      base: {
+        startOxygen: 100,
+        // Part 1: move the science box with the robot arm
+        armSpeed: 2.6, // metres per second the arm's hand moves
+        grabRadius: 0.9, // metres from the box's handle to grab it
+        placeRadius: 1.1, // metres from the platform slot to set it down
+        grabShare: 15, // Progress for grabbing the box
+        placeShare: 25, // Progress for setting it on the platform (the rest comes from the experiment)
+        // Part 2: the experiment, through day and night
+        daySeconds: 40, // sunlit side of Earth: the solar panels make lots of energy
+        nightSeconds: 26, // Earth's shadow: only the batteries
+        dayPlugs: 4,
+        nightPlugs: 2,
+        startPlugged: ['air', 'arm', 'lights'],
+        sciencePerSec: 0.7, // Progress per second for each science plug
+        breathePerSec: 0.5,
+        airMachinePerSec: 0.9,
+        staleAirPerSec: 0.9,
+        lowOxygen: 35,
+        veryLowOxygen: 18,
+        stars: { safeAbove: 35, speedySeconds: 200 },
+      },
+      easy: {},
+      hard: {
+        armSpeed: 2.2,
+        grabRadius: 0.7,
+        placeRadius: 0.85,
+        daySeconds: 32,
+        nightSeconds: 30,
+        sciencePerSec: 0.6,
+        breathePerSec: 0.65,
+        airMachinePerSec: 0.8,
+        staleAirPerSec: 1.3,
+        stars: { speedySeconds: 240 },
+      },
+      demo: {
+        startOxygen: 75,
+        armSpeed: 3.6,
+        grabRadius: 1.2,
+        placeRadius: 1.5,
+        daySeconds: 9,
+        nightSeconds: 12,
+        sciencePerSec: 3.5,
+        stars: { speedySeconds: 60 },
+      },
+    },
   },
 };
 
