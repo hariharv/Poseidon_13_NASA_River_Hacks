@@ -1,0 +1,20 @@
+[
+  {
+    "queryId": "nbl",
+    "foundOn": "2026-11-14",
+    "title": "Neutral Buoyancy Laboratory fact sheet",
+    "source": "nasa.gov",
+    "url": "https://www.nasa.gov/centers/johnson/pdf/167748main_FS_NBL508c.pdf",
+    "image": null,
+    "sample": true
+  },
+  {
+    "queryId": "nbl",
+    "foundOn": "2026-11-14",
+    "title": "Space training fact sheet",
+    "source": "nasa.gov",
+    "url": "https://www.nasa.gov/centers/johnson/pdf/160410main_space_training_fact_sheet.pdf",
+    "image": null,
+    "sample": true
+  }
+]

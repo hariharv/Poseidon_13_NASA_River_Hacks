@@ -1,0 +1,25 @@
+// The six stages, in order. A stage becomes playable the moment its folder has
+// an index.js, so stage builders never need to edit /core to register it.
+
+const modules = import.meta.glob('../stages/*/index.js');
+
+const PLAN = [
+  { id: 'hermes', name: 'Hermes', rank: 'Astronaut Trainee', place: 'Training pool' },
+  { id: 'odysseus', name: 'Odysseus', rank: 'Astronaut', place: 'Zero-G plane' },
+  { id: 'dioscuri', name: 'Dioscuri', rank: 'Science Expert', place: 'Space lab' },
+  { id: 'hera', name: 'Hera', rank: 'Pilot', place: 'Ship simulator' },
+  { id: 'artemis', name: 'Artemis', rank: 'Commander', place: 'Mars-style home' },
+  { id: 'apollo', name: 'Apollo', rank: 'Commander on the Moon', place: 'Moon base' },
+];
+
+export const STAGES = PLAN.map((s) => ({ ...s, available: Boolean(modules[`../stages/${s.id}/index.js`]) }));
+
+export async function loadStage(id) {
+  const load = modules[`../stages/${id}/index.js`];
+  if (!load) throw new Error(`No stage called "${id}" (expected stages/${id}/index.js)`);
+  const stage = (await load()).default;
+  for (const key of ['id', 'name', 'rank', 'start', 'demo']) {
+    if (!stage?.[key]) throw new Error(`stages/${id}/index.js is missing "${key}" (see CONTRACTS.md)`);
+  }
+  return stage;
+}

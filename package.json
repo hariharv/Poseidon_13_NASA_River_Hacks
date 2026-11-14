@@ -1,0 +1,21 @@
+{
+  "name": "path-to-olympus",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Path to Olympus: a first-person astronaut training game for kids 7-12.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}

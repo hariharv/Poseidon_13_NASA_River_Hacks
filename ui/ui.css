@@ -1,0 +1,520 @@
+/* In-game UI: the helmet visor, Buoy, cards, and the judge checklist.
+   Person 5 owns this look; these are working placeholders built on tokens.css. */
+
+.ui-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  font-size: calc(16px * var(--ui-scale));
+}
+.ui-layer > * {
+  pointer-events: auto;
+}
+
+/* ---------- Helmet visor ---------- */
+.visor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.visor[hidden] {
+  display: none;
+}
+/* The helmet rim: a soft dark edge with a gold glint, so the screen reads as "inside my helmet". */
+.visor::before {
+  content: '';
+  position: absolute;
+  inset: -2vmax;
+  border-radius: 46% 46% 40% 40% / 38% 38% 52% 52%;
+  box-shadow:
+    inset 0 0 0 2.2vmax rgba(8, 7, 26, 0.92),
+    inset 0 0 6vmax 3vmax rgba(8, 7, 26, 0.65);
+}
+.visor::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 70% at 12% 0%, rgba(255, 193, 69, 0.13), transparent 45%),
+    radial-gradient(90% 60% at 100% 100%, rgba(70, 180, 255, 0.08), transparent 50%);
+}
+
+.hud {
+  position: absolute;
+  top: max(4.5vh, 28px);
+  left: max(5vw, 28px);
+  display: grid;
+  gap: 10px;
+  z-index: 1;
+}
+.hud-bar {
+  display: grid;
+  grid-template-columns: 26px 6.2em minmax(140px, 22vw) 3.2em;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px 7px 10px;
+  border-radius: 999px;
+  background: rgba(13, 11, 38, 0.55);
+  backdrop-filter: blur(4px);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 243, 214, 0.16);
+}
+.hud-icon {
+  width: 26px;
+  height: 26px;
+}
+.hud-label {
+  font-family: var(--font-display);
+  font-size: 1.05em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.hud-track {
+  position: relative;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.hud-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 100%;
+  border-radius: inherit;
+  transition: width 160ms linear;
+}
+/* tick marks every 10% so kids can count chunks */
+.hud-track::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), rgba(13, 11, 38, 0.55) calc(10% - 2px) 10%);
+}
+.hud-num {
+  font-family: var(--font-hud);
+  font-size: 0.95em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.hud-oxygen .hud-label,
+.hud-oxygen .hud-num {
+  color: var(--oxygen);
+}
+.hud-oxygen .hud-fill {
+  background: linear-gradient(180deg, #8fd3ff, var(--oxygen) 60%, var(--oxygen-dark));
+}
+.hud-progress .hud-label,
+.hud-progress .hud-num {
+  color: var(--progress);
+}
+.hud-progress .hud-fill {
+  background: linear-gradient(180deg, #a6f0c2, var(--progress) 60%, var(--progress-dark));
+}
+.hud-oxygen.is-low {
+  animation: low-pulse 0.9s ease-in-out infinite;
+}
+.hud-oxygen.is-low .hud-fill {
+  background: linear-gradient(180deg, #ffa3ad, var(--alarm) 60%, #b3202f);
+}
+.hud-oxygen.is-low .hud-num,
+.hud-oxygen.is-low .hud-label {
+  color: #ff9aa5;
+}
+@keyframes low-pulse {
+  50% {
+    box-shadow: inset 0 0 0 2px var(--alarm), 0 0 22px rgba(255, 77, 94, 0.55);
+  }
+}
+
+/* Energy plugs and storm light: hidden until a stage uses them */
+.hud-extras {
+  position: absolute;
+  top: max(4.5vh, 28px);
+  right: max(5vw, 28px);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  z-index: 1;
+}
+.hud-plugs,
+.hud-storm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(13, 11, 38, 0.55);
+  font-family: var(--font-display);
+}
+.hud-plugs[hidden],
+.hud-storm[hidden] {
+  display: none;
+}
+.plug {
+  width: 14px;
+  height: 22px;
+  border-radius: 4px;
+  background: var(--visor-gold);
+}
+.storm-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--progress);
+  box-shadow: 0 0 12px currentColor;
+}
+.hud-storm[data-colour='yellow'] .storm-dot {
+  background: var(--visor-gold);
+}
+.hud-storm[data-colour='red'] .storm-dot {
+  background: var(--alarm);
+  animation: low-pulse 0.7s infinite;
+}
+
+.real-numbers-btn {
+  pointer-events: auto;
+  font-family: var(--font-display);
+  font-size: 0.95em;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: rgba(255, 193, 69, 0.18);
+  color: var(--visor-gold);
+  box-shadow: inset 0 0 0 2px rgba(255, 193, 69, 0.5);
+}
+.real-numbers-btn[hidden] {
+  display: none;
+}
+
+.crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: rgba(255, 243, 214, 0.75);
+  box-shadow: 0 0 0 2px rgba(13, 11, 38, 0.4);
+}
+.crosshair.is-target {
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  background: transparent;
+  box-shadow: inset 0 0 0 3px var(--visor-gold);
+}
+
+/* sits just under the crosshair, where your eyes already are */
+.hud-prompt {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 46px);
+  transform: translateX(-50%);
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: rgba(13, 11, 38, 0.72);
+  font-family: var(--font-display);
+  font-size: 1.35em;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  box-shadow: inset 0 0 0 2px rgba(255, 193, 69, 0.45);
+}
+.hud-prompt[hidden] {
+  display: none;
+}
+.hud-prompt kbd {
+  color: var(--visor-gold);
+  margin: 0 0.15em;
+}
+
+/* ---------- Buoy speech ---------- */
+.buoy-say {
+  position: absolute;
+  left: max(5vw, 24px);
+  bottom: max(5vh, 24px);
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  max-width: min(560px, 80vw);
+  pointer-events: none;
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+.buoy-say.is-hidden {
+  opacity: 0;
+  transform: translateY(14px);
+}
+.buoy-say .buoy-svg {
+  flex: none;
+  animation: bob 2.6s ease-in-out infinite;
+}
+.buoy-bubble {
+  position: relative;
+  margin: 0 0 18px;
+  padding: 14px 18px;
+  border-radius: 20px 20px 20px 6px;
+  background: var(--cream);
+  color: var(--twill);
+  font-size: 1.12em;
+  line-height: 1.4;
+  box-shadow: 0 6px 0 rgba(13, 11, 38, 0.35);
+}
+.buoy-bubble strong {
+  color: var(--suit-orange-dark);
+}
+.buoy-name {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.8em;
+  letter-spacing: 0.06em;
+  color: var(--suit-orange);
+  text-transform: uppercase;
+}
+@keyframes bob {
+  50% {
+    transform: translateY(-6px) rotate(-3deg);
+  }
+}
+.buoy-antenna {
+  animation: blink 1.6s steps(1) infinite;
+}
+@keyframes blink {
+  50% {
+    fill: #ff5b1f;
+  }
+}
+
+/* ---------- Cards (embroidered patch fabric) ---------- */
+.card-layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 7, 26, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 5;
+}
+.card-layer[hidden] {
+  display: none;
+}
+.card {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 30px 30px 26px;
+  border-radius: 28px;
+  background: var(--twill);
+  color: var(--cream);
+  box-shadow:
+    0 0 0 6px var(--suit-orange),
+    0 18px 50px rgba(0, 0, 0, 0.5);
+  animation: card-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1.25);
+}
+/* the stitched border that makes it a patch */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  border-radius: 21px;
+  border: 3px dashed rgba(255, 193, 69, 0.75);
+  pointer-events: none;
+}
+.card[data-tone='alert'] {
+  box-shadow:
+    0 0 0 6px var(--alarm),
+    0 18px 50px rgba(0, 0, 0, 0.5);
+}
+.card[data-tone='win'] {
+  box-shadow:
+    0 0 0 6px var(--progress),
+    0 18px 50px rgba(0, 0, 0, 0.5);
+}
+@keyframes card-in {
+  from {
+    transform: scale(0.9) translateY(12px);
+    opacity: 0;
+  }
+}
+.card-eyebrow {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 0.95em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--visor-gold);
+}
+.card-title {
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 2.1em;
+  line-height: 1.05;
+}
+.card-text {
+  margin: 0 0 12px;
+  font-size: 1.12em;
+  line-height: 1.5;
+}
+.card-text strong {
+  color: var(--visor-gold);
+}
+.card-stars {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 14px;
+}
+.card-stars svg {
+  width: 48px;
+  height: 48px;
+}
+.card-facts {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.card-facts li {
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(255, 243, 214, 0.07);
+}
+.card-facts .fact-value {
+  display: block;
+  font-family: var(--font-hud);
+  font-size: 1.05em;
+  color: var(--oxygen);
+}
+.card-facts .fact-source {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.82em;
+  color: var(--cream-dim);
+}
+.card-facts a {
+  color: var(--cream-dim);
+}
+.card-note {
+  margin: 0 0 14px;
+  font-size: 0.85em;
+  color: var(--cream-dim);
+}
+.card-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+/* ---------- Judge checklist (demo mode) ---------- */
+.checklist {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  bottom: 16px;
+  width: min(340px, 40vw);
+  overflow: auto;
+  padding: 16px 16px 12px;
+  border-radius: 20px;
+  background: rgba(13, 11, 38, 0.86);
+  box-shadow: inset 0 0 0 2px rgba(255, 193, 69, 0.4);
+  font-size: 0.88em;
+  z-index: 4;
+}
+.checklist[hidden] {
+  display: none;
+}
+.checklist h2 {
+  margin: 0 0 2px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.4em;
+}
+.checklist-count {
+  margin: 0 0 10px;
+  font-family: var(--font-hud);
+  color: var(--visor-gold);
+}
+.checklist h3 {
+  margin: 12px 0 4px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 0.95em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+}
+.checklist ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.checklist li {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 8px;
+  padding: 4px 0;
+  color: rgba(255, 243, 214, 0.55);
+}
+.checklist li::before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 2px rgba(255, 243, 214, 0.35);
+}
+.checklist li.is-done {
+  color: var(--cream);
+}
+.checklist li.is-done::before {
+  background: var(--progress)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10.5l3.2 3.2L15 7' fill='none' stroke='%231b1846' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / 100% no-repeat;
+  box-shadow: none;
+  animation: tick-in 380ms cubic-bezier(0.2, 0.9, 0.3, 1.5);
+}
+@keyframes tick-in {
+  from {
+    transform: scale(0.3);
+  }
+}
+
+/* ---------- Pause ---------- */
+.pause-layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 7, 26, 0.5);
+  z-index: 3;
+  cursor: pointer;
+}
+.pause-layer[hidden] {
+  display: none;
+}
+.pause-layer p {
+  margin: 0;
+  padding: 16px 26px;
+  border-radius: 999px;
+  background: rgba(13, 11, 38, 0.85);
+  font-family: var(--font-display);
+  font-size: 1.5em;
+}
+
+@media (max-width: 640px) {
+  .hud {
+    top: 14px;
+    left: 14px;
+  }
+  .hud-bar {
+    grid-template-columns: 20px 5.4em minmax(80px, 30vw) 2.8em;
+    font-size: 0.85em;
+  }
+  .checklist {
+    display: none;
+  }
+}
