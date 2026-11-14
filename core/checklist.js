@@ -9,7 +9,7 @@ export const CHECKLIST = [
   { id: 'real-world-link', group: 'Real NASA data', label: 'Safe-room choice tied to real space weather' },
   { id: 'honest-data', group: 'Real NASA data', label: 'Saved storms show their date; only live data says LIVE' },
   { id: 'attribution', group: 'Real NASA data', label: '"Where\'s this from?" Data Sources page' },
-  { id: 'plain-language', group: 'Made for kids 7-12', label: 'Buoy explains each science word where it appears' },
+  { id: 'plain-language', group: 'Made for kids 7-12', label: 'Zeus Jr. explains each science word where it appears' },
   { id: 'browser-playable', group: 'Made for kids 7-12', label: 'Plays in the browser: no download, no account' },
   { id: 'teaches-one-thing', group: 'Made for kids 7-12', label: 'Teaches one real thing about astronaut limits' },
   { id: 'what-really-happened', group: 'Bonus points', label: '"What really happened" moment from real NASA data' },

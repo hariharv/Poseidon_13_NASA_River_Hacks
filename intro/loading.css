@@ -354,6 +354,43 @@
   color: var(--cream-dim);
 }
 
+/* Apollo flies as a flag on top of the Moon */
+.flag-pole {
+  stroke: var(--cream);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.flag-finial {
+  fill: var(--visor-gold);
+}
+.flag-dust {
+  fill: #ddcca2;
+}
+.flag-rope {
+  stroke: var(--cream-dim);
+  stroke-width: 2.5;
+  fill: none;
+}
+.patch-flag .flag-label {
+  text-anchor: end;
+}
+.patch-flag .flag-cloth {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+.patch-flag.is-stitched .flag-cloth {
+  animation: flag-wave 3.4s ease-in-out infinite;
+}
+@keyframes flag-wave {
+  0%,
+  100% {
+    transform: skewY(0deg);
+  }
+  50% {
+    transform: skewY(-3deg);
+  }
+}
+
 @media (max-width: 720px) {
   .loading-status,
   .loading-modes {

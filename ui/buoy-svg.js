@@ -1,4 +1,4 @@
-// Buoy: a goofy floating helper drone, shaped like a striped life buoy with a
+// Zeus Jr.: the goofy floating helper robot (called "buoy" in the code), shaped like a striped life buoy with a
 // screen for a face. One SVG, reused on the loading screen and on the visor.
 
 export function buoySvg({ size = 64, mood = 'happy' } = {}) {

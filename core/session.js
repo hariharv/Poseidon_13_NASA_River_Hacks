@@ -29,11 +29,11 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
           await ui.card({
             tone: 'alert',
             eyebrow: 'Sim over!',
-            title: 'Buoy pulled you out',
+            title: 'Zeus Jr. pulled you out',
             text: [
               "Nobody got hurt. It's only training, and failing is part of training.",
               `The moment that made the difference: *${moment.text}*`,
-              'You keep all your stickers and badges.',
+              'You keep all your badges.',
             ],
             choices: [{ id: 'retry', label: 'Try again' }],
           });

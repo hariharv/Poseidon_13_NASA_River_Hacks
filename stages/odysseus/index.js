@@ -537,7 +537,7 @@ function run(game, { demo }) {
           title: 'Astronaut Pin!',
           text: [
             `You floated, caught every tool, and kept the air machine running. You're now an *Astronaut*, ${game.player.name}!`,
-            'A gold pin goes on your suit, plus new stickers.',
+            'A gold pin goes on your suit.',
           ],
           choices: [{ id: 'ok', label: 'Pin it on!' }],
         });

@@ -1,0 +1,373 @@
+/* Homepage: Team Poseidon 13 and the character maker. Same night-sky fabric as the loading screen. */
+
+.home {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 470px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'head maker'
+    'stage maker'
+    'foot foot';
+  gap: clamp(10px, 2vh, 20px) clamp(14px, 2.5vw, 36px);
+  padding: clamp(16px, 3.5vh, 36px) clamp(16px, 4vw, 56px);
+  background:
+    radial-gradient(60% 55% at 30% 62%, rgba(255, 193, 69, 0.12), transparent 60%),
+    radial-gradient(80% 70% at 100% 0%, rgba(43, 39, 112, 0.9), transparent 70%),
+    linear-gradient(180deg, var(--night), var(--twill) 130%);
+  overflow-x: hidden;
+  overflow-y: auto;
+  z-index: 25;
+  transition: opacity 550ms ease, transform 650ms cubic-bezier(0.5, 0, 0.75, 0);
+}
+.home.is-leaving {
+  opacity: 0;
+  transform: translateY(-6vh) scale(0.98);
+  pointer-events: none;
+}
+.home > :not(.home-stars) {
+  position: relative;
+  z-index: 1;
+}
+.home-stars {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.home-stars .twinkle {
+  animation: home-twinkle 3.2s ease-in-out infinite;
+}
+
+/* ---------- team header ---------- */
+.home-head {
+  grid-area: head;
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 2.4vw, 32px);
+}
+@keyframes home-twinkle {
+  50% {
+    opacity: 0.15;
+  }
+}
+@keyframes home-bob {
+  50% {
+    transform: translateY(-6px);
+  }
+}
+.home-logo {
+  flex: none;
+  width: clamp(150px, 16vw, 260px);
+  height: auto;
+  /* brand guide: keep clear space around the logo, never tilt or skew it */
+  padding: clamp(6px, 1vw, 14px);
+}
+.home-team {
+  padding-left: clamp(14px, 2.4vw, 32px);
+  border-left: 2px solid rgba(255, 243, 214, 0.18);
+}
+.home-eyebrow {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: clamp(13px, 1.4vw, 18px);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--visor-gold);
+}
+.home-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(40px, 5.4vw, 96px);
+  line-height: 0.95;
+  white-space: nowrap;
+  color: var(--cream);
+  text-shadow:
+    0.035em 0 0 var(--oxygen-dark),
+    -0.035em 0 0 var(--oxygen-dark),
+    0 0.035em 0 var(--oxygen-dark),
+    0 -0.035em 0 var(--oxygen-dark),
+    0.025em 0.025em 0 var(--oxygen-dark),
+    -0.025em 0.025em 0 var(--oxygen-dark),
+    0.025em -0.025em 0 var(--oxygen-dark),
+    -0.025em -0.025em 0 var(--oxygen-dark),
+    0 0.09em 0 #0e3f66,
+    0 0.13em 0.12em rgba(0, 0, 0, 0.45);
+}
+.home-presents {
+  margin: 10px 0 0;
+  max-width: 46ch;
+  font-size: clamp(15px, 1.25vw, 18px);
+  line-height: 1.4;
+  color: var(--cream-dim);
+}
+.home-presents strong {
+  color: var(--cream);
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- 3D stand + maker ---------- */
+.home-main {
+  display: contents; /* the stand and the maker sit straight in the page grid */
+}
+.home-stage {
+  grid-area: stage;
+  position: relative;
+  min-height: 300px;
+}
+.home-canvas {
+  position: absolute;
+  inset: 0;
+}
+.home-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+.home-canvas canvas:active {
+  cursor: grabbing;
+}
+.home-spin-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(13, 11, 38, 0.55);
+  font-size: 13px;
+  color: var(--cream-dim);
+  pointer-events: none;
+}
+.home-no3d {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+  text-align: center;
+  color: var(--cream-dim);
+}
+
+.maker {
+  grid-area: maker;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 20px 20px;
+  border-radius: 24px;
+  background: rgba(13, 11, 38, 0.72);
+  backdrop-filter: blur(6px);
+  box-shadow: inset 0 0 0 2px rgba(255, 243, 214, 0.14), 0 10px 0 rgba(0, 0, 0, 0.3);
+  outline: 2px dashed rgba(255, 193, 69, 0.35);
+  outline-offset: -9px;
+}
+.maker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.maker-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: calc(1.5rem * var(--ui-scale));
+  color: var(--visor-gold);
+}
+.maker-random {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(255, 243, 214, 0.1);
+  box-shadow: inset 0 0 0 2px rgba(255, 243, 214, 0.25);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+}
+.maker-random:hover {
+  background: rgba(255, 243, 214, 0.18);
+}
+.maker-name {
+  width: 100%;
+  padding: 11px 14px;
+  border: none;
+  border-radius: 14px;
+  background: var(--cream);
+  color: var(--twill);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: 0.03em;
+  box-shadow: inset 0 3px 0 rgba(0, 0, 0, 0.12);
+}
+.maker-name::placeholder {
+  color: #8f88b5;
+}
+.maker-name.is-bad {
+  box-shadow: 0 0 0 3px var(--alarm);
+  animation: shake 300ms ease;
+}
+@keyframes shake {
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+.maker-row {
+  display: grid;
+  gap: 7px;
+}
+.maker-label {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.03em;
+}
+.maker-label small {
+  margin-left: 6px;
+  font-family: var(--font-body);
+  font-size: 0.8em;
+  letter-spacing: 0;
+  color: var(--cream-dim);
+}
+.maker-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.swatch {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: var(--c);
+  box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.2), 0 0 0 3px rgba(255, 243, 214, 0.15);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.swatch-visor {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0 10%, var(--c) 45%, #1b1846 120%);
+}
+.swatch:hover {
+  transform: scale(1.08);
+}
+.swatch[aria-pressed='true'] {
+  box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.2), 0 0 0 3px var(--night), 0 0 0 6px var(--visor-gold);
+  transform: scale(1.08);
+}
+
+.chip {
+  flex: 1 1 110px;
+  display: grid;
+  gap: 1px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  background: rgba(43, 39, 112, 0.7);
+  box-shadow: inset 0 0 0 2px rgba(255, 243, 214, 0.16);
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+.chip span {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+.chip small {
+  font-size: 0.78rem;
+  color: var(--cream-dim);
+}
+.chip:hover {
+  background: rgba(43, 39, 112, 1);
+}
+.chip[aria-pressed='true'] {
+  background: var(--suit-orange);
+  box-shadow: 0 4px 0 var(--suit-orange-dark);
+}
+.chip[aria-pressed='true'] small {
+  color: var(--cream);
+}
+
+
+/* ---------- footer ---------- */
+.home-foot {
+  grid-area: foot;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px 28px;
+}
+.home-buoy {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex: 1 1 340px;
+  max-width: 620px;
+}
+.home-buoy .buoy-svg {
+  flex: none;
+  animation: home-bob 2.6s ease-in-out infinite;
+}
+.home-bubble {
+  margin: 0 0 14px;
+  padding: 13px 18px;
+  border-radius: 20px 20px 20px 6px;
+  background: var(--cream);
+  color: var(--twill);
+  font-size: calc(1.05rem * var(--ui-scale));
+  line-height: 1.45;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35);
+  min-height: 3.2em;
+}
+.home-bubble strong {
+  color: var(--suit-orange-dark);
+}
+.home-go {
+  font-size: calc(1.45rem * var(--ui-scale));
+  padding: calc(0.9rem * var(--ui-scale)) calc(1.7rem * var(--ui-scale));
+  margin-bottom: 14px;
+}
+
+/* ---------- small screens: stack everything and let the page scroll ---------- */
+@media (max-width: 860px) {
+  .home {
+    display: flex;
+    flex-direction: column;
+  }
+  .home > * {
+    flex: none;
+  }
+  .home-stage {
+    height: 46vh;
+    min-height: 280px;
+  }
+  .maker {
+    overflow: visible;
+    min-height: auto;
+  }
+}
+@media (max-width: 560px) {
+  .home-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .home-team {
+    padding-left: 0;
+    border-left: none;
+  }
+  .home-go {
+    width: 100%;
+  }
+}

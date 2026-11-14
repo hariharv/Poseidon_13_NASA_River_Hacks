@@ -35,7 +35,7 @@ export function createUI(container) {
     <div class="pause-layer" hidden><p>Paused · click to keep training</p></div>
     <div class="buoy-say is-hidden" aria-live="polite">
       ${buoySvg({ size: 76 })}
-      <p class="buoy-bubble"><span class="buoy-name">Buoy</span><span class="buoy-text"></span></p>
+      <p class="buoy-bubble"><span class="buoy-name">Zeus Jr.</span><span class="buoy-text"></span></p>
     </div>
     <aside class="checklist" hidden aria-label="Judge checklist"></aside>
     <div class="card-layer" hidden></div>

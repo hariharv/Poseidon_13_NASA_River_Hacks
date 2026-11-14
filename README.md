@@ -18,7 +18,7 @@ npm run dev        # http://localhost:5173
 
 | URL | What you get |
 |---|---|
-| `/` | Loading screen, then pick Easy, Hard or Judge Demo |
+| `/` | Homepage (Team Poseidon 13 + make your astronaut), then the loading screen: pick Easy, Hard or Judge Demo |
 | `/?stage=hermes` | One stage on its own (for stage builders) |
 | `/?stage=hermes&mode=hard` | Same, in Hard mode (shows the Real numbers button) |
 | `/?stage=hermes&mode=demo` | That stage's 15-35 s judge version, with the checklist on screen |
@@ -38,7 +38,7 @@ Only edit your own folders. `CONTRACTS.md` is the one shared file; changing it n
 | 2 · Aanya | Stages 1-3 | `stages/hermes`, `stages/odysseus`, `stages/dioscuri` |
 | 3 · Abhinav | Stages 4-6 | `stages/hera`, `stages/artemis`, `stages/apollo` |
 | 4 · Aniketh | Data + SerpAPI | `data/`, `api/`, `tools/`, `DATA_SOURCES.md` |
-| 5 · Nivedhya | Look, intro, 3D character, HUD, Buoy, cards, sounds | `ui/`, `assets/`, `intro/` |
+| 5 · Nivedhya | Look, intro, 3D character, HUD, Zeus Jr. (the helper robot), cards, sounds | `ui/`, `assets/`, `intro/` |
 
 ## How the pieces fit
 
@@ -49,7 +49,11 @@ Only edit your own folders. `CONTRACTS.md` is the one shared file; changing it n
 - **The UI is swappable.** The engine only talks to `ui/index.js` through the object `createUI()` returns.
 
 ## What's built
-
+- **Homepage** (`intro/home.js`): the NASA Space Apps Challenge logo (`assets/space-apps-logo.svg`, from
+  spaceappschallenge.org/brand), Team Poseidon 13, and "Make your astronaut": a 3D astronaut on a spinning stand
+  (`intro/astronaut.js`). Type your name (bad words filtered), then pick the suit colour (6), visor (3), boots &
+  gloves (3) and backpack (classic, jet pack, space cat). Zeus Jr., the helper robot, talks you through it.
+  Saves `player.json`.
 - **Loading screen** (`intro/loading.js`): the six stages as mission patches on a path to the Moon. The
   stitching thread is the real loading bar. Ends in Easy / Hard / Judge Demo.
 - **Engine** (`core/`): Oxygen and Progress bars, Sim over with "the moment that made the difference",
@@ -67,5 +71,5 @@ Only edit your own folders. `CONTRACTS.md` is the one shared file; changing it n
 
 - `data/storms.json` is empty until real DONKI rows are saved (never invent a storm).
 - `data/web_cache.json` has two hand-picked NASA links for the pool; SerpAPI cards replace them.
-- The Olympus Academy intro, character maker and fly-through slot in before Stage 1 in `core/main.js`.
+- The Olympus Academy intro and the stage fly-through still slot in before Stage 1 in `core/main.js`.
 - Visuals in `ui/` are working placeholders for Person 5 to restyle.

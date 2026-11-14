@@ -77,6 +77,22 @@ export function cleanName(name) {
   return cleaned || 'Cadet';
 }
 
+// "Filtered for bad words": returns false for a name a 7-year-old shouldn't see on a name tag.
+// Long words are caught inside other words (and with 1337 spelling); short ones only on their own,
+// so names like Cassie, Dickens or Scunthorpe still work.
+const BLOCK_INSIDE = ['fuck', 'shit', 'bitch', 'asshole', 'bastard', 'whore', 'slut', 'penis', 'vagina', 'porn', 'nazi', 'hitler', 'pussy', 'boob'];
+const BLOCK_WORD = ['cunt', 'ass', 'dick', 'cock', 'damn', 'crap', 'piss', 'sex', 'fag', 'tit', 'tits', 'kill', 'poop', 'butt'];
+const LEET = { 0: 'o', 1: 'i', 3: 'e', 4: 'a', 5: 's', 7: 't', 8: 'b', '@': 'a', $: 's' };
+
+export function isKidSafeName(name) {
+  const lower = String(name ?? '').toLowerCase();
+  const plain = [...lower].map((c) => LEET[c] ?? c).join('');
+  const squashed = plain.replace(/[^a-z]/g, '');
+  if (BLOCK_INSIDE.some((w) => squashed.includes(w))) return false;
+  const words = plain.split(/[^a-z]+/).filter(Boolean);
+  return !words.some((w) => BLOCK_WORD.includes(w));
+}
+
 function isObject(v) {
   return v !== null && typeof v === 'object' && !Array.isArray(v);
 }

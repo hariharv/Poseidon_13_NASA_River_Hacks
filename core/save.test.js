@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createSave, cleanName, DEFAULT_PLAYER } from './save.js';
+import { createSave, cleanName, isKidSafeName, DEFAULT_PLAYER } from './save.js';
 
 function memoryStorage() {
   const data = new Map();
@@ -80,5 +80,14 @@ describe('cleanName', () => {
 
   it('falls back to Cadet for an empty name', () => {
     expect(cleanName('  ')).toBe('Cadet');
+  });
+});
+
+describe('isKidSafeName', () => {
+  it('allows ordinary names', () => {
+    for (const n of ['Mira', 'Leo', 'Ana Sofia', 'Cassie', 'Dickens', 'Matilda', 'Scunthorpe Sam']) expect(isKidSafeName(n)).toBe(true);
+  });
+  it('blocks bad words, even hidden inside a name or spelled with numbers', () => {
+    for (const n of ['shit', 'xXfuckXx', 'sh1t', 'b1tch face', 'ass', 'Big Butt']) expect(isKidSafeName(n)).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
 // Boots the game.
-//   /                         loading screen -> pick a mode -> training
+//   /                         homepage (team + make your astronaut) -> loading screen -> pick a mode -> training
 //   /?stage=hermes            one stage alone (for stage builders)
 //   /?stage=hermes&mode=demo  that stage's judge version
 
@@ -33,6 +33,11 @@ if (stageParam) {
 }
 
 async function showTitle() {
+  // Homepage first: Team Poseidon 13 and "Make your astronaut". Then the menu (loading screen).
+  const { showHome } = await import('../intro/home.js');
+  const player = await showHome({ root: app, player: save.loadPlayer(), progress: save.loadProgress() });
+  save.savePlayer(player);
+
   const { showLoadingScreen } = await import('../intro/loading.js');
   const { mode } = await showLoadingScreen({
     root: app,
@@ -40,7 +45,7 @@ async function showTitle() {
     player: save.loadPlayer(),
     progress: save.loadProgress(),
     tasks: [
-      { label: 'Waking up Buoy…', weight: 1, run: () => document.fonts?.ready },
+      { label: 'Waking up Zeus Jr.…', weight: 1, run: () => document.fonts?.ready },
       { label: 'Filling the training pool…', weight: 3, run: () => loadStage('hermes') },
       { label: 'Checking your suit seals…', weight: 1, run: () => data.ready() },
     ],
@@ -85,6 +90,7 @@ async function runTraining(mode) {
 async function runJudgeDemo() {
   ui.checklist.show();
   ui.checklist.tick('easy-hard-modes'); // both modes were on the title screen the judge just saw
+  ui.checklist.tick('intro-character'); // and the character maker on the homepage before it
   for (const stage of STAGES) {
     if (!stage.available) continue;
     await playStage(stage.id, { ...ctx, mode: 'demo', demo: true });
