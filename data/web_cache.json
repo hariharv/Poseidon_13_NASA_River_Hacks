@@ -52,5 +52,23 @@
     "url": "https://www.nasa.gov/missions/station/spot-the-station-frequently-asked-questions/",
     "image": null,
     "sample": true
+  },
+  {
+    "queryId": "ship",
+    "foundOn": "2026-11-14",
+    "title": "Preparing for Artemis II: training for a mission around the Moon",
+    "source": "nasa.gov",
+    "url": "https://www.nasa.gov/centers-and-facilities/johnson/preparing-for-artemis-ii-training-for-a-mission-around-the-moon/",
+    "image": null,
+    "sample": true
+  },
+  {
+    "queryId": "ship",
+    "foundOn": "2026-11-14",
+    "title": "To protect Artemis II astronauts, NASA experts keep eyes on the Sun",
+    "source": "nasa.gov",
+    "url": "https://science.nasa.gov/missions/artemis/artemis-2/to-protect-artemis-ii-astronauts-nasa-experts-keep-eyes-on-sun/",
+    "image": null,
+    "sample": true
   }
 ]

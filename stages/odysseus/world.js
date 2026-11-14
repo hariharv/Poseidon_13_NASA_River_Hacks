@@ -155,10 +155,10 @@ export function buildWorld({ hints = 'more' }) {
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.font = 'bold 84px "Lilita One", system-ui, sans-serif';
-    g.fillText(text, sign.w / 2, 78);
+    g.fillText(text, sign.w / 2, 78, sign.w - 40);
     g.fillStyle = '#fff3d6';
     g.font = '34px "Atkinson Hyperlegible", system-ui, sans-serif';
-    g.fillText(sub, sign.w / 2, 148);
+    g.fillText(sub, sign.w / 2, 148, sign.w - 40);
     sign.redraw();
   }
   setSign('READY', 'strap in for the first hill', '#ffc145');
@@ -305,7 +305,7 @@ function buildMachines(scene) {
   cam.add(rec);
   const screen = screenTexture(256, 128);
   const screenMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.31), new THREE.MeshBasicMaterial({ map: screen.texture, fog: false }));
-  screenMesh.position.set(-0.55, 1.6, FRONT + 0.02);
+  screenMesh.position.set(-0.55, 1.3, FRONT + 0.03); // below the flight sign, not on top of it
   scene.add(screenMesh);
   let screenKey = '';
   function drawScreen(pct, on) {
@@ -415,7 +415,7 @@ function buildPowerPanel(scene, hints) {
   group.rotation.y = Math.PI; // faces into the cabin (towards -z)
   scene.add(group);
 
-  const board = new THREE.Mesh(new THREE.BoxGeometry(1.95, 1.48, 0.08), new THREE.MeshStandardMaterial({ color: '#23305c', roughness: 0.6 }));
+  const board = new THREE.Mesh(new THREE.BoxGeometry(1.95, 1.62, 0.08), new THREE.MeshStandardMaterial({ color: '#23305c', roughness: 0.6 }));
   group.add(board);
   const header = new THREE.Mesh(
     new THREE.PlaneGeometry(1.8, 0.2),
@@ -429,7 +429,7 @@ function buildPowerPanel(scene, hints) {
     new THREE.PlaneGeometry(1.8, 0.12),
     new THREE.MeshBasicMaterial({ map: labelTexture({ text: 'TOO MANY MACHINES!', bg: '#ff4d5e', fg: '#fff3d6', w: 512, h: 40 }), transparent: true }),
   );
-  overload.position.set(0, -0.67, 0.045);
+  overload.position.set(0, -0.75, 0.055); // under the bottom row of sockets, not behind them
   overload.visible = false;
   group.add(overload);
   void overloadMat;

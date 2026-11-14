@@ -134,7 +134,7 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  z-index: 1;
+  z-index: 4;
 }
 .hud-plugs,
 .hud-storm {
@@ -218,7 +218,10 @@
   font-family: var(--font-display);
   font-size: 1.35em;
   letter-spacing: 0.02em;
-  white-space: nowrap;
+  width: max-content;
+  max-width: min(640px, calc(100vw - 40px));
+  text-align: center;
+  line-height: 1.25;
   box-shadow: inset 0 0 0 2px rgba(255, 193, 69, 0.45);
 }
 .hud-prompt[hidden] {
@@ -483,6 +486,49 @@
   }
 }
 
+/* ---------- Menu + sound buttons (bottom right of the visor) ---------- */
+.hud-corner {
+  position: absolute;
+  right: max(5vw, 24px);
+  bottom: max(5vh, 24px);
+  display: flex;
+  gap: 10px;
+  z-index: 4;
+}
+.hud-btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 1em;
+  letter-spacing: 0.02em;
+  color: var(--cream);
+  background: rgba(13, 11, 38, 0.66);
+  backdrop-filter: blur(4px);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 243, 214, 0.22);
+}
+.hud-btn:hover {
+  box-shadow: inset 0 0 0 2px var(--visor-gold);
+}
+.hud-btn[hidden] {
+  display: none;
+}
+.hud-btn.is-off {
+  color: var(--cream-dim);
+  text-decoration: line-through;
+}
+
+/* The judge checklist fills the right edge in demo mode: keep the HUD pieces clear of it. */
+:root[data-mode='demo'] .hud-extras,
+:root[data-mode='demo'] .hud-corner {
+  right: calc(min(340px, 40vw) + 32px);
+}
+
 /* ---------- Pause ---------- */
 .pause-layer {
   position: absolute;
@@ -496,13 +542,31 @@
 .pause-layer[hidden] {
   display: none;
 }
-.pause-layer p {
+.pause-box {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 24px 30px 18px;
+  border-radius: 28px;
+  background: rgba(13, 11, 38, 0.9);
+  box-shadow: inset 0 0 0 2px rgba(255, 193, 69, 0.4);
+  cursor: default;
+}
+.pause-title {
   margin: 0;
-  padding: 16px 26px;
-  border-radius: 999px;
-  background: rgba(13, 11, 38, 0.85);
   font-family: var(--font-display);
-  font-size: 1.5em;
+  font-size: 1.8em;
+}
+.pause-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+.pause-hint {
+  margin: 0;
+  font-size: 0.9em;
+  color: var(--cream-dim);
 }
 
 @media (max-width: 640px) {
@@ -516,5 +580,49 @@
   }
   .checklist {
     display: none;
+  }
+  /* plugs + storm light drop under the bars instead of sitting on the Oxygen number */
+  .hud-extras {
+    top: 112px;
+    left: 14px;
+    right: auto;
+    flex-wrap: wrap;
+  }
+  :root[data-mode='demo'] .hud-extras,
+  :root[data-mode='demo'] .hud-corner {
+    right: 14px;
+  }
+  .hud-corner {
+    right: 14px;
+    bottom: auto;
+    top: 14px;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .hud-btn-text {
+    display: none;
+  }
+  .hud-prompt {
+    font-size: 1.1em;
+    padding: 10px 16px;
+  }
+}
+
+/* Short landscape phones: keep the prompt above Zeus Jr.'s speech bubble */
+@media (max-height: 480px) {
+  .hud-prompt {
+    top: calc(50% + 24px);
+    font-size: 1.05em;
+  }
+  .buoy-say {
+    max-width: min(420px, 58vw);
+  }
+  .buoy-say .buoy-svg {
+    width: 52px;
+    height: 52px;
+  }
+  .buoy-bubble {
+    font-size: 0.95em;
+    padding: 10px 14px;
   }
 }

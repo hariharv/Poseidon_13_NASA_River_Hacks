@@ -1,5 +1,6 @@
 // Runs one stage: builds `game`, starts the stage, and handles Sim over,
-// Try again and Stage complete. Resolves when the player moves on.
+// Try again, the in-game Menu and Stage complete. Resolves when the player moves on
+// with the stage's result, or { quit: true } / { crashed: true }.
 
 import { createGame } from './game.js';
 import { STAGES, loadStage } from './stages.js';
@@ -10,6 +11,34 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
   const stage = await loadStage(id);
 
   return new Promise((resolve) => {
+    let menuOpen = false;
+
+    // The Menu button (and the pause screen's Menu) during play.
+    async function openMenu(game) {
+      if (menuOpen || !game.running) return;
+      menuOpen = true;
+      if (document.pointerLockElement) document.exitPointerLock();
+      const choice = await ui.card({
+        eyebrow: `Stage ${index + 1} · ${stage.name}`,
+        title: 'Menu',
+        text: 'Training is paused while this is open.',
+        choices: [
+          { id: 'resume', label: 'Keep training' },
+          { id: 'restart', label: 'Start this stage again' },
+          { id: 'quit', label: 'Back to the main menu' },
+        ],
+      });
+      menuOpen = false;
+      if (!game.running) return;
+      if (choice === 'restart') {
+        teardown(game);
+        attempt();
+      } else if (choice === 'quit') {
+        teardown(game);
+        resolve({ quit: true });
+      }
+    }
+
     function attempt() {
       const stageRoot = document.createElement('div');
       stageRoot.className = 'stage-root';
@@ -26,7 +55,7 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
         onSimOver: async ({ moment }) => {
           teardown(game);
           game.demo.check('replayability');
-          await ui.card({
+          const choice = await ui.card({
             tone: 'alert',
             eyebrow: 'Sim over!',
             title: 'Zeus Jr. pulled you out',
@@ -35,13 +64,20 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
               `The moment that made the difference: *${moment.text}*`,
               'You keep all your badges.',
             ],
-            choices: [{ id: 'retry', label: 'Try again' }],
+            choices: [
+              { id: 'retry', label: 'Try again' },
+              { id: 'quit', label: 'Back to the main menu' },
+            ],
           });
-          attempt();
+          if (choice === 'quit') resolve({ quit: true });
+          else attempt();
         },
         onFinish: async (result) => {
           teardown(game);
-          if (result.passed && !demo) save.recordStage(id, result.stars ?? 1);
+          if (result.passed && !demo) {
+            save.recordStage(id, result.stars ?? 1);
+            if (result.badge) save.addBadge(result.badge);
+          }
           await ui.card({
             tone: 'win',
             eyebrow: `Stage ${index + 1} of ${STAGES.length} complete`,
@@ -59,13 +95,16 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
       ui.hud.oxygen(game.oxygen.value);
       ui.hud.progress(game.progress.value);
       ui.hud.show();
+      ui.setMenu?.(() => openMenu(game));
       ui.setRealNumbers(
         mode === 'hard' && stage.realNumbers?.length
           ? () => ui.card({ eyebrow: 'Hard mode', title: 'Real numbers', facts: stage.realNumbers, choices: [{ id: 'ok', label: 'Back to training' }] })
           : null,
       );
 
-      Promise.resolve((demo ? stage.demo : stage.start).call(stage, game))
+      // .then() so a stage that throws while starting (no WebGL, say) still reaches the crash card.
+      Promise.resolve()
+        .then(() => (demo ? stage.demo : stage.start).call(stage, game))
         .then((cleanup) => game.addCleanup(cleanup))
         .catch(async (err) => {
           console.error(`Stage "${id}" crashed`, err);
@@ -90,6 +129,7 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
       ui.pause(false);
       ui.setRealNumbers(null);
       ui.hud.target(false);
+      ui.setMenu?.(null);
       ui.hud.hide();
     }
 

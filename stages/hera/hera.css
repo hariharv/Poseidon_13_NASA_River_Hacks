@@ -1,0 +1,126 @@
+/* Hera: the storm sign at the top of the visor. Same family as the Odysseus and Dioscuri signs,
+   but it wraps instead of running off the screen. */
+
+.hera-sign {
+  position: fixed;
+  left: 50%;
+  top: calc(max(4.5vh, 28px) + 104px);
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: auto minmax(0, auto);
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  max-width: min(440px, calc(100vw - 32px));
+  padding: 8px 18px 10px 10px;
+  border-radius: 22px;
+  background: rgba(13, 11, 38, 0.66);
+  backdrop-filter: blur(4px);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 243, 214, 0.16);
+  color: var(--cream);
+  pointer-events: none;
+  font-size: calc(16px * var(--ui-scale));
+}
+.hera-sign[hidden] {
+  display: none;
+}
+.hera-icon {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 2.6em;
+  height: 2.6em;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 1em;
+  background: var(--twill-2);
+}
+.hera-words {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 10px;
+}
+.hera-phase {
+  font-family: var(--font-display);
+  font-size: 1.4em;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.hera-sub {
+  font-size: 0.95em;
+  color: var(--cream-dim);
+}
+.hera-timer {
+  position: relative;
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.hera-timer-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: inherit;
+  background: var(--cream);
+  transition: width 120ms linear;
+}
+
+/* The flash has happened: particles on the way */
+.hera-sign[data-kind='warning'] {
+  box-shadow: inset 0 0 0 2px var(--visor-gold), 0 0 22px rgba(255, 193, 69, 0.4);
+}
+.hera-sign[data-kind='warning'] .hera-phase {
+  color: var(--visor-gold);
+}
+.hera-sign[data-kind='warning'] .hera-icon {
+  background: var(--visor-gold);
+  color: var(--night);
+  animation: hera-pulse 1s ease-in-out infinite;
+}
+.hera-sign[data-kind='warning'] .hera-timer-fill {
+  background: var(--visor-gold);
+}
+
+/* The particles are here */
+.hera-sign[data-kind='storm'] {
+  box-shadow: inset 0 0 0 2px var(--alarm), 0 0 26px rgba(255, 77, 94, 0.55);
+}
+.hera-sign[data-kind='storm'] .hera-phase {
+  color: #ff9aa5;
+}
+.hera-sign[data-kind='storm'] .hera-icon {
+  background: var(--alarm);
+  animation: hera-pulse 0.6s ease-in-out infinite;
+}
+.hera-sign[data-kind='storm'] .hera-timer-fill {
+  background: var(--alarm);
+}
+
+.hera-sign[data-kind='clear'] .hera-phase {
+  color: var(--progress);
+}
+.hera-sign[data-kind='clear'] .hera-icon {
+  background: var(--progress);
+  color: var(--night);
+}
+
+@keyframes hera-pulse {
+  50% {
+    transform: scale(1.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hera-sign .hera-icon {
+    animation: none !important;
+  }
+}
+
+/* Phones: drop under the two bars */
+@media (max-width: 640px) {
+  .hera-sign {
+    top: 150px;
+  }
+}

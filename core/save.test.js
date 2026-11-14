@@ -16,6 +16,13 @@ describe('createSave', () => {
     storage = memoryStorage();
   });
 
+  it('saves a badge once, even if the stage is played again', () => {
+    const save = createSave(storage);
+    save.addBadge('pilot-wings');
+    save.addBadge('pilot-wings');
+    expect(save.loadPlayer().badges).toEqual(['pilot-wings']);
+  });
+
   it('gives a default astronaut when nothing is saved', () => {
     expect(createSave(storage).loadPlayer()).toEqual(DEFAULT_PLAYER);
   });

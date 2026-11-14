@@ -3,6 +3,7 @@
 
 import './ui.css';
 import { buoySvg } from './buoy-svg.js';
+import { createSound } from './sound.js';
 import { CHECKLIST } from '../core/checklist.js';
 
 const ICONS = {
@@ -31,8 +32,21 @@ export function createUI(container) {
       </div>
       <div class="crosshair"></div>
       <div class="hud-prompt" hidden></div>
+      <div class="hud-corner">
+        <button class="hud-btn hud-sound" type="button" aria-pressed="true" title="Sound on or off (M)"><span aria-hidden="true">♪</span><span class="hud-btn-text">Sound on</span></button>
+        <button class="hud-btn hud-menu" type="button" title="Menu"><span aria-hidden="true">☰</span><span class="hud-btn-text">Menu</span></button>
+      </div>
     </div>
-    <div class="pause-layer" hidden><p>Paused · click to keep training</p></div>
+    <div class="pause-layer" hidden>
+      <div class="pause-box" role="dialog" aria-label="Paused">
+        <p class="pause-title">Paused</p>
+        <div class="pause-actions">
+          <button class="btn pause-resume" type="button">Keep training</button>
+          <button class="btn btn-quiet pause-menu" type="button">Menu</button>
+        </div>
+        <p class="pause-hint">or press <kbd>P</kbd></p>
+      </div>
+    </div>
     <div class="buoy-say is-hidden" aria-live="polite">
       ${buoySvg({ size: 76 })}
       <p class="buoy-bubble"><span class="buoy-name">Zeus Jr.</span><span class="buoy-text"></span></p>
@@ -56,8 +70,39 @@ export function createUI(container) {
   const buoyText = $('.buoy-text');
   const checklistBox = $('.checklist');
   const cardLayer = $('.card-layer');
+  const soundBtn = $('.hud-sound');
+  const menuBtn = $('.hud-menu');
 
+  const sound = createSound();
   let lowAt = 30;
+  let lastOxygen = 100;
+  let lastProgress = 0;
+  let lastStorm = 'green';
+  let menuHandler = null;
+
+  // ---------- Sound + Menu buttons (bottom right of the visor) ----------
+  function showSoundState(muted) {
+    soundBtn.setAttribute('aria-pressed', String(!muted));
+    soundBtn.querySelector('.hud-btn-text').textContent = muted ? 'Sound off' : 'Sound on';
+    soundBtn.classList.toggle('is-off', muted);
+  }
+  showSoundState(sound.muted);
+  sound.onChange(showSoundState);
+  soundBtn.addEventListener('click', () => {
+    sound.toggle();
+    sound.play('click');
+  });
+  const openMenu = (e) => {
+    e?.stopPropagation();
+    sound.play('click');
+    menuHandler?.();
+  };
+  menuBtn.addEventListener('click', openMenu);
+  $('.pause-menu').addEventListener('click', openMenu);
+  window.addEventListener('keydown', (e) => {
+    if (e.code !== 'KeyM' || e.repeat || e.target.closest?.('input, textarea')) return;
+    sound.toggle();
+  });
 
   // ---------- HUD ----------
   const hud = {
@@ -70,6 +115,9 @@ export function createUI(container) {
     },
     reset({ low = 30 } = {}) {
       lowAt = low;
+      lastOxygen = 100;
+      lastProgress = 0;
+      lastStorm = 'green';
       plugs.hidden = true;
       storm.hidden = true;
       prompt.hidden = true;
@@ -78,9 +126,13 @@ export function createUI(container) {
     oxygen(v) {
       setBar(oxygenBar, v);
       oxygenBar.classList.toggle('is-low', v < lowAt);
+      if (v < lowAt && lastOxygen >= lowAt) sound.play('warn');
+      lastOxygen = v;
     },
     progress(v) {
       setBar(progressBar, v);
+      if (v >= 100 && lastProgress < 100) sound.play('success');
+      lastProgress = v;
     },
     plugs(n) {
       plugs.hidden = false;
@@ -90,6 +142,8 @@ export function createUI(container) {
       storm.hidden = false;
       storm.dataset.colour = colour;
       storm.querySelector('.storm-text').textContent = { green: 'Calm', yellow: 'Storm coming', red: 'Storm here!' }[colour];
+      if (colour !== lastStorm) sound.play(colour === 'red' ? 'alarm' : colour === 'yellow' ? 'warn' : 'success');
+      lastStorm = colour;
     },
     target(on) {
       crosshair.classList.toggle('is-target', Boolean(on));
@@ -152,6 +206,7 @@ export function createUI(container) {
       return;
     }
     showing = text;
+    sound.play('chirp');
     buoyText.innerHTML = escapeHtml(text).replace(/\*(.+?)\*/g, '<strong>$1</strong>');
     buoyBox.classList.remove('is-hidden');
     shownAt = performance.now();
@@ -196,11 +251,16 @@ export function createUI(container) {
         ${note ? `<p class="card-note">${escapeHtml(note)}</p>` : ''}
         <div class="card-choices"></div>`;
       const row = box.querySelector('.card-choices');
+      // A key held down from the game (Space to swim, E to fix) must not click
+      // the first button the moment the card appears, so buttons wake up after a beat.
+      const readyAt = performance.now() + 450;
       list.forEach((choice, i) => {
         const b = el('button', i === 0 ? 'btn' : 'btn btn-quiet');
         b.type = 'button';
         b.textContent = choice.label;
         b.addEventListener('click', () => {
+          if (performance.now() < readyAt) return;
+          sound.play('click');
           cardLayer.hidden = true;
           cardLayer.replaceChildren();
           resolve(choice.id);
@@ -214,7 +274,12 @@ export function createUI(container) {
       }
       cardLayer.replaceChildren(box);
       cardLayer.hidden = false;
-      row.querySelector('button').focus();
+      sound.play(tone === 'alert' ? 'fail' : tone === 'win' ? 'win' : 'tap');
+      box.tabIndex = -1;
+      box.focus({ preventScroll: true });
+      setTimeout(() => {
+        if (box.isConnected) row.querySelector('button')?.focus({ preventScroll: true });
+      }, 460);
     });
   }
 
@@ -242,6 +307,7 @@ export function createUI(container) {
       checklistBox.hidden = true;
     },
     tick(id) {
+      if (!done.has(id)) sound.play('star');
       done.add(id);
       renderChecklist();
     },
@@ -251,9 +317,16 @@ export function createUI(container) {
   };
 
   // ---------- Pause ----------
+  const pauseResume = $('.pause-resume');
   function pause(on, onResume) {
     pauseLayer.hidden = !on;
     pauseLayer.onclick = on ? () => onResume?.() : null;
+    pauseResume.onclick = on
+      ? (e) => {
+          e.stopPropagation();
+          onResume?.();
+        }
+      : null;
   }
 
   function setRealNumbers(onClick) {
@@ -274,6 +347,13 @@ export function createUI(container) {
     checklist,
     pause,
     setRealNumbers,
+    sound,
+    // The engine sets what the Menu button does while a stage is running (null hides it).
+    setMenu(fn) {
+      menuHandler = fn;
+      menuBtn.hidden = !fn;
+      $('.pause-menu').hidden = !fn;
+    },
   };
 }
 

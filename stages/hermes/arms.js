@@ -80,7 +80,7 @@ export function createArms(suit) {
   bit.position.z = -0.17;
   tool.add(bit);
   const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.072, 0.02, 0.1), new THREE.MeshStandardMaterial({ color: '#ffc145' }));
-  stripe.position.set(0, 0.04, -0.02);
+  stripe.position.set(0, 0.042, -0.02); // top sits just above the body's, so the two faces don't fight
   tool.add(stripe);
   tool.position.set(0.0, 0.06, -0.12);
   right.add(tool);
@@ -88,6 +88,7 @@ export function createArms(suit) {
   const leftHome = left.position.clone();
   const rightHome = right.position.clone();
   let push = 0;
+  let swim = 0;
 
   return {
     scene,
@@ -95,7 +96,8 @@ export function createArms(suit) {
       rig.position.copy(camera.position);
       rig.quaternion.copy(camera.quaternion);
       // gentle breast-stroke when swimming
-      const stroke = swimming ? Math.sin(t * 3.2) : 0;
+      swim += ((swimming ? 1 : 0) - swim) * Math.min(1, dt * 6); // ease in and out, never snap
+      const stroke = Math.sin(t * 3.2) * swim;
       left.position.set(leftHome.x - stroke * 0.05, leftHome.y + Math.sin(t * 1.3) * 0.01, leftHome.z + stroke * 0.06);
       // right hand reaches forward and shakes a little while drilling
       push += ((working ? 1 : 0) - push) * Math.min(1, dt * 8);
@@ -105,7 +107,7 @@ export function createArms(suit) {
         rightHome.y + push * 0.05 + Math.sin(t * 1.3 + 1) * 0.01,
         rightHome.z - push * 0.1 + stroke * 0.06,
       );
-      bit.rotation.y += working ? dt * 40 : 0;
+      bit.rotation.y += working ? dt * 12 : 0; // slow enough not to strobe backwards
     },
   };
 }

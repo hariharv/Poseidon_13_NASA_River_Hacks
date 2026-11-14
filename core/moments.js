@@ -3,7 +3,9 @@
 export const MOMENT_TEXT = {
   working: 'You kept working when your oxygen was low.',
   breathing: 'You were far from the air station when your oxygen got low.',
-  storm: 'You stayed outside while the storm light was red.',
+  storm: 'You stayed out of the storm shelter while the storm light was red.',
+  'no-air-hose': 'You hid in the shelter without plugging in the air hose.',
+  'cabin-air': 'The flight took so long that the cabin air ran low.',
 };
 
 const DEFAULT_MOMENT = {

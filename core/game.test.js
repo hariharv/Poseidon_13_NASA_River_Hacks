@@ -163,4 +163,25 @@ describe('createGame', () => {
     game.addCleanup(cleanup);
     expect(cleanup).toHaveBeenCalledTimes(1);
   });
+
+  it('plays sounds while the stage runs, and goes quiet once it ends', () => {
+    const play = vi.fn();
+    const handle = { set: vi.fn(), stop: vi.fn() };
+    const ui = { ...fakeUi(), sound: { play, loop: vi.fn(() => handle) } };
+    const game = createGame({ stageId: 'hermes', ui });
+    game.sound.play('beep');
+    const hum = game.sound.loop('hum');
+    expect(play).toHaveBeenCalledWith('beep');
+    expect(hum).toBe(handle);
+    game.end();
+    game.sound.play('beep');
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(handle.stop).toHaveBeenCalled(); // loops never outlive the stage
+  });
+
+  it('still works when the UI has no sound', () => {
+    const { game } = make();
+    expect(() => game.sound.play('beep')).not.toThrow();
+    expect(() => game.sound.loop('hum').set(0.5)).not.toThrow();
+  });
 });

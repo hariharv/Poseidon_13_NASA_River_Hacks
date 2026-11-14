@@ -1,1 +1,58 @@
-[]
+[
+  {
+    "donkiId": "2017-09-10T16:25:00-SEP-001",
+    "date": "2017-09-10",
+    "kind": "Solar flare + particle storm",
+    "strength": "X8.2",
+    "kidText": "On 10 September 2017 the Sun blasted a giant X8.2 flare. Its fast particles reached space near Earth 50 minutes later.",
+    "flareId": "2017-09-10T15:35:00-FLR-001",
+    "flareTime": "2017-09-10T15:35Z",
+    "particlesTime": "2017-09-10T16:25Z",
+    "measuredBy": "GOES-13 satellite (particles over 100 MeV)",
+    "url": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/13101/-1",
+    "flareUrl": "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13098/-1",
+    "savedOn": "2026-11-14"
+  },
+  {
+    "donkiId": "2024-05-11T02:10:00-SEP-001",
+    "date": "2024-05-11",
+    "kind": "Solar flare + particle storm",
+    "strength": "X5.8",
+    "kidText": "On 11 May 2024, the week people saw northern lights far from the poles, the Sun blasted an X5.8 flare. Its particles arrived one hour later.",
+    "flareId": "2024-05-11T01:10:00-FLR-001",
+    "flareTime": "2024-05-11T01:10Z",
+    "particlesTime": "2024-05-11T02:10Z",
+    "measuredBy": "GOES satellite (particles over 100 MeV)",
+    "url": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/30714/-1",
+    "flareUrl": "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/30711/-1",
+    "savedOn": "2026-11-14"
+  },
+  {
+    "donkiId": "2017-09-06T23:30:00-SEP-001",
+    "date": "2017-09-06",
+    "kind": "Solar flare + particle storm",
+    "strength": "X9.3",
+    "kidText": "On 6 September 2017 the Sun made its biggest flare in over ten years, an X9.3. Its particles were measured near Earth almost 12 hours later.",
+    "flareId": "2017-09-06T11:53:00-FLR-001",
+    "flareTime": "2017-09-06T11:53Z",
+    "particlesTime": "2017-09-06T23:30Z",
+    "measuredBy": "SOHO spacecraft (particles 15.8-39.8 MeV)",
+    "url": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/13081/-1",
+    "flareUrl": "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13010/-1",
+    "savedOn": "2026-11-14"
+  },
+  {
+    "donkiId": "2017-09-05T00:30:00-SEP-001",
+    "date": "2017-09-04",
+    "kind": "Solar flare + particle storm",
+    "strength": "M5.5",
+    "kidText": "On 4 September 2017 the Sun made an M5.5 flare, weaker than an X flare. Its particles reached Earth about 4 hours later.",
+    "flareId": "2017-09-04T20:15:00-FLR-001",
+    "flareTime": "2017-09-04T20:15Z",
+    "particlesTime": "2017-09-05T00:30Z",
+    "measuredBy": "GOES-13 satellite (particles over 10 MeV)",
+    "url": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/12984/-1",
+    "flareUrl": "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/12979/-1",
+    "savedOn": "2026-11-14"
+  }
+]

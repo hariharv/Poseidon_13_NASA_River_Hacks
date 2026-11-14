@@ -64,7 +64,15 @@ export function createSave(storage = safeLocalStorage()) {
     return player;
   }
 
-  return { loadPlayer, savePlayer, loadProgress, recordStage, addSticker };
+  function addBadge(id) {
+    const player = loadPlayer();
+    if (!Array.isArray(player.badges)) player.badges = [];
+    if (!player.badges.includes(id)) player.badges.push(id);
+    savePlayer(player);
+    return player;
+  }
+
+  return { loadPlayer, savePlayer, loadProgress, recordStage, addSticker, addBadge };
 }
 
 export function cleanName(name) {

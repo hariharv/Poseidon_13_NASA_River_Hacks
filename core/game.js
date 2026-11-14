@@ -46,6 +46,21 @@ export function createGame({
   let plugCount = 0;
   let stormColour = 'green';
 
+  // Sound: one-shots only play while the stage runs, and every loop stops when it ends.
+  const QUIET_LOOP = { set() {}, stop() {} };
+  const loops = new Set();
+  const sound = {
+    play(name) {
+      if (running) ui.sound?.play(name);
+    },
+    loop(name, level) {
+      if (!ui.sound || ended) return QUIET_LOOP;
+      const handle = ui.sound.loop(name, level);
+      loops.add(handle);
+      return handle;
+    },
+  };
+
   const game = {
     stageId,
     mode,
@@ -97,6 +112,7 @@ export function createGame({
 
     data,
     web,
+    sound,
 
     demo: {
       check(id) {
@@ -125,6 +141,8 @@ export function createGame({
     end() {
       running = false;
       ended = true;
+      loops.forEach((h) => h.stop());
+      loops.clear();
       while (cleanups.length) {
         try {
           cleanups.pop()();

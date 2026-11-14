@@ -71,7 +71,10 @@ async function runSingleStage(id, mode) {
 // (The Olympus Academy intro and character maker slot in here once Person 5 lands them.)
 async function runTraining(mode) {
   const done = save.loadProgress().completed;
-  const start = Math.max(0, STAGES.findIndex((s) => !done.includes(s.id)));
+  // Pick up at the first built stage not finished yet. Once every built stage is done,
+  // start again from Stage 1 so the player can replay (or try Hard) instead of hitting "Coming soon".
+  const next = STAGES.findIndex((s) => s.available && !done.includes(s.id));
+  const start = next === -1 ? 0 : next;
   for (const stage of STAGES.slice(start)) {
     if (!stage.available) {
       await ui.card({
@@ -82,7 +85,8 @@ async function runTraining(mode) {
       });
       return;
     }
-    await playStage(stage.id, { ...ctx, mode });
+    const result = await playStage(stage.id, { ...ctx, mode });
+    if (result?.quit || result?.crashed) return;
   }
 }
 
@@ -93,7 +97,8 @@ async function runJudgeDemo() {
   ui.checklist.tick('intro-character'); // and the character maker on the homepage before it
   for (const stage of STAGES) {
     if (!stage.available) continue;
-    await playStage(stage.id, { ...ctx, mode: 'demo', demo: true });
+    const result = await playStage(stage.id, { ...ctx, mode: 'demo', demo: true });
+    if (result?.quit || result?.crashed) return;
   }
   const built = STAGES.filter((s) => s.available).length;
   await ui.card({

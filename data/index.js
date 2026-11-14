@@ -21,6 +21,11 @@ const PLACES = {
     title: "The station's real robot arm",
     text: 'The space station really has a giant robot arm called *Canadarm2*. Astronauts steer it from the *Cupola* window, and it catches cargo ships and moves experiments, just like you did.',
   },
+  ship: {
+    eyebrow: 'Real world window',
+    title: 'The real spaceship simulator',
+    text: "The Artemis II astronauts practised in NASA's *Orion simulator* in Houston before flying around the Moon. Their real capsule has a radiation alarm called *HERA*, and the crew practised building a storm shelter out of supply bags, like you did.",
+  },
 };
 
 export function createData() {
