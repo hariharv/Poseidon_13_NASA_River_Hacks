@@ -40,8 +40,8 @@ const REAL_NUMBERS = [
 const SIGN_COLOURS = { float: '#ffc145', heavy: '#ff5b1f', level: '#5bd98a', power: '#ff4d5e' };
 
 const CONTROLS = [
-  { label: 'Push yourself (while floating)', value: 'W A S D, Space = up, Shift = down' },
-  { label: 'Look around', value: 'Move the mouse (or ← →)' },
+  { label: 'Push yourself (while floating)', value: 'W and S (or ↑ ↓), Space = up, Shift = down' },
+  { label: 'Turn left and right', value: 'A and D (or ← →, or the mouse)' },
   { label: 'Grab a tool / plug or unplug', value: 'Press E (or click)' },
 ];
 

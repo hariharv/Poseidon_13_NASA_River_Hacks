@@ -31,8 +31,8 @@ const REAL_NUMBERS = [
 ];
 
 const CONTROLS = [
-  { label: 'Float around the lab', value: 'W A S D, Space = up, Shift = down' },
-  { label: 'Look around', value: 'Move the mouse' },
+  { label: 'Float around the lab', value: 'W and S (or ↑ ↓), Space = up, Shift = down' },
+  { label: 'Turn left and right', value: 'A and D (or ← →, or the mouse)' },
   { label: 'Use what you look at', value: 'Press E (or click)' },
   { label: 'At the arm controls', value: 'W A S D, Space, Shift steer the arm · Q gets up' },
 ];
@@ -319,7 +319,7 @@ function run(game, { demo }) {
         kind: e.exp.puzzle,
         title: `${e.exp.puzzleTitle}`,
         text: `Start the *${e.exp.name}* experiment before the timer runs out!`,
-        seconds: r.puzzleSeconds,
+        seconds: r.puzzleSeconds + (e.exp.puzzle === 'pipes' ? 10 : e.exp.puzzle === 'balance' ? 6 : 0),
         size: r.puzzleSizes[e.exp.id],
       })
       .then((ok) => {

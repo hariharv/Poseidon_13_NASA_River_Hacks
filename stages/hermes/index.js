@@ -31,12 +31,12 @@ const REAL_NUMBERS = [
 const PANEL_PUZZLES = [
   { kind: 'flow', title: 'reconnect the power lines', text: "Drag a line from each dot to the dot with the *same colour and shape*. Lines can't cross!" },
   { kind: 'sequence', title: 'type the panel code', text: 'Watch the lights, then press them *in the same order*.' },
-  { kind: 'timing', title: 'tighten the bolts', text: 'Stop the wrench in the *green zone*.' },
+  { kind: 'pipes', title: 'reroute the power pipes', text: 'Turn the pipe pieces until the *power reaches the bulb*.' },
 ];
 
 const CONTROLS = [
-  { label: 'Swim', value: 'W A S D or the arrow keys' },
-  { label: 'Look around', value: 'Move the mouse (or ← →)' },
+  { label: 'Swim forward and back', value: 'W and S (or ↑ ↓)' },
+  { label: 'Turn left and right', value: 'A and D (or ← →, or the mouse)' },
   { label: 'Float up / sink down', value: 'Space / Shift' },
   { label: 'Fix a panel', value: 'Press E, then solve the repair puzzle before time runs out' },
 ];
@@ -300,8 +300,8 @@ function run(game, { demo }) {
         kind: puzzle.kind,
         title: `Panel ${panel.index + 1}: ${puzzle.title}`,
         text: `${puzzle.text} Your oxygen drops faster while you work!`,
-        seconds: puzzle.kind === 'flow' ? r.flowSeconds : r.puzzleSeconds,
-        size: puzzle.kind === 'flow' ? r.flowGrid : puzzle.kind === 'sequence' ? r.puzzleWires + 1 : easy ? 3 : 4,
+        seconds: puzzle.kind === 'flow' ? r.flowSeconds : puzzle.kind === 'pipes' ? r.puzzleSeconds + 10 : r.puzzleSeconds,
+        size: puzzle.kind === 'flow' ? r.flowGrid : puzzle.kind === 'sequence' ? r.puzzleWires + 1 : puzzle.kind === 'pipes' ? 4 : 3,
       })
       .then((ok) => {
         fixing = null;
@@ -379,7 +379,7 @@ function run(game, { demo }) {
   function fixLeak() {
     leakFixing = true;
     player.setEnabled(false);
-    game.ui.puzzle({ kind: 'timing', title: 'Clamp the leak', text: 'Stop the clamp in the *green zone*, three times!', seconds: r.puzzleSeconds, size: 3 }).then((ok) => {
+    game.ui.puzzle({ kind: 'balance', title: 'Clamp the leak', text: 'Hold the clamp *steady*: keep the needle in the green until the bar is full!', seconds: r.puzzleSeconds + 6, size: 4 }).then((ok) => {
       leakFixing = false;
       if (!game.running) return;
       player.setEnabled(true);

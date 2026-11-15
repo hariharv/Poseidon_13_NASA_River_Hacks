@@ -107,8 +107,9 @@ export function createPlayer({ camera, dom, spawn, rules, onPointerChange, onPoi
   let shake = 0;
 
   function update(dt, t) {
-    if (keys.has('ArrowLeft')) yaw += 1.9 * dt;
-    if (keys.has('ArrowRight')) yaw -= 1.9 * dt;
+    // A / D and the left / right arrows turn you (the same keys, the same way, every time)
+    if (enabled && (keys.has('ArrowLeft') || keys.has('KeyA'))) yaw += 1.9 * dt;
+    if (enabled && (keys.has('ArrowRight') || keys.has('KeyD'))) yaw -= 1.9 * dt;
 
     const cp = Math.cos(pitch);
     forward.set(-Math.sin(yaw) * cp, Math.sin(pitch), -Math.cos(yaw) * cp);
@@ -120,8 +121,6 @@ export function createPlayer({ camera, dom, spawn, rules, onPointerChange, onPoi
       const along = mode === 'float' ? forward : flat;
       if (keys.has('KeyW') || keys.has('ArrowUp')) wish.add(along);
       if (keys.has('KeyS') || keys.has('ArrowDown')) wish.sub(along);
-      if (keys.has('KeyD')) wish.add(right);
-      if (keys.has('KeyA')) wish.sub(right);
       if (mode === 'float') {
         if (keys.has('Space')) wish.y += 1;
         if (keys.has('ShiftLeft') || keys.has('ShiftRight') || keys.has('KeyC')) wish.y -= 1;

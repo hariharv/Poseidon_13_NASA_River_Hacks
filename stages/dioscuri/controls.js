@@ -114,12 +114,13 @@ export function createControls({ camera, dom, seat, start, room, floatSpeed, onP
         pos.lerpVectors(glide.from, glide.to, k);
         if (glide.t >= 1) glide = null;
       } else if (mode === 'float') {
+        // A / D and the left / right arrows turn you
+        if (enabled && (keys.has('KeyA') || keys.has('ArrowLeft'))) yaw += 1.9 * dt;
+        if (enabled && (keys.has('KeyD') || keys.has('ArrowRight'))) yaw -= 1.9 * dt;
         wish.set(0, 0, 0);
         if (enabled) {
           if (keys.has('KeyW') || keys.has('ArrowUp')) wish.add(forward);
           if (keys.has('KeyS') || keys.has('ArrowDown')) wish.sub(forward);
-          if (keys.has('KeyD') || keys.has('ArrowRight')) wish.add(right);
-          if (keys.has('KeyA') || keys.has('ArrowLeft')) wish.sub(right);
           if (keys.has('Space')) wish.y += 1;
           if (keys.has('ShiftLeft') || keys.has('ShiftRight') || keys.has('KeyC')) wish.y -= 1;
         }
