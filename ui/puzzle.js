@@ -34,6 +34,11 @@ export const HOW_TO = {
   balance: ['Hold Space (or press and hold the button) to push the needle up.', 'Let go and it falls back down.', 'Keep it inside the green zone until the bar is full.'],
 };
 
+// Every mini game gets this much extra time on top of what the stage asks for, so younger
+// players can finish (the stage keeps running underneath, so oxygen still matters).
+export const EXTRA_SECONDS = 15;
+export const puzzleTime = (seconds) => Math.max(1, Number(seconds) || 0) + EXTRA_SECONDS;
+
 const COLOURS = [
   { id: 'red', hex: '#ff4d5e', shape: '●', name: 'red circle' },
   { id: 'blue', hex: '#46b4ff', shape: '■', name: 'blue square' },
@@ -655,6 +660,7 @@ export function createPuzzle(layer, sound) {
       if (open) return Promise.resolve(false);
       open = true;
       auto = autoplay;
+      seconds = puzzleTime(seconds); // the extra time for every mini game
       if (document.pointerLockElement) document.exitPointerLock();
       return new Promise((resolve) => {
         finish = resolve;
