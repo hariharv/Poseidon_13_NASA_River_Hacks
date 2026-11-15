@@ -37,7 +37,7 @@ export function createUI(container) {
       <div class="power-board" hidden aria-live="polite"></div>
       <div class="hud-task" hidden><span class="hud-task-label">Task</span><span class="hud-task-text"></span></div>
       <div class="crosshair"></div>
-      <div class="rotate-hint" aria-live="polite"><span class="rotate-icon" aria-hidden="true">📱↻</span><span>Turn your phone sideways to play</span></div>
+      <div class="rotate-hint" aria-live="polite"><svg class="rotate-icon" viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="14" width="16" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="3"/><line x1="15" y1="37" x2="19" y2="37" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M30 10a12 12 0 0 1 10 14" fill="none" stroke="#ffc145" stroke-width="3" stroke-linecap="round"/><path d="M35 22l5 3 3-5" fill="none" stroke="#ffc145" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Turn your phone sideways to play</span></div>
       <div class="hud-prompt" hidden></div>
       <div class="hud-corner">
         <button class="hud-btn hud-help" type="button" hidden title="What do I do now? (H)"><span aria-hidden="true">?</span><span class="hud-btn-text">Help</span></button>
