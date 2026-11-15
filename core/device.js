@@ -44,11 +44,15 @@ const SWAPS = [
   [/\bmove the mouse\b/g, 'drag the screen'],
   [/\bPress E \(or click\)/g, 'Tap USE'],
   [/\bE \(or click\)/g, 'USE'],
-  [/\bpress \*?E\*?\b/g, 'tap USE'],
-  [/\bPress \*?E\*?\b/g, 'Tap USE'],
+  [/\bpress \*?E\b\*?/g, 'tap USE'], // (also eats the closing * of a bold key)
+  [/\bPress \*?E\b\*?/g, 'Tap USE'],
   [/\[E\]/g, '[USE]'],
-  [/\bpress \*?Q\*?\b/gi, 'tap GET UP'],
+  [/ \[[WASD]\]/g, ''], // steering hints: the direction word is enough when you use the stick
+  [/\bpress \*?Q\b\*?/g, 'tap GET UP'],
+  [/\bPress \*?Q\b\*?/g, 'Tap GET UP'],
+  [/\[Q\] get up/g, '[GET UP]'], // not "[GET UP] get up"
   [/\[Q\]/g, '[GET UP]'],
+  [/\bQ gets up\b/g, 'GET UP to stand up'],
   [/\bhold \*?Space\*?\b/g, 'hold UP'],
   [/\bHold \*?Space\*?\b/g, 'Hold UP'],
   [/\[Space\]/g, '[UP]'],
