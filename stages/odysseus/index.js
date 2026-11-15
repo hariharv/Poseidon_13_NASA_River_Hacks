@@ -9,6 +9,7 @@ import './odysseus.css';
 import { buildWorld, disposeTree, SPAWN, MASKS } from './world.js';
 import { createPlayer } from './player.js';
 import { createTools } from './tools.js';
+import { createBlobs } from './blobs.js';
 import { createArms } from '../hermes/arms.js';
 import {
   powerState,
@@ -81,6 +82,10 @@ function run(game, { demo }) {
 
   const arms = createArms(game.player.suit);
   const tools = createTools(world.scene, { count: r.tools, origin: world.toolbox.mouth, speed: r.toolSpeed, hints: easy ? 'more' : 'fewer' });
+  const blobs = createBlobs(world.scene, { count: r.blobs });
+  let lastCatchAt = -99;
+  let combo = 0;
+  let powerWasOk = false;
 
   // ---------- the flight sign at the top of the visor ----------
   const banner = document.createElement('div');
@@ -204,6 +209,8 @@ function run(game, { demo }) {
       choices: [{ id: 'go', label: 'Take off' }],
     });
     if (!game.running) return;
+    await game.ui.countdown();
+    if (!game.running) return;
     stage = 'flight';
     updateTask();
     player.setEnabled(true);
@@ -302,7 +309,8 @@ function run(game, { demo }) {
     const caught = tools.caught;
     const part2 = stage === 'power' || stage === 'power-card' || stage === 'done';
     let now;
-    if (!part2) now = endFlightAt != null ? 'Hold on: the plane is levelling out' : `Catch the floating tools (${caught} of ${r.tools})`;
+    if (!part2 && blobs.loose.length) now = `Catch the floating water blobs before the hill ends! (${blobs.loose.length} left)`;
+    else if (!part2) now = endFlightAt != null ? 'Hold on: the plane is levelling out' : `Catch the floating tools (${caught} of ${r.tools})`;
     else if (p?.overloaded) now = flicker ? 'Only 1 plug! Keep the AIR MACHINE plugged in' : 'Unplug the extra machines (power panel, back wall)';
     else if (p && !p.airOn) now = 'Plug in the AIR MACHINE (power panel, back wall)';
     else if (p && !p.cameraOn) now = 'Plug in the CAMERA to send your science home';
@@ -333,6 +341,36 @@ function run(game, { demo }) {
     });
   }
 
+  // ---------- the burst juice pouch: catch the water blobs ----------
+  function releaseBlobs() {
+    if (blobs.released || stage !== 'flight' || player.mode !== 'float') return;
+    const at = camera.position.clone().addScaledVector(player.forward(), 1.8);
+    blobs.release(at);
+    game.sound.play('water');
+    game.ui.cheer({ title: 'SPLOOSH!', sub: 'a juice pouch burst', quiet: true });
+    game.ui.buoy('*A juice pouch burst!* In zero-G, water floats in wobbly balls. *Catch the water blobs* before the hill ends, or they splat!', { interrupt: true });
+    updateTask();
+  }
+  function catchBlobs(dt) {
+    blobs.update(dt, t);
+    if (!blobs.loose.length || player.mode !== 'float') return;
+    const fwd = player.forward();
+    const pressed = player.takeActionPeek?.();
+    for (const b of blobs.loose) {
+      const d = b.pos.distanceTo(camera.position);
+      const facing = d < 1.8 && fwd.dot(b.pos.clone().sub(camera.position).normalize()) > 0.9;
+      if (d < 0.75 || (facing && pressed)) {
+        blobs.catch(b);
+        reachUntil = t + 0.3;
+        game.sound.play('water');
+        const left = blobs.loose.length;
+        game.ui.cheer({ title: left ? 'SPLASH CATCH!' : 'ALL BLOBS CAUGHT!', sub: left ? `${left} blob${left === 1 ? '' : 's'} left` : 'no mess!', quiet: Boolean(left) });
+        if (blobs.caught === 1) game.ui.buoy('Gotcha! Real astronauts sometimes *drink* floating water blobs like this. Slurp!');
+        updateTask();
+      }
+    }
+  }
+
   // ---------- Part 1: the flight ----------
   function onFlightPhase(f) {
     if (f.phase === 'float') {
@@ -340,6 +378,8 @@ function run(game, { demo }) {
       if (f.hill === 0) {
         world.toolbox.open();
         tools.release();
+        game.ui.cheer({ title: 'ZERO-G!', sub: 'everything floats' });
+        later(demo ? 3000 : 9000, releaseBlobs);
         game.ui.buoy('We\'re floating! Oops, the toolbox popped open. *Catch the floating tools!*', { interrupt: true });
         if (!demo) later(7000, () => game.ui.buoy('Need air? Float into the *yellow oxygen masks* hanging in the middle of the cabin.'));
       } else {
@@ -347,6 +387,13 @@ function run(game, { demo }) {
         if (endFlightAt == null) once(`float-${Math.min(f.hill, 2)}`, f.hill === 1 ? 'Floating again! The tools are lifting off the floor.' : 'Another hill! Real zero-G flights fly lots of these in one trip.');
       }
     } else {
+      if (blobs.loose.length) {
+        const n = blobs.splat();
+        game.oxygen.change(-n * r.blobPenalty, 'Water blobs splashed on the walls, and cleaning up cost air.');
+        game.sound.play('thud');
+        game.ui.buoy(`*Splat!* ${n === 1 ? 'A water blob' : `${n} water blobs`} hit the walls. Water and electronics don't mix, so the clean-up cost air!`, { interrupt: true });
+        updateTask();
+      }
       player.setMode('heavy');
       if (f.hill === 0) {
         game.ui.buoy('Feel heavy? The plane is pulling up hard, so you weigh almost *twice* as much. Lie still!');
@@ -394,6 +441,9 @@ function run(game, { demo }) {
     if (grabbed) {
       tools.catch(grabbed);
       reachUntil = t + 0.35;
+      combo = t - lastCatchAt < 3 ? combo + 1 : 1;
+      lastCatchAt = t;
+      if (combo >= 2) game.ui.cheer({ title: combo === 2 ? 'DOUBLE CATCH!' : combo === 3 ? 'TRIPLE CATCH!' : `${combo}x CATCH!`, sub: 'speedy hands!' });
       updateProgress();
       updateTask();
       const left = r.tools - tools.caught;
@@ -429,6 +479,7 @@ function run(game, { demo }) {
   }
 
   function onAllCaught(f) {
+    game.ui.cheer({ title: 'ALL TOOLS CAUGHT!', big: true });
     const cycle = r.heavySeconds + r.floatSeconds;
     endFlightAt = Math.min(flightT + 4, (f.hill + 1) * cycle) + r.heavySeconds; // float a little more, then one last pull-out
     game.ui.buoy('All tools caught! Hold on, the plane is going to *level out*.', { interrupt: true });
@@ -579,6 +630,7 @@ function run(game, { demo }) {
 
   function complete() {
     stage = 'done';
+    game.ui.cheer({ title: 'SCIENCE SENT HOME!', sub: `water blobs caught: ${blobs.caught} of ${r.blobs}`, big: true });
     setPrompt(null);
     game.ui.target(false);
     player.setEnabled(false);
@@ -611,6 +663,8 @@ function run(game, { demo }) {
   // ---------- one step of play ----------
   function step(dt) {
     elapsed += dt;
+    game.ui.clock(elapsed, r.stars.speedySeconds);
+    catchBlobs(dt);
     if (stage === 'flight') flightStep(dt);
     else if (stage === 'level') {
       levelT += dt;

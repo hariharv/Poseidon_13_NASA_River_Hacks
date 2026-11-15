@@ -206,6 +206,10 @@ export function createPlayer({ camera, dom, spawn, rules, onPointerChange, onPoi
     get dragMode() {
       return dragMode;
     },
+    // is an E press / click waiting? (doesn't use it up)
+    takeActionPeek() {
+      return actions > 0;
+    },
     // one press of E (or one click) = one action
     takeAction() {
       if (!actions) return false;

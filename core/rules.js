@@ -66,6 +66,8 @@ export const RULES = {
         staleAirPerSec: 1.1, // extra oxygen lost while nothing is making fresh air
         thrust: 3.4, // how hard a push speeds you up (m/s²)
         maskRefillPerSec: 9, // oxygen from the masks (they get their air from the air machine)
+        blobs: 5, // water blobs from the burst juice pouch (catch them before the hill ends)
+        blobPenalty: 3, // oxygen lost for each blob that splats on the walls
         maskRadius: 1.25, // metres from the masks to breathe from them
         maxSpeed: 3.6, // m/s
         walkSpeed: 2.6, // m/s in level flight
@@ -87,6 +89,8 @@ export const RULES = {
       hard: {
         tools: 8,
         maskRefillPerSec: 6,
+        blobs: 7,
+        blobPenalty: 4,
         breathePerSec: 0.65,
         workPerSec: 2.8,
         airMachinePerSec: 0.8,
@@ -104,6 +108,7 @@ export const RULES = {
         toolsShare: 60,
         uploadPerSec: 6,
         startPlugged: ['air', 'fridge', 'music'],
+        blobs: 3,
         flickerAt: null,
         stars: { speedySeconds: 60 },
       },
