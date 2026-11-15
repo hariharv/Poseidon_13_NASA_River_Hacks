@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import './odysseus.css';
-import { buildWorld, disposeTree, SPAWN } from './world.js';
+import { buildWorld, disposeTree, SPAWN, MASKS } from './world.js';
 import { createPlayer } from './player.js';
 import { createTools } from './tools.js';
 import { createArms } from '../hermes/arms.js';
@@ -198,12 +198,14 @@ function run(game, { demo }) {
         : [
             'This plane flies giant hills in the sky. Over the top of each hill, everything inside *floats*!',
             'Your job: *catch the floating tools*, then help when the power gets low.',
+            'Running low on air? Float into the *yellow oxygen masks* in the middle of the cabin.',
           ],
       facts: CONTROLS,
       choices: [{ id: 'go', label: 'Take off' }],
     });
     if (!game.running) return;
     stage = 'flight';
+    updateTask();
     player.setEnabled(true);
     player.requestLock();
     game.demo.check('browser-playable');
@@ -281,6 +283,56 @@ function run(game, { demo }) {
     game.progress.change(total - game.progress.value);
   }
 
+  // ---------- the oxygen masks ----------
+  // Returns oxygen per second from the masks (0 when you're not in them, or they have no air).
+  let inMaskZone = false;
+  function breatheFromMasks(powered) {
+    inMaskZone = camera.position.distanceTo(MASKS) < r.maskRadius;
+    world.masks.state.powered = powered;
+    world.masks.state.low = game.oxygen.value < r.lowOxygen;
+    const breathing = inMaskZone && powered && game.oxygen.value < 99.9;
+    world.masks.state.active = inMaskZone && powered;
+    if (breathing) once('mask-first', 'Ahh, fresh air! The *oxygen masks* fill you up fast, like on a real plane.');
+    return breathing ? r.maskRefillPerSec : 0;
+  }
+
+  // ---------- the Task chip and Help ----------
+  let taskKey = '';
+  function updateTask(p = null) {
+    const caught = tools.caught;
+    const part2 = stage === 'power' || stage === 'power-card' || stage === 'done';
+    let now;
+    if (!part2) now = endFlightAt != null ? 'Hold on: the plane is levelling out' : `Catch the floating tools (${caught} of ${r.tools})`;
+    else if (p?.overloaded) now = flicker ? 'Only 1 plug! Keep the AIR MACHINE plugged in' : 'Unplug the extra machines (power panel, back wall)';
+    else if (p && !p.airOn) now = 'Plug in the AIR MACHINE (power panel, back wall)';
+    else if (p && !p.cameraOn) now = 'Plug in the CAMERA to send your science home';
+    else now = 'Send your science home (watch the green bar)';
+    const key = now;
+    if (key === taskKey) return;
+    taskKey = key;
+    game.ui.task({
+      now,
+      steps: [
+        { text: `Catch all ${r.tools} floating tools`, done: part2 || endFlightAt != null, now: !part2 && endFlightAt == null },
+        { text: 'Unplug the extra machines when the power fails', done: part2 && p && !p.overloaded, now: part2 && p?.overloaded },
+        { text: 'Keep the AIR MACHINE plugged in', done: false, now: part2 && p && !p.airOn },
+        { text: 'Plug in the CAMERA and send your science home', done: stage === 'done', now: part2 && p && !p.overloaded && p.airOn },
+      ],
+      tips: !part2
+        ? [
+            'In the *Float!* part, push with *W A S D* (Space up, Shift down), then *glide*: pushing uses more air.',
+            'Look at a tool and press *E* (or click) to grab it.',
+            'Low on air? Float into the *yellow oxygen masks* hanging in the middle of the cabin.',
+            'When the sign says *Heavy*, lie still. The tools will float up again.',
+          ]
+        : [
+            'The *power panel* is on the back wall. Look at a socket and press *E* to plug or unplug it.',
+            'Lights, snack fridge and music are *extras*. The air machine and camera matter.',
+            'The oxygen masks only work while the *air machine* has a plug.',
+          ],
+    });
+  }
+
   // ---------- Part 1: the flight ----------
   function onFlightPhase(f) {
     if (f.phase === 'float') {
@@ -289,6 +341,7 @@ function run(game, { demo }) {
         world.toolbox.open();
         tools.release();
         game.ui.buoy('We\'re floating! Oops, the toolbox popped open. *Catch the floating tools!*', { interrupt: true });
+        if (!demo) later(7000, () => game.ui.buoy('Need air? Float into the *yellow oxygen masks* hanging in the middle of the cabin.'));
       } else {
         tools.lift();
         if (endFlightAt == null) once(`float-${Math.min(f.hill, 2)}`, f.hill === 1 ? 'Floating again! The tools are lifting off the floor.' : 'Another hill! Real zero-G flights fly lots of these in one trip.');
@@ -321,8 +374,9 @@ function run(game, { demo }) {
     const floating = f.phase === 'float';
     const g = floating ? 0 : r.heavyG;
 
-    const o = oxygenStep({ airOn: true, thrusting: floating && player.thrusting }, dt, r);
-    game.oxygen.change(o.delta, o.reason);
+    const atMask = breatheFromMasks(true);
+    const o = atMask ? { delta: atMask, reason: 'refill' } : oxygenStep({ airOn: true, thrusting: floating && player.thrusting }, dt, r);
+    game.oxygen.change(o.delta * (atMask ? dt : 1), o.reason);
     if (!game.running) return;
     if (floating && player.thrusting && once('first-push', 'Pushing yourself around makes you breathe hard. *One push and glide* saves air!')) {
       game.demo.check('every-choice-costs');
@@ -341,6 +395,7 @@ function run(game, { demo }) {
       tools.catch(grabbed);
       reachUntil = t + 0.35;
       updateProgress();
+      updateTask();
       const left = r.tools - tools.caught;
       if (left > 0) game.ui.buoy(left === 1 ? `Got the ${grabbed.name}! *One more tool.*` : `Got the ${grabbed.name}! *${left} to go.*`);
       else onAllCaught(f);
@@ -358,7 +413,7 @@ function run(game, { demo }) {
 
     const o2 = game.oxygen.value;
     if (o2 > 70) said.delete('low');
-    if (o2 < r.lowOxygen) once('low', easy ? 'Your air is getting low! *Stop pushing and glide.* The air machine catches up when you rest.' : 'Oxygen low. Glide more, push less.', { interrupt: true });
+    if (o2 < r.lowOxygen) once('low', easy ? 'Your air is getting low! Float into the *yellow oxygen masks* in the middle of the cabin, and *glide* instead of pushing.' : 'Oxygen low. Masks are mid-cabin.', { interrupt: true });
 
     // banner + prompt
     if (floating) setBanner('float', 'Float!', `0 g · ${Math.ceil(f.left)} s left`, '0g');
@@ -367,6 +422,8 @@ function run(game, { demo }) {
     game.ui.target(Boolean(target));
     if (endFlightAt != null) setPrompt('All tools caught! Hold on…');
     else if (target) setPrompt(`Press [E] or click to grab the ${target.name}`);
+    else if (atMask) setPrompt('Breathing from the oxygen mask…');
+    else if (inMaskZone && game.oxygen.value >= 99.9) setPrompt('Air full! Go catch a tool');
     else if (floating) setPrompt(`Tools caught: ${tools.caught} of ${r.tools}`);
     else setPrompt(f.hill === 0 ? 'Too heavy to move! Wait for the float…' : `Too heavy to move! Tools caught: ${tools.caught} of ${r.tools}`);
   }
@@ -375,6 +432,7 @@ function run(game, { demo }) {
     const cycle = r.heavySeconds + r.floatSeconds;
     endFlightAt = Math.min(flightT + 4, (f.hill + 1) * cycle) + r.heavySeconds; // float a little more, then one last pull-out
     game.ui.buoy('All tools caught! Hold on, the plane is going to *level out*.', { interrupt: true });
+    updateTask();
     if (easy && !demo) later(5000, () => game.ui.buoy('Did you see the blue bar? Pushing around used air. *Gliding saved it.*'));
   }
 
@@ -481,9 +539,12 @@ function run(game, { demo }) {
       game.ui.buoy(`Power's back: *${plugs} plugs* again!`);
     }
 
-    const o = oxygenStep({ airOn: p.airOn }, dt, r);
+    const atMask = breatheFromMasks(p.airOn);
+    const o = atMask ? { delta: atMask * dt, reason: 'refill' } : oxygenStep({ airOn: p.airOn }, dt, r);
     game.oxygen.change(o.delta, o.reason);
     if (!game.running) return;
+    if (inMaskZone && !p.airOn) once('mask-off', 'The masks get their air from the *air machine*. No plug, no air!');
+    updateTask(p);
 
     upload = Math.min(100 - r.toolsShare, upload + uploadStep(p, dt, r));
     world.machines.state.upload = (upload / (100 - r.toolsShare)) * 100;

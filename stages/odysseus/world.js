@@ -21,6 +21,8 @@ const BACK = 9;
 export const BOUNDS = { minX: -HALF_W + 0.35, maxX: HALF_W - 0.35, minY: 0.25, maxY: CEIL_Y - 0.3, minZ: FRONT + 0.4, maxZ: BACK - 0.4 };
 export const SPAWN = { pos: new THREE.Vector3(0, 1.6, 6.2), yaw: 0 };
 export const TOOLBOX = new THREE.Vector3(0, 0, 3.4);
+// Yellow oxygen masks hanging from the ceiling, like on a real plane. Float into them for air.
+export const MASKS = new THREE.Vector3(0, 1.3, -1.4);
 
 const CREAM = new THREE.Color('#f4efe4');
 
@@ -170,6 +172,10 @@ export function buildWorld({ hints = 'more' }) {
   const machines = buildMachines(scene);
   animators.push((t, dt) => machines.update(t, dt));
 
+  // ---------- oxygen masks ----------
+  const masks = buildMasks(scene, hints);
+  animators.push((t) => masks.update(t));
+
   // ---------- power panel on the back wall ----------
   const panel = buildPowerPanel(scene, hints);
   animators.push((t) => panel.update(t));
@@ -184,6 +190,7 @@ export function buildWorld({ hints = 'more' }) {
     scene,
     toolbox,
     machines,
+    masks,
     panel,
     setSign,
     setPitch(deg) {
@@ -251,6 +258,64 @@ function buildToolbox(scene) {
     update(dt) {
       open += (target - open) * Math.min(1, dt * 5);
       lidPivot.rotation.x = -open * 1.9;
+    },
+  };
+}
+
+// The oxygen masks: a ceiling box with three yellow cups on tubes and a soft glowing bubble.
+function buildMasks(scene, hints) {
+  const group = new THREE.Group();
+  group.position.copy(MASKS);
+  scene.add(group);
+  const top = CEIL_Y - 0.08 - MASKS.y;
+  const box = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.12, 0.5), new THREE.MeshStandardMaterial({ color: '#e7ecef', roughness: 0.5 }));
+  box.position.y = top;
+  group.add(box);
+  const sign = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.9, 0.2),
+    new THREE.MeshBasicMaterial({ map: labelTexture({ text: 'OXYGEN', bg: '#1a6fb0', w: 320, h: 70 }), side: THREE.DoubleSide }),
+  );
+  sign.rotation.x = Math.PI / 2;
+  sign.position.y = top - 0.065;
+  group.add(sign);
+  const cupMat = new THREE.MeshStandardMaterial({ color: '#ffd23f', roughness: 0.45, emissive: '#5a4300', emissiveIntensity: 0.5 });
+  const tubeMat = new THREE.MeshStandardMaterial({ color: '#cfe8ff', roughness: 0.2, transparent: true, opacity: 0.6 });
+  const cups = [-0.32, 0, 0.32].map((x, i) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(x, top - 0.06, 0);
+    group.add(pivot);
+    const len = top - 0.55; // the cups hang just above your head
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, len, 6), tubeMat);
+    tube.position.y = -len / 2;
+    pivot.add(tube);
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 0.12, 16, 1, true), cupMat);
+    cup.position.y = -len - 0.04;
+    pivot.add(cup);
+    return { pivot, phase: i * 1.7 };
+  });
+  const zoneMat = new THREE.MeshBasicMaterial({ color: '#ffe27a', transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  const zone = new THREE.Mesh(new THREE.SphereGeometry(1.15, 28, 14), zoneMat);
+  group.add(zone);
+  const ringMat = new THREE.MeshBasicMaterial({ color: '#ffd23f', transparent: true, opacity: 0.6, depthWrite: false });
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.025, 8, 40), ringMat);
+  ring.rotation.x = Math.PI / 2;
+  ring.position.y = -0.1;
+  group.add(ring);
+  const state = { active: false, low: false, powered: true };
+  return {
+    position: MASKS,
+    state,
+    update(t) {
+      cups.forEach((c) => {
+        c.pivot.rotation.z = Math.sin(t * 1.1 + c.phase) * 0.12;
+        c.pivot.rotation.x = Math.cos(t * 0.9 + c.phase) * 0.1;
+      });
+      const on = state.powered;
+      cupMat.emissiveIntensity = on ? 0.5 + (state.low ? 0.4 * Math.sin(t * 6) : 0) : 0;
+      zone.visible = on;
+      zoneMat.opacity = state.active ? 0.16 : (hints === 'more' ? 0.07 : 0.04) + (state.low ? 0.05 * Math.sin(t * 6) : 0);
+      ringMat.opacity = on ? (state.low ? 0.6 + 0.35 * Math.sin(t * 6) : 0.45) : 0.1;
+      ring.scale.setScalar(state.active ? 1 + 0.06 * Math.sin(t * 8) : 1);
     },
   };
 }

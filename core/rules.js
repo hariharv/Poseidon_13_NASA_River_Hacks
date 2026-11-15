@@ -65,6 +65,8 @@ export const RULES = {
         airMachinePerSec: 0.9, // fresh air made while the air machine has a plug
         staleAirPerSec: 1.1, // extra oxygen lost while nothing is making fresh air
         thrust: 3.4, // how hard a push speeds you up (m/s²)
+        maskRefillPerSec: 9, // oxygen from the masks (they get their air from the air machine)
+        maskRadius: 1.25, // metres from the masks to breathe from them
         maxSpeed: 3.6, // m/s
         walkSpeed: 2.6, // m/s in level flight
         grabRadius: 2.4, // metres from a tool to catch it
@@ -84,6 +86,7 @@ export const RULES = {
       easy: {},
       hard: {
         tools: 8,
+        maskRefillPerSec: 6,
         breathePerSec: 0.65,
         workPerSec: 2.8,
         airMachinePerSec: 0.8,
