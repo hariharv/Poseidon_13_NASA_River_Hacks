@@ -22,7 +22,7 @@ export function showCeremony({ root, ui, player, stages, progress }) {
   screen.className = 'ceremony';
   screen.setAttribute('aria-label', 'Graduation ceremony');
   screen.innerHTML = `
-    <div class="cer-bar is-top"><p class="cer-eyebrow">Olympus Academy · Graduation Day</p><button type="button" class="cer-sound" hidden>🔊 Sound on</button></div>
+    <div class="cer-bar is-top"><p class="cer-eyebrow">Olympus Academy · Graduation Day</p><button type="button" class="cer-sound" hidden>Sound on</button></div>
     <div class="cer-rank" aria-live="polite">
       <p class="cer-stage"></p>
       <h2 class="cer-title"></h2>
