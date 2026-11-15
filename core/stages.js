@@ -13,6 +13,12 @@ const PLAN = [
 
 export const STAGES = PLAN.map((s) => ({ ...s, available: Boolean(modules[`../stages/${s.id}/index.js`]) }));
 
+// The stage to play next: the first built stage not finished yet (Stage 1 again once all are done).
+export function nextStageIndex(stages, completed) {
+  const i = stages.findIndex((s) => s.available !== false && !completed.includes(s.id));
+  return i === -1 ? 0 : i;
+}
+
 export async function loadStage(id) {
   const load = modules[`../stages/${id}/index.js`];
   if (!load) throw new Error(`No stage called "${id}" (expected stages/${id}/index.js)`);

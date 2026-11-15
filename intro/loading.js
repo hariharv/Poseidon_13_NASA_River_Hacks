@@ -2,6 +2,7 @@
 // loading bar: it follows the real loading steps the engine passes in.
 
 import { isTouch } from '../core/device.js';
+import { nextStageIndex } from '../core/stages.js';
 import { allFacts } from '../core/lessons.js';
 import './loading.css';
 import { buoySvg } from '../ui/buoy-svg.js';
@@ -169,7 +170,8 @@ export function showLoadingScreen({ root, stages, tasks, player, progress }) {
         // finish any stage and every stage opens up
         g.classList.toggle('is-locked', !available || (!returning && id !== 'hermes'));
       });
-      patches[0].classList.add('is-next');
+      const next = patches[nextStageIndex(stages, progress.completed)] ?? patches[0];
+      next.classList.add('is-next'); // "Start here" sits on the next stage to play
       say(
         returning
           ? `Ready, ${escapeHtml(player.name)}! Pick how you want to train.`
@@ -182,8 +184,8 @@ export function showLoadingScreen({ root, stages, tasks, player, progress }) {
         if (!btn) return;
         const mode = btn.dataset.mode;
         document.documentElement.dataset.mode = mode;
-        // Dive into the Hermes patch.
-        const box = patches[0].getBoundingClientRect();
+        // Dive into the next stage's patch.
+        const box = next.getBoundingClientRect();
         screen.style.transformOrigin = `${box.left + box.width / 2}px ${box.top + box.height / 2}px`;
         screen.classList.add('is-leaving');
         setTimeout(() => {
