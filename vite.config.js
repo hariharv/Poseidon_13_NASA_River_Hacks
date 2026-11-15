@@ -7,6 +7,6 @@ export default defineConfig({
   build: { chunkSizeWarningLimit: 800 }, // three.js alone is ~590 kB; it loads behind the loading screen
   test: {
     environment: 'node',
-    include: ['core/**/*.test.js', 'stages/**/*.test.js'],
+    include: ['core/**/*.test.js', 'stages/**/*.test.js', 'ui/**/*.test.js'],
   },
 });

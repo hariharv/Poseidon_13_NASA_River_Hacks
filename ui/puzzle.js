@@ -7,8 +7,12 @@
 //   'wires'    match each coloured wire to the plug with the same colour and shape
 //   'sequence' watch the lights flash, then press them in the same order
 //   'timing'   stop the moving needle inside the green zone, a few times in a row
+//   'flow'     drag a power line between each pair of same-coloured dots; lines can't cross
+//              (size = grid width, 4-7). A perfect board fills every square.
 //
 // Works with the mouse, and with keys: 1-4 pick, Space / E for the timing needle.
+
+import { makeFlow, same, touching, stepToward } from './flow.js';
 
 const COLOURS = [
   { id: 'red', hex: '#ff4d5e', shape: '●', name: 'red circle' },
@@ -197,6 +201,140 @@ export function createPuzzle(layer, sound) {
     play();
   }
 
+  // ---------- flow (power lines) ----------
+  function flow({ title, text, seconds, size }) {
+    const n = Math.max(4, Math.min(7, size ?? 5));
+    const board = makeFlow(n, Math.min(COLOURS.length, n - 1));
+    const k = board.pairs.length;
+    const dotAt = Array.from({ length: n }, () => Array(n).fill(-1));
+    board.pairs.forEach(({ a, b }, i) => {
+      dotAt[a[0]][a[1]] = i;
+      dotAt[b[0]][b[1]] = i;
+    });
+    const cellsHtml = [];
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        const d = dotAt[r][c];
+        const dot = d >= 0 ? `<span class="flow-dot" data-i="${d}" style="--c:${COLOURS[d].hex}" aria-label="${COLOURS[d].name}">${COLOURS[d].shape}</span>` : '';
+        cellsHtml.push(`<div class="flow-cell" data-r="${r}" data-c="${c}">${dot}</div>`);
+      }
+    }
+    const body = `
+      <div class="flow" style="--n:${n}">
+        ${cellsHtml.join('')}
+        <svg class="flow-lines" viewBox="0 0 ${n} ${n}" aria-hidden="true"></svg>
+      </div>`;
+    const ui = frame({ title, text: text ?? "Drag from each dot to the dot with the *same colour and shape*. Lines can't cross!", seconds, body });
+    const grid = layer.querySelector('.flow');
+    const svg = layer.querySelector('.flow-lines');
+    const cellEls = [...layer.querySelectorAll('.flow-cell')];
+    const paths = Array.from({ length: k }, () => []);
+    let active = -1;
+    let won = false;
+
+    const otherEnd = (i, cell) => (same(board.pairs[i].a, cell) ? board.pairs[i].b : board.pairs[i].a);
+    const connected = (i) => {
+      const p = paths[i];
+      return p.length > 1 && dotAt[p[0][0]][p[0][1]] === i && same(p[p.length - 1], otherEnd(i, p[0]));
+    };
+    const ownerOf = (cell) => paths.findIndex((p) => p.some((q) => same(q, cell)));
+    const cellFrom = (e) => {
+      const box = grid.getBoundingClientRect();
+      const c = Math.floor(((e.clientX - box.left) / box.width) * n);
+      const r = Math.floor(((e.clientY - box.top) / box.height) * n);
+      return r >= 0 && c >= 0 && r < n && c < n ? [r, c] : null;
+    };
+
+    function draw() {
+      svg.innerHTML = paths
+        .map((p, i) =>
+          p.length > 1
+            ? `<polyline points="${p.map(([r, c]) => `${c + 0.5},${r + 0.5}`).join(' ')}" stroke="${COLOURS[i].hex}" stroke-width="0.34" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+            : '',
+        )
+        .join('');
+      const filled = new Set();
+      paths.forEach((p, i) =>
+        p.forEach(([r, c]) => {
+          filled.add(r * n + c);
+          cellEls[r * n + c].style.setProperty('--c', COLOURS[i].hex);
+        }),
+      );
+      cellEls.forEach((el, j) => el.classList.toggle('is-filled', filled.has(j)));
+      grid.querySelectorAll('.flow-dot').forEach((dot) => dot.classList.toggle('is-done', connected(Number(dot.dataset.i))));
+      const joined = paths.filter((_, i) => connected(i)).length;
+      if (joined === k && !won) {
+        won = true;
+        const perfect = filled.size === n * n;
+        ui.status(perfect ? 'Perfect! Every square is filled!' : 'All lines connected!', true);
+        sound?.play('success');
+        setTimeout(() => close(true), perfect ? 700 : 450);
+      } else if (!won) ui.status(`${joined} of ${k} lines connected`, joined > 0);
+    }
+
+    function begin(cell) {
+      if (!cell || won) return;
+      const d = dotAt[cell[0]][cell[1]];
+      if (d >= 0) {
+        active = d;
+        paths[d] = [cell]; // starting on a dot always starts that colour fresh
+      } else {
+        const o = ownerOf(cell);
+        if (o < 0) return;
+        active = o;
+        paths[o] = paths[o].slice(0, paths[o].findIndex((q) => same(q, cell)) + 1); // carry on from here
+      }
+      sound?.play('tap');
+      draw();
+    }
+
+    function extend(cell) {
+      const p = paths[active];
+      const last = p[p.length - 1];
+      if (!touching(last, cell)) return false;
+      const back = p.findIndex((q) => same(q, cell));
+      if (back >= 0) {
+        paths[active] = p.slice(0, back + 1); // dragging back undoes the line
+        return true;
+      }
+      if (connected(active)) return false; // reached the partner dot: the line is finished
+      const d = dotAt[cell[0]][cell[1]];
+      if (d >= 0 && d !== active) return false; // another colour's dot blocks the way
+      const o = ownerOf(cell);
+      if (o >= 0 && o !== active) paths[o] = paths[o].slice(0, paths[o].findIndex((q) => same(q, cell))); // cut through the other line
+      p.push(cell);
+      if (d === active) sound?.play('clunk');
+      return true;
+    }
+
+    function dragTo(cell) {
+      if (active < 0 || !cell || won) return;
+      let guard = 0;
+      while (guard++ < 20) {
+        const p = paths[active];
+        const step = stepToward(p[p.length - 1], cell);
+        if (!step || !extend(step)) break;
+      }
+      draw();
+    }
+
+    grid.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      grid.setPointerCapture?.(e.pointerId);
+      begin(cellFrom(e));
+    });
+    grid.addEventListener('pointermove', (e) => active >= 0 && dragTo(cellFrom(e)));
+    const end = () => {
+      if (active >= 0 && !won && paths[active].length === 1) paths[active] = [];
+      active = -1;
+      if (!won) draw();
+    };
+    grid.addEventListener('pointerup', end);
+    grid.addEventListener('pointercancel', end);
+    onKey = () => {};
+    draw();
+  }
+
   // ---------- timing ----------
   function timing({ title, text, seconds, size }) {
     const hitsNeeded = Math.max(2, size ?? 3);
@@ -280,6 +418,7 @@ export function createPuzzle(layer, sound) {
         finish = resolve;
         if (kind === 'sequence') sequence({ title, text, seconds, size });
         else if (kind === 'timing') timing({ title, text, seconds, size });
+        else if (kind === 'flow') flow({ title, text, seconds, size });
         else wires({ title, text, seconds, size });
         window.addEventListener('keydown', onKey, true);
         sound?.play('alarm');

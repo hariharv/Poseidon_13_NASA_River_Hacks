@@ -248,8 +248,8 @@ export function createUI(container) {
   let shownAt = 0;
   let task = null;
 
-  const MIN_READ = 6000;
-  const readTimeFor = (text) => Math.max(MIN_READ, text.split(/\s+/).length * 560);
+  const MIN_READ = 10000; // every line stays up at least 10 seconds
+  const readTimeFor = (text) => Math.max(MIN_READ, text.split(/\s+/).length * 850); // slow readers too
 
   function buoy(text, { interrupt = false } = {}) {
     if (!text || text === showing || lines.includes(text)) return;
@@ -296,7 +296,7 @@ export function createUI(container) {
       showing = null;
       buoyBox.classList.add('is-resting');
       clearTimeout(restTimer);
-      restTimer = setTimeout(showTaskInBubble, 4000);
+      restTimer = setTimeout(showTaskInBubble, 10000);
       return;
     }
     sound.play('chirp');

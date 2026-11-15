@@ -29,7 +29,7 @@ const REAL_NUMBERS = [
 
 // Each panel has a different repair puzzle, so every one feels new.
 const PANEL_PUZZLES = [
-  { kind: 'wires', title: 'connect the power wires', text: 'Match each wire to the plug with the *same colour and shape*.' },
+  { kind: 'flow', title: 'reconnect the power lines', text: "Drag a line from each dot to the dot with the *same colour and shape*. Lines can't cross!" },
   { kind: 'sequence', title: 'type the panel code', text: 'Watch the lights, then press them *in the same order*.' },
   { kind: 'timing', title: 'tighten the bolts', text: 'Stop the wrench in the *green zone*.' },
 ];
@@ -38,7 +38,7 @@ const CONTROLS = [
   { label: 'Swim', value: 'W A S D or the arrow keys' },
   { label: 'Look around', value: 'Move the mouse (or ← →)' },
   { label: 'Float up / sink down', value: 'Space / Shift' },
-  { label: 'Fix a panel', value: 'Press E, then match the wires before time runs out' },
+  { label: 'Fix a panel', value: 'Press E, then solve the repair puzzle before time runs out' },
 ];
 
 export default {
@@ -176,7 +176,7 @@ function run(game, { demo }) {
         ? ['A copy of NASA\'s spacewalk training pool. *Fix 1 broken panel.* Your oxygen starts at 60.']
         : [
             "You're 40 feet underwater in NASA's training pool. There's a pretend space station down here!",
-            'Your job: *fix 3 broken panels* before your oxygen runs low. Each one has a wire puzzle, and the clock is ticking!',
+            'Your job: *fix 3 broken panels* before your oxygen runs low. Each one has a repair puzzle, and the clock is ticking!',
           ],
       facts: CONTROLS,
       choices: [{ id: 'go', label: 'Dive in' }],
@@ -287,20 +287,21 @@ function run(game, { demo }) {
     });
   }
 
-  // ---------- fixing a panel: a wire puzzle against the clock ----------
+  // ---------- fixing a panel: a repair puzzle against the clock ----------
   function startFix(panel) {
     fixing = panel;
     player.setEnabled(false);
     if (once('first-work', 'Working hard makes you breathe faster. *Suits only carry so much air!*')) {
       game.demo.check('every-choice-costs');
     }
+    const puzzle = PANEL_PUZZLES[panel.index % PANEL_PUZZLES.length];
     game.ui
       .puzzle({
-        kind: PANEL_PUZZLES[panel.index % PANEL_PUZZLES.length].kind,
-        title: `Panel ${panel.index + 1}: ${PANEL_PUZZLES[panel.index % PANEL_PUZZLES.length].title}`,
-        text: `${PANEL_PUZZLES[panel.index % PANEL_PUZZLES.length].text} Your oxygen drops faster while you work!`,
-        seconds: r.puzzleSeconds,
-        size: PANEL_PUZZLES[panel.index % PANEL_PUZZLES.length].kind === 'wires' ? r.puzzleWires : PANEL_PUZZLES[panel.index % PANEL_PUZZLES.length].kind === 'sequence' ? r.puzzleWires + 1 : easy ? 3 : 4,
+        kind: puzzle.kind,
+        title: `Panel ${panel.index + 1}: ${puzzle.title}`,
+        text: `${puzzle.text} Your oxygen drops faster while you work!`,
+        seconds: puzzle.kind === 'flow' ? r.flowSeconds : r.puzzleSeconds,
+        size: puzzle.kind === 'flow' ? r.flowGrid : puzzle.kind === 'sequence' ? r.puzzleWires + 1 : easy ? 3 : 4,
       })
       .then((ok) => {
         fixing = null;
@@ -340,7 +341,7 @@ function run(game, { demo }) {
       ],
       tips: [
         'Follow the *red light beams* to find the broken panels.',
-        'Get close, look right at the panel and *press E*. Then match the wires before the timer runs out.',
+        'Get close, look right at the panel and *press E*. Then solve the repair puzzle before the timer runs out.',
         'The *blue beam* shows the way back to the air station.',
         'Golden patches are hidden around the station: one up high, one down low, one round the back. Swim through them!',
       ],
@@ -403,7 +404,7 @@ function run(game, { demo }) {
     const atLeak = leaking && !leakFixing && camera.position.distanceTo(LEAK) < 2.6 && player.forward().dot(toPanel.subVectors(LEAK, camera.position).normalize()) > 0.55;
     if (atLeak && pressed && !game.ui.puzzleOpen) fixLeak();
     else if (target && pressed && !fixing && !game.ui.puzzleOpen) startFix(target);
-    const working = Boolean(fixing); // the wire puzzle is open: hard work, fast breathing
+    const working = Boolean(fixing); // the repair puzzle is open: hard work, fast breathing
     workingNow = working;
     drill.set(working ? 1 : 0);
     // in the bubble you don't use air; once it's full it just stays full (no flicker)
@@ -455,7 +456,7 @@ function run(game, { demo }) {
     }
     if (refilling) once('refill', '*Refilling takes time.* Real astronauts plan their air before every job.');
     if (!demo && !said.has('near-panel') && nearestUnfixed() < 7) {
-      once('near-panel', 'A broken panel! Look right at it and *press E*. Then match the wires, fast!');
+      once('near-panel', 'A broken panel! Look right at it and *press E*. Then fix it, fast!');
     }
     if (easy && !demo && t - lastProgressAt > 30 && !inZone && fixedCount < world.panels.length) {
       if (once('idle-hint', 'Follow the *red light beams* to find the broken panels. One is up high, one is round the back!')) {
