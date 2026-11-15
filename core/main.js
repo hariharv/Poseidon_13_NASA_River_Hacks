@@ -35,7 +35,8 @@ if (stageParam) {
 async function showTitle() {
   // Homepage first: Team Poseidon 13 and "Make your astronaut". Then the menu (loading screen).
   const { showHome } = await import('../intro/home.js');
-  const player = await showHome({ root: app, player: save.loadPlayer(), progress: save.loadProgress() });
+  // the homepage saves player.json the moment you change your name (or anything else)
+  const player = await showHome({ root: app, player: save.loadPlayer(), progress: save.loadProgress(), onChange: (p) => save.savePlayer(p) });
   save.savePlayer(player);
 
   const { showLoadingScreen } = await import('../intro/loading.js');

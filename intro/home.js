@@ -56,7 +56,7 @@ const REAL_SUIT = [
   { part: 'How heavy is it?', text: 'The spacewalk suit with its backpack weighs about 145 kg (319 lb) on Earth. In space, it floats!', src: EMU_SRC },
 ];
 
-export function showHome({ root, player, progress }) {
+export function showHome({ root, player, progress, onChange = () => {} }) {
   const draft = { ...structuredClone(player), boots: player.boots ?? 'classic' };
   const returning = player.name !== 'Cadet'; // they've made an astronaut before
   void progress;
@@ -145,6 +145,15 @@ export function showHome({ root, player, progress }) {
   const stage = createStage($('.home-canvas'), draft);
 
   // ---------- choices ----------
+  // Save straight away: every letter of the name, every suit choice. A name is only saved
+  // once it's allowed on a name tag; until then the last good name stays saved.
+  let savedName = player.name;
+  function persist() {
+    const typed = nameInput.value.trim();
+    if (typed && isKidSafeName(typed)) savedName = cleanName(typed);
+    onChange({ ...draft, name: savedName });
+  }
+
   function refresh() {
     for (const btn of screen.querySelectorAll('[data-pick]')) {
       btn.setAttribute('aria-pressed', String(draft[btn.dataset.pick] === btn.dataset.value));
@@ -162,12 +171,14 @@ export function showHome({ root, player, progress }) {
     say(CHEERS[pick](list.find((o) => o.id === value)));
     stage?.face(pick === 'backpack' ? 'back' : 'front');
     refresh();
+    persist();
     if (pick === 'backpack') showPackInfo();
   });
   nameInput.addEventListener('input', () => {
     draft.name = nameInput.value;
     nameInput.classList.remove('is-bad');
     refresh();
+    persist();
     stage?.face('front');
   });
   screen.querySelector('.maker').addEventListener('submit', (e) => e.preventDefault());
@@ -181,6 +192,7 @@ export function showHome({ root, player, progress }) {
     say('Ta-da! A brand new look. Keep it, or change anything you like.');
     stage?.face('spin');
     refresh();
+    persist();
     showPackInfo();
   });
 
