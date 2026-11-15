@@ -10,8 +10,9 @@ import './apollo.css';
 import { buildWorld, disposeTree, INSIDE_START, OUTSIDE_START, AIRLOCK_IN, AIRLOCK_OUT, SHELTER_EYE, CRATER, groundAt } from './world.js';
 import { createPlayer } from './player.js';
 import { createArms } from '../hermes/arms.js';
-import { STORM_OUT, dayClock, plugsFor, powerState, canPlug, oxygenStep, waterStep, growStep, progressFor, stormLight, flareStrength, starsFor } from './sim.js';
+import { MACHINES, STORM_OUT, dayClock, plugsFor, powerState, canPlug, oxygenStep, waterStep, growStep, progressFor, stormLight, flareStrength, starsFor } from './sim.js';
 import { rulesFor } from '../../core/rules.js';
+import { plugPrompt } from '../../core/plugs.js';
 
 const SRC = {
   moon: 'https://science.nasa.gov/moon/facts/',
@@ -33,7 +34,8 @@ const REAL_NUMBERS = [
 ];
 
 const CONTROLS = [
-  { label: 'Walk', value: 'W A S D (or the arrow keys)' },
+  { label: 'Walk forward and back', value: 'W and S (or the up and down arrows)' },
+  { label: 'Turn left and right', value: 'A and D (or the left and right arrows, or the mouse)' },
   { label: 'Hop (outside, in Moon gravity)', value: 'Space' },
   { label: 'Look around', value: 'Move the mouse' },
   { label: 'Use things (plugs, plants, radio, airlock, ice)', value: 'Look at it, press E (or click)' },
@@ -261,10 +263,10 @@ function run(game, { demo }) {
     if (plugged.has(id)) {
       plugged.delete(id);
       game.sound.play('clunk');
-      game.ui.buoy(power().overloaded ? `Unplugged the ${label}. Still *too many*: unplug one more!` : `Unplugged the ${label}.`);
+      game.ui.buoy(power().overloaded ? `Turned OFF the ${label}. Still *too many* ON: turn one more OFF!` : `Turned OFF the ${label}. That frees a plug.`);
     } else if (power().overloaded || !canPlug(plugged, plugs)) {
       game.sound.play('fail');
-      game.ui.buoy(`No plugs left! *Unplug something* first. You have ${plugs} ${night ? 'battery plugs at night' : 'solar plugs right now'}.`, { interrupt: true });
+      game.ui.buoy(`No free plug! Turn another machine *OFF* first. You have ${plugs} ${night ? 'battery plugs at night' : 'solar plugs right now'}.`, { interrupt: true });
       return;
     } else {
       plugged.add(id);
@@ -360,7 +362,7 @@ function run(game, { demo }) {
         player.setEnabled(true);
         player.requestLock();
         if (!ok) {
-          game.ui.buoy('The ice is stuck rules. Look at it and press E to try again!', { interrupt: true });
+          game.ui.buoy('The ice is stuck hard. Look at it and press E to try again!', { interrupt: true });
           return;
         }
         world.crater.mine(chunk);
@@ -454,7 +456,10 @@ function run(game, { demo }) {
   }
   function label(a) {
     if (!a) return null;
-    if (a.kind === 'socket') return `${plugged.has(a.item.machine.id) ? 'Unplug' : 'Plug in'} the ${a.item.machine.label.toLowerCase()}`;
+    if (a.kind === 'socket') {
+      const p = power();
+      return plugPrompt({ label: a.item.machine.label, plugged: plugged.has(a.item.machine.id), free: p.free, overloaded: p.overloaded }).replace(/^Press \[E\] to /, '').replace(/^t/, 'T');
+    }
     if (a.kind === 'tray') return a.item.growth >= 1 ? 'Harvest the plants' : `Plants: ${Math.round(a.item.growth * 100)}% grown`;
     if (a.kind === 'radio') return lastCallDay === day ? 'Radio (already called today)' : 'Call Earth';
     if (a.kind === 'shelter') return 'Get in the storm shelter';
@@ -498,7 +503,7 @@ function run(game, { demo }) {
       said.add('overload');
       game.demo.check('every-choice-costs');
       game.ui.buoy(
-        `*The Sun has set!* No sunlight on the solar panels, only *${r.nightPlugs}* battery plugs. Too many machines are plugged in, so *nothing works*! Unplug down to the *AIR MACHINE* and the *HEATER*.`,
+        `*The Sun has set!* No sunlight on the solar panels, only *${r.nightPlugs}* battery plugs. Too many machines are ON, so *nothing works*! Turn everything *OFF* except the *AIR MACHINE* and the *HEATER*.`,
         { interrupt: true },
       );
     } else {
@@ -547,7 +552,7 @@ function run(game, { demo }) {
     let now;
     if (lastLight === 'red' || lastLight === 'yellow') {
       now = where === 'shelter' ? 'Stay in the storm shelter until the light is green' : where === 'outside' ? 'Storm! Back through the airlock, then into the shelter' : 'Storm! Get in the storm shelter (red sign, next to the airlock)';
-    } else if (p.overloaded) now = 'Too many machines! Unplug some at the power panel';
+    } else if (p.overloaded) now = 'Too many machines ON! Turn some OFF at the power panel';
     else if (night && !p.heaterOn) now = 'Lunar night! Plug in the HEATER at the power panel';
     else if (!p.airOn) now = 'Plug in the AIR MACHINE at the power panel';
     else if (water <= 0) now = 'Out of water! Go outside and dig ice in the dark crater';
@@ -677,7 +682,14 @@ function run(game, { demo }) {
     for (const tr of world.greenhouse.trays) tr.aimed = aimed?.item === tr;
     world.radio.setAimed(aimed?.kind === 'radio');
     const text = label(aimed);
-    const promptNow = text ? `[E] ${text}` : where === 'outside' && player.grounded ? '[Space] Hop in Moon gravity' : null;
+    const promptNow = text ? (text.startsWith('No free') ? text : `[E] ${text}`) : where === 'outside' && player.grounded ? '[Space] Hop in Moon gravity' : null;
+    // the power board: while you're at the panel, or whenever the power needs fixing
+    const nearPanel = where === 'inside' && camera.position.distanceTo(world.panel.sockets[0].position) < 3;
+    game.ui.power(
+      where !== 'outside' && (nearPanel || aimed?.kind === 'socket' || p.overloaded || (night && !p.heaterOn))
+        ? { plugs, overloaded: p.overloaded, aimed: aimed?.kind === 'socket' ? aimed.item.machine.id : null, machines: MACHINES.map((m) => ({ id: m.id, label: m.label, kind: m.kind, plugged: plugged.has(m.id) })) }
+        : null,
+    );
     if (promptNow !== promptKey) {
       promptKey = promptNow;
       game.ui.prompt(promptNow);
@@ -696,6 +708,7 @@ function run(game, { demo }) {
   // ---------- done ----------
   function complete() {
     stage = 'done';
+    game.ui.power(null);
     game.progress.change(progressFor({ fraction: 1, harvests, calls, ice }, r) - game.progress.value);
     game.ui.cheer({ title: 'MISSION COMPLETE!', big: true });
     game.ui.prompt(null);

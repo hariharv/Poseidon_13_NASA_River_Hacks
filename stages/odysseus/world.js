@@ -19,6 +19,32 @@ const BACK = 9;
 
 // Where you (and the tools) can be. Kept a little inside the padding.
 export const BOUNDS = { minX: -HALF_W + 0.35, maxX: HALF_W - 0.35, minY: 0.25, maxY: CEIL_Y - 0.3, minZ: FRONT + 0.4, maxZ: BACK - 0.4 };
+// Half the cabin's width at height y: straight walls, then the padding slants in toward the ceiling.
+export function halfWidthAt(y) {
+  if (y <= WALL_H) return HALF_W;
+  return HALF_W - ((Math.min(y, CEIL_Y) - WALL_H) / (CEIL_Y - WALL_H)) * (HALF_W - CEIL_HALF);
+}
+// Keep a floating thing (radius `pad`) inside the padding: walls, the slanted ceiling panels, floor and ends.
+export function keepInside(p, v, pad, bounce = 0.55, floor = pad) {
+  const lo = { y: floor, z: FRONT + pad + 0.05 };
+  const hi = { y: CEIL_Y - pad, z: BACK - pad - 0.05 };
+  for (const axis of ['y', 'z']) {
+    if (p[axis] < lo[axis]) {
+      p[axis] = lo[axis];
+      v[axis] = Math.abs(v[axis]) * bounce;
+    } else if (p[axis] > hi[axis]) {
+      p[axis] = hi[axis];
+      v[axis] = -Math.abs(v[axis]) * bounce;
+    }
+  }
+  const lim = halfWidthAt(p.y + pad * 0.7) - pad;
+  if (Math.abs(p.x) > lim) {
+    const s = Math.sign(p.x);
+    p.x = s * lim;
+    v.x = -s * Math.abs(v.x) * bounce;
+    if (p.y > WALL_H) v.y = -Math.abs(v.y) * bounce; // the slanted panel also pushes you down a little
+  }
+}
 export const SPAWN = { pos: new THREE.Vector3(0, 1.6, 6.2), yaw: 0 };
 export const TOOLBOX = new THREE.Vector3(0, 0, 3.4);
 // Yellow oxygen masks hanging from the ceiling, like on a real plane. Float into them for air.

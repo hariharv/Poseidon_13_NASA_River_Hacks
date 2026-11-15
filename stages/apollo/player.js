@@ -1,4 +1,5 @@
 // First person on the Moon. Walk inside the base; outside, hop around in one-sixth gravity.
+// Easy controls: W / S walk forward and back, A / D turn left and right (the mouse also looks around).
 // Uses pointer lock when it can, and falls back to click-and-drag to look.
 
 import * as THREE from 'three';
@@ -103,7 +104,6 @@ export function createPlayer({ camera, dom, spawn, rules, onPointerChange, onPoi
 
   const forward = new THREE.Vector3();
   const flat = new THREE.Vector3();
-  const right = new THREE.Vector3();
   const wish = new THREE.Vector3();
 
   function floorAt(x, z) {
@@ -111,12 +111,11 @@ export function createPlayer({ camera, dom, spawn, rules, onPointerChange, onPoi
   }
 
   function update(dt, t) {
-    if (keys.has('ArrowLeft')) yaw += 1.9 * dt;
-    if (keys.has('ArrowRight')) yaw -= 1.9 * dt;
+    if (enabled && (keys.has('ArrowLeft') || keys.has('KeyA'))) yaw += 2.0 * dt;
+    if (enabled && (keys.has('ArrowRight') || keys.has('KeyD'))) yaw -= 2.0 * dt;
     const cp = Math.cos(pitch);
     forward.set(-Math.sin(yaw) * cp, Math.sin(pitch), -Math.cos(yaw) * cp);
     flat.set(-Math.sin(yaw), 0, -Math.cos(yaw));
-    right.set(Math.cos(yaw), 0, -Math.sin(yaw));
 
     if (fixedEye) {
       jumps = 0;
@@ -129,8 +128,6 @@ export function createPlayer({ camera, dom, spawn, rules, onPointerChange, onPoi
     if (enabled) {
       if (keys.has('KeyW') || keys.has('ArrowUp')) wish.add(flat);
       if (keys.has('KeyS') || keys.has('ArrowDown')) wish.sub(flat);
-      if (keys.has('KeyD')) wish.add(right);
-      if (keys.has('KeyA')) wish.sub(right);
     }
     if (wish.lengthSq() > 1) wish.normalize();
 

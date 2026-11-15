@@ -709,6 +709,126 @@
   display: none;
 }
 
+/* ---------- Power board: which machines are ON, and what to unplug ---------- */
+.power-board {
+  position: absolute;
+  left: max(5vw, 28px);
+  top: calc(max(4.5vh, 28px) + 96px);
+  width: min(300px, 42vw);
+  padding: 10px 12px 10px;
+  border-radius: 16px;
+  background: rgba(13, 11, 38, 0.78);
+  backdrop-filter: blur(4px);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 243, 214, 0.18);
+  font-size: calc(14px * var(--ui-scale, 1));
+  z-index: 2;
+  pointer-events: none;
+}
+.power-board[hidden] {
+  display: none;
+}
+.power-board[data-tone='bad'] {
+  box-shadow: inset 0 0 0 2px var(--alarm), 0 0 18px rgba(255, 77, 94, 0.4);
+}
+.pb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--visor-gold);
+}
+.pb-plugs {
+  display: flex;
+  gap: 4px;
+}
+.pb-plug {
+  width: 12px;
+  height: 16px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px var(--visor-gold);
+}
+.pb-plug.is-used {
+  background: var(--visor-gold);
+}
+.pb-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pb-row {
+  display: grid;
+  grid-template-columns: 4.6em 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: 8px;
+}
+.pb-row.is-aimed {
+  background: rgba(255, 193, 69, 0.18);
+  box-shadow: inset 0 0 0 1.5px var(--visor-gold);
+}
+.pb-state {
+  padding: 1px 0;
+  border-radius: 6px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 0.8em;
+  letter-spacing: 0.04em;
+}
+.pb-row.is-on .pb-state {
+  background: var(--progress);
+  color: var(--night);
+}
+.pb-row.is-off .pb-state {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--cream-dim);
+}
+.power-board[data-tone='bad'] .pb-row.is-on .pb-state {
+  background: var(--alarm);
+  color: var(--cream);
+}
+.pb-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+.pb-row.is-off .pb-name {
+  color: var(--cream-dim);
+}
+.pb-tag {
+  font-size: 0.75em;
+  color: var(--cream-dim);
+}
+.pb-tag.is-life {
+  color: #7fe0ff;
+}
+.pb-press {
+  font-size: 0.8em;
+  color: var(--visor-gold);
+  white-space: nowrap;
+}
+.pb-status {
+  margin: 8px 0 0;
+  line-height: 1.3;
+  color: var(--cream);
+}
+.power-board[data-tone='bad'] .pb-status {
+  color: #ff9aa5;
+  font-weight: 700;
+}
+@media (max-width: 700px) {
+  .power-board {
+    width: calc(100vw - 32px);
+    left: 16px;
+  }
+}
+
 /* ---------- Help card: the job, step by step ---------- */
 .card-steps {
   margin: 12px 0 0;
@@ -1144,6 +1264,40 @@
   height: 14px;
   border-radius: 3px;
   animation: confetti 1.2s ease-out forwards;
+}
+/* a level is done: confetti rains over the whole screen (above the "Stage complete" card) */
+.confetti-rain {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 7;
+}
+.rain-bit {
+  position: absolute;
+  top: -24px;
+  width: 10px;
+  height: 16px;
+  border-radius: 3px;
+  animation: rain-fall 3s linear forwards;
+}
+.rain-bit.is-round {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+@keyframes rain-fall {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--drift), calc(100vh + 40px)) rotate(var(--spin));
+    opacity: 0;
+  }
 }
 @keyframes confetti {
   to {

@@ -5,7 +5,7 @@
 // Uses pointer lock when it can, and falls back to click-and-drag to look.
 
 import * as THREE from 'three';
-import { BOUNDS } from './world.js';
+import { BOUNDS, halfWidthAt } from './world.js';
 
 const LYING_EYE = 0.45;
 const STANDING_EYE = 1.6;
@@ -170,6 +170,13 @@ export function createPlayer({ camera, dom, spawn, rules, onPointerChange, onPoi
         pos[axis] = hi;
         vel[axis] = mode === 'float' ? -Math.abs(vel[axis]) * 0.4 : 0;
       }
+    }
+    // near the ceiling the padding slants in: don't let your head go through it
+    const side = halfWidthAt(pos.y + 0.15) - 0.35;
+    if (Math.abs(pos.x) > side) {
+      const sx = Math.sign(pos.x);
+      pos.x = sx * side;
+      vel.x = mode === 'float' ? -sx * Math.abs(vel.x) * 0.4 : 0;
     }
     // landed: settle at standing or lying eye height
     if (mode !== 'float' && pos.y <= floorEye + 0.001) {

@@ -105,8 +105,15 @@ export function armPoints({ yaw, shoulder, elbow }, L1, L2) {
 }
 
 // Keep the hand target inside the arm's reach and above the station deck.
-export function clampTarget(p, L1, L2, minY) {
+// `box` (optional) keeps it in the work area in front of the shoulder too, so the hand can never
+// swing round behind the arm's base (where the arm would flip over and get stuck).
+export function clampTarget(p, L1, L2, minY, box = null) {
   const out = { ...p, y: Math.max(minY, p.y) };
+  if (box) {
+    out.z = Math.max(box.minZ, out.z);
+    out.x = clamp(out.x, -box.maxX, box.maxX);
+    out.y = Math.min(box.maxY, out.y);
+  }
   const max = (L1 + L2) * 0.97;
   const min = Math.abs(L1 - L2) + 0.6;
   const len = Math.hypot(out.x, out.y, out.z);

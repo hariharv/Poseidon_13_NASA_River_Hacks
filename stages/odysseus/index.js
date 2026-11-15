@@ -12,6 +12,7 @@ import { createTools } from './tools.js';
 import { createBlobs } from './blobs.js';
 import { createArms } from '../hermes/arms.js';
 import {
+  MACHINES,
   powerState,
   canPlug,
   oxygenStep,
@@ -22,6 +23,7 @@ import {
   starsFor,
 } from './sim.js';
 import { rulesFor } from '../../core/rules.js';
+import { plugPrompt } from '../../core/plugs.js';
 
 const C9_FACTS = 'https://www.nasa.gov/news-release/phoenix-teachers-to-experiment-aboard-nasas-weightless-wonder/';
 const G_FACTS = 'https://www.nasa.gov/centers-and-facilities/armstrong/relevant-environment-provides-testing-for-technology-payloads/';
@@ -119,7 +121,7 @@ function run(game, { demo }) {
   let paused = false;
   let t = 0;
   let elapsed = 0;
-  let flightT = 0;
+  let flightT = Math.max(0, r.heavySeconds - (r.firstClimbSeconds ?? r.heavySeconds)); // skip most of the first climb
   let lastFlightPhase = null;
   let endFlightAt = null;
   let levelT = 0;
@@ -314,7 +316,7 @@ function run(game, { demo }) {
     let now;
     if (!part2 && blobs.loose.length) now = `Catch the floating water blobs before the hill ends! (${blobs.loose.length} left)`;
     else if (!part2) now = endFlightAt != null ? 'Hold on: the plane is levelling out' : `Catch the floating tools (${caught} of ${r.tools})`;
-    else if (p?.overloaded) now = flicker ? 'Only 1 plug! Keep the AIR MACHINE plugged in' : 'Unplug the extra machines (power panel, back wall)';
+    else if (p?.overloaded) now = flicker ? 'Only 1 plug! Keep the AIR MACHINE ON' : 'Turn OFF the extra machines (power panel, back wall)';
     else if (p && !p.airOn) now = 'Plug in the AIR MACHINE (power panel, back wall)';
     else if (p && !p.cameraOn) now = 'Plug in the CAMERA to send your science home';
     else now = 'Send your science home (watch the green bar)';
@@ -428,7 +430,7 @@ function run(game, { demo }) {
     const o = atMask ? { delta: atMask, reason: 'refill' } : oxygenStep({ airOn: true, thrusting: floating && player.thrusting }, dt, r);
     game.oxygen.change(o.delta * (atMask ? dt : 1), o.reason);
     if (!game.running) return;
-    if (floating && player.thrusting && once('first-push', 'Pushing yourself around makes you breathe rules. *One push and glide* saves air!')) {
+    if (floating && player.thrusting && once('first-push', 'Pushing yourself around makes you breathe hard. *One push and glide* saves air!')) {
       game.demo.check('every-choice-costs');
     }
 
@@ -520,7 +522,7 @@ function run(game, { demo }) {
       title: `Only ${plugs} energy plugs!`,
       text: [
         'One of the plane\'s generators switched off. Too many machines are plugged in, so *nothing works*, not even the air machine!',
-        `Go to the *power panel* on the back wall. Unplug the extras so only ${plugs} machines have plugs.`,
+        `Go to the *power panel* on the back wall and turn OFF the extras, so only ${plugs} machines are ON. The list on the left of your screen shows which ones are ON.`,
       ],
       facts: [
         { label: 'Air machine', value: 'makes fresh air (keeps Oxygen up)' },
@@ -533,7 +535,7 @@ function run(game, { demo }) {
     stage = 'power';
     world.panel.setHint(true);
     player.requestLock();
-    game.ui.buoy('Turn around! The power panel is on the *back wall*. *Unplug the extra machines* first.');
+    game.ui.buoy('Turn around! The power panel is on the *back wall*. Look at an *extra* machine and press E to turn it *OFF*.');
   }
 
   function toggle(socket) {
@@ -541,9 +543,9 @@ function run(game, { demo }) {
     if (plugged.has(id)) {
       plugged.delete(id);
       game.sound.play('clunk');
-      game.ui.buoy(`Unplugged the ${socket.machine.label.toLowerCase()}.`);
+      game.ui.buoy(`Turned OFF the ${socket.machine.label.toLowerCase()}. That frees a plug.`);
     } else if (power().overloaded || !canPlug(plugged, plugs)) {
-      game.ui.buoy(`No plugs left! *Unplug something* first.`, { interrupt: true });
+      game.ui.buoy('No free plug! Turn another machine *OFF* first. The *power panel* list shows which ones are ON.', { interrupt: true });
       return;
     } else {
       plugged.add(id);
@@ -618,7 +620,7 @@ function run(game, { demo }) {
     const o2 = game.oxygen.value;
     if (o2 > 70) said.delete('low-power');
     if (!p.airOn && o2 < r.lowOxygen) once('low-power', easy ? 'Oxygen low! Give the *air machine* a plug!' : 'Oxygen low.', { interrupt: true });
-    if (easy && !demo && p.overloaded && levelT > 25) once('overload-hint', 'The panel is flashing red: *too many machines*. Look at an extra one and press E to unplug it.');
+    if (easy && !demo && p.overloaded && levelT > 25) once('overload-hint', 'Too many machines are ON! Look at an *extra* one on the panel (like the snack fridge) and press E to turn it *OFF*.');
 
     // banner + prompt
     if (flicker) setBanner('power', 'Generator flicker', `only ${plugs} plug · ${Math.ceil(flicker.until - t)} s`, '⚡');
@@ -626,15 +628,15 @@ function run(game, { demo }) {
     else setBanner('level', 'Level flight', p.cameraOn ? `sending science home · ${Math.round(world.machines.state.upload)}%` : 'plug in the camera to send your science home', '1g');
     $timer.style.width = flicker ? `${((flicker.until - t) / r.flickerSeconds) * 100}%` : '0%';
     game.ui.target(Boolean(socket));
-    if (socket) {
-      const name = socket.machine.label.toLowerCase();
-      setPrompt(plugged.has(socket.machine.id) ? `Press [E] to unplug the ${name}` : `Press [E] to plug in the ${name}`);
-    } else if (easy && camera.position.z < 6.4) setPrompt('Walk to the power panel on the back wall');
+    game.ui.power({ plugs, overloaded: p.overloaded, aimed: socket?.machine.id ?? null, machines: MACHINES.map((m) => ({ id: m.id, label: m.label, kind: m.kind, plugged: plugged.has(m.id) })) });
+    if (socket) setPrompt(plugPrompt({ label: socket.machine.label, plugged: plugged.has(socket.machine.id), free: p.free, overloaded: p.overloaded }));
+    else if (easy && camera.position.z < 6.4) setPrompt('Walk to the power panel on the back wall');
     else setPrompt(null);
   }
 
   function complete() {
     stage = 'done';
+    game.ui.power(null);
     game.ui.cheer({ title: 'SCIENCE SENT HOME!', sub: `water blobs caught: ${blobs.caught} of ${r.blobs}`, big: true });
     setPrompt(null);
     game.ui.target(false);

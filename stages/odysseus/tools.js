@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { dotTexture } from '../hermes/textures.js';
-import { BOUNDS } from './world.js';
+import { keepInside } from './world.js';
 
 const KINDS = ['wrench', 'screwdriver', 'tape', 'flashlight', 'clipboard', 'duck', 'pliers', 'socket'];
 export const TOOL_NAMES = {
@@ -118,24 +118,15 @@ export function createTools(scene, { count, origin, speed, hints }) {
   };
 }
 
+const TOOL_RADIUS = 0.3; // tools are up to about 0.4 m long and spin, so keep them this far from the padding
+
 function bounce(tool, g) {
   const p = tool.pos;
   const v = tool.vel;
   const floor = FLOOR_REST;
-  const limits = [
-    ['x', BOUNDS.minX - 0.2, BOUNDS.maxX + 0.2],
-    ['y', floor, BOUNDS.maxY + 0.15],
-    ['z', BOUNDS.minZ, BOUNDS.maxZ],
-  ];
-  for (const [axis, lo, hi] of limits) {
-    if (p[axis] < lo) {
-      p[axis] = lo;
-      v[axis] = Math.abs(v[axis]) * (axis === 'y' && g > 0 ? 0.15 : 0.55); // soft padding
-    } else if (p[axis] > hi) {
-      p[axis] = hi;
-      v[axis] = -Math.abs(v[axis]) * 0.55;
-    }
-  }
+  const wasFalling = v.y < 0 && p.y < floor;
+  keepInside(p, v, TOOL_RADIUS, 0.55, floor);
+  if (wasFalling && g > 0) v.y *= 0.27; // the floor mat is soft: barely a bounce when the plane is heavy
   if (g > 0 && p.y <= floor + 0.001) {
     v.x *= 0.9;
     v.z *= 0.9;

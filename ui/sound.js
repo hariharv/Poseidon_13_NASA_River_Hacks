@@ -170,6 +170,18 @@ export function createSound(storage = safeStorage()) {
     },
     hiss: () => noise({ dur: 0.7, vol: 0.12, type: 'highpass', freq: 3500, q: 0.4 }),
     tick: () => noise({ dur: 0.012, vol: 0.25, type: 'highpass', freq: 5000, q: 0.5 }),
+    clap: () => {
+      // a crowd clapping: lots of short, bright noise bursts that swell, then fade out
+      const n = 110;
+      for (let i = 0; i < n; i++) {
+        const at = Math.random() * 3.0;
+        const swell = at < 0.5 ? at / 0.5 : at > 2.2 ? Math.max(0, 1 - (at - 2.2) / 0.8) : 1;
+        noise({ at, dur: 0.05 + Math.random() * 0.05, vol: (0.05 + Math.random() * 0.1) * swell + 0.004, freq: 900 + Math.random() * 1700, q: 0.9 });
+      }
+      // a couple of happy cheers on top
+      tone({ type: 'triangle', from: 660, to: 990, at: 0.15, dur: 0.35, vol: 0.06 });
+      tone({ type: 'triangle', from: 740, to: 1110, at: 0.9, dur: 0.4, vol: 0.05 });
+    },
     flash: () => {
       noise({ dur: 1.4, vol: 0.18, type: 'lowpass', freq: 6000, toFreq: 300, q: 0.3 });
       tone({ type: 'sine', from: 2200, to: 300, dur: 1.1, vol: 0.06 });

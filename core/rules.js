@@ -49,7 +49,8 @@ export const RULES = {
         startOxygen: 90, // each stage starts with a little less air than the one before
         // Part 1: catch the floating tools
         tools: 6,
-        heavySeconds: 7, // pull-up / pull-out: you feel about twice as heavy
+        heavySeconds: 5, // pull-up / pull-out: you feel about twice as heavy
+        firstClimbSeconds: 2, // the very first climb is short, so you float almost straight away
         floatSeconds: 22, // weightless time per hill (NASA: about 22-25 s)
         heavyG: 1.8,
         breathePerSec: 0.5, // oxygen used just by breathing

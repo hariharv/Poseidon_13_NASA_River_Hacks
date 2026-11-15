@@ -3,7 +3,7 @@
 // In weightlessness water doesn't pour: it floats in wobbly balls.
 
 import * as THREE from 'three';
-import { BOUNDS } from './world.js';
+import { keepInside } from './world.js';
 
 export function createBlobs(scene, { count }) {
   const mat = new THREE.MeshPhysicalMaterial({
@@ -70,10 +70,7 @@ export function createBlobs(scene, { count }) {
       for (const b of blobs) {
         if (b.state === 'loose') {
           b.pos.addScaledVector(b.vel, dt);
-          for (const [axis, lo, hi] of [['x', BOUNDS.minX, BOUNDS.maxX], ['y', BOUNDS.minY + 0.2, BOUNDS.maxY], ['z', BOUNDS.minZ, BOUNDS.maxZ]]) {
-            if (b.pos[axis] < lo) (b.pos[axis] = lo), (b.vel[axis] = Math.abs(b.vel[axis]));
-            if (b.pos[axis] > hi) (b.pos[axis] = hi), (b.vel[axis] = -Math.abs(b.vel[axis]));
-          }
+          keepInside(b.pos, b.vel, 0.22, 1, 0.45); // water blobs bounce off the padding, never through it
           b.m.position.copy(b.pos);
           // wobble like real floating water
           const w = Math.sin(t * 6 + b.phase) * 0.12;

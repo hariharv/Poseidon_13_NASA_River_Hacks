@@ -125,6 +125,18 @@ describe('the robot arm', () => {
     expect(Math.hypot(far.x, far.y, far.z)).toBeLessThanOrEqual(L1 + L2);
     expect(clampTarget({ x: 3, y: -9, z: -3 }, L1, L2, -1).y).toBeGreaterThanOrEqual(-1);
   });
+  it('the hand can be pushed far out and always comes straight back (it never gets stuck behind the shoulder)', () => {
+    const box = { minZ: 1.0, maxX: 6.8, maxY: 4.2 };
+    let p = { x: 0, y: 0.8, z: 3 };
+    const move = (dz, n) => {
+      for (let i = 0; i < n; i++) p = clampTarget({ ...p, z: p.z + dz }, L1, L2, -1, box);
+    };
+    move(-0.05, 400); // hold W for a long time
+    expect(p.z).toBeGreaterThanOrEqual(box.minZ);
+    const stuckAt = p.z;
+    move(0.05, 20); // then S
+    expect(p.z).toBeGreaterThan(stuckAt + 0.9);
+  });
 });
 
 describe('modes: each one a bit harder', () => {

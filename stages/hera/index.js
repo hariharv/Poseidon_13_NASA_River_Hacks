@@ -148,6 +148,7 @@ function run(game, { demo }) {
   const doseHistory = new Array(60).fill(0);
   const att = new THREE.Quaternion();
   const spin = new THREE.Vector2(); // x = yaw rate, y = pitch rate (rad/s)
+  const qWant = new THREE.Vector2();
   const qa = new THREE.Quaternion();
   const axisY = new THREE.Vector3(0, 1, 0);
   const axisX = new THREE.Vector3(1, 0, 0);
@@ -252,7 +253,7 @@ function run(game, { demo }) {
         ? 'Turn the ship with *W A S D* until the *green diamond* sits in the ring, then *hold Space* to fire the engine.'
         : "You're the *pilot* now! Turn the ship with *W A S D* until the *green diamond* sits inside the ring, then *hold Space* to fire the engine.",
     );
-    if (easy) later(9000, () => progressNow() < 4 && game.ui.buoy('Small taps work best. The ship keeps turning after you let go, just like in real space!'));
+    if (easy) later(9000, () => progressNow() < 4 && game.ui.buoy('Hold a key to turn, let go to stop. Near the diamond the ship turns slower, so you can aim.'));
   })();
 
   // ---------- the flare ----------
@@ -512,7 +513,7 @@ function run(game, { demo }) {
       ],
       tips: [
         'The *ring* is on your window. The *yellow arrow* points to the diamond if you lose it.',
-        'Small taps on *W A S D* work best: the ship keeps turning after you let go.',
+        'Hold *W A S D* to turn the ship and let go to stop. It turns slower near the diamond so you can aim.',
         'A *red ring* round a piece of junk means it will hit you. Steer until the ring is *green*, then steer back to the diamond.',
         'In the storm, the *shelter* makes the radiation reach you about 4 times slower. Hiding pauses the flight, but keeps you safe.',
       ],
@@ -531,7 +532,7 @@ function run(game, { demo }) {
       onPhase(clock.phase, prev);
     }
 
-    // turning the ship: thrusters push, and the ship keeps turning (there's no air to slow it)
+    // turning the ship with W A S D
     const input = controls.turnInput();
     world.setStick(input.x, input.y);
     const pushing = input.lengthSq() > 0;
@@ -540,23 +541,23 @@ function run(game, { demo }) {
     const burning = where === 'seat' && controls.burnHeld();
     world.setThrottle(burning);
     rumble.set(burning ? 1 : pushing ? 0.5 : 0);
+    // Steering: the ship turns while you hold a key and stops soon after you let go, the same
+    // speed in every direction. Close to the diamond it turns slower, for fine aiming.
+    world.targetInShip(local);
+    const near = local.angleTo(world.boresight) < r.aimRing * 3 ? 0.55 : 1;
+    const want = qWant.set(input.x, input.y).multiplyScalar(r.turnRate * near).clampLength(0, r.turnRate * near); // diagonals aren't faster
+    spin.lerp(want, 1 - Math.exp(-(pushing ? 8 : 6) * dt));
+    // things that push the ship off course on top of your steering
+    let offX = (Math.sin(t * 0.37) + Math.sin(t * 0.91 + 1)) * r.drift * 0.25; // little wobbles (the trainers add these)
+    let offY = (Math.sin(t * 0.53 + 2) + Math.sin(t * 1.13)) * r.drift * 0.18;
+    if (faultOn) offX += r.faultSpin; // a stuck thruster keeps turning you
     if (burning) {
-      // the main engine shakes the ship: keep correcting to stay in the ring
-      spin.x += (Math.random() - 0.5) * r.burnShake * 6 * dt;
-      spin.y += (Math.random() - 0.5) * r.burnShake * 6 * dt;
+      // the main engine shakes the ship a little: keep correcting to stay in the ring
+      offX += (Math.random() - 0.5) * r.burnShake * 1.5;
+      offY += (Math.random() - 0.5) * r.burnShake * 1.5;
     }
-    spin.x += input.x * r.turnRate * 2.6 * dt;
-    spin.y += input.y * r.turnRate * 2.6 * dt;
-    // little wobbles (the trainers add these)
-    spin.x += (Math.sin(t * 0.37) + Math.sin(t * 0.91 + 1)) * r.drift * 0.5 * dt;
-    spin.y += (Math.sin(t * 0.53 + 2) + Math.sin(t * 1.13)) * r.drift * 0.35 * dt;
-    if (faultOn) spin.x += r.faultSpin * 1.4 * dt;
-    // the ship's computer gently damps the spin (stronger while you're holding the stick)
-    const damp = Math.exp(-(pushing ? 0.6 : 1.4) * dt);
-    spin.multiplyScalar(damp);
-    spin.clampLength(0, r.turnRate);
-    att.multiply(qa.setFromAxisAngle(axisY, -spin.x * dt));
-    att.multiply(qa.setFromAxisAngle(axisX, spin.y * dt));
+    att.multiply(qa.setFromAxisAngle(axisY, -(spin.x + offX) * dt));
+    att.multiply(qa.setFromAxisAngle(axisX, (spin.y + offY) * dt));
     att.normalize();
     world.setAttitude(att);
     junkStep(dt);

@@ -32,6 +32,7 @@ export function createUI(container) {
         <div class="hud-storm" hidden data-colour="green"><span class="storm-dot"></span><span class="storm-text">Calm</span></div>
         <button class="real-numbers-btn" type="button" hidden>Real numbers</button>
       </div>
+      <div class="power-board" hidden aria-live="polite"></div>
       <div class="hud-task" hidden><span class="hud-task-label">Task</span><span class="hud-task-text"></span></div>
       <div class="crosshair"></div>
       <div class="hud-prompt" hidden></div>
@@ -60,6 +61,7 @@ export function createUI(container) {
     <button class="checklist-open" type="button" hidden>Judge checklist</button>
     <div class="puzzle-layer" hidden></div>
     <div class="cheer-layer" aria-live="polite"></div>
+    <div class="confetti-rain" aria-hidden="true"></div>
     <div class="card-layer" hidden></div>
   `;
   container.append(layer);
@@ -91,6 +93,7 @@ export function createUI(container) {
   let clockText = '';
   let clockGoalText = '';
   const puzzleLayer = $('.puzzle-layer');
+  const powerBoard = $('.power-board');
 
   const sound = createSound();
   let lowAt = 30;
@@ -484,6 +487,44 @@ export function createUI(container) {
       : null;
   }
 
+  // ---------- Power board: every machine, ON or OFF, and what to do about the plugs ----------
+  // ui.power({ plugs, overloaded, machines: [{ id, label, sub, kind, plugged }], aimed }) or null to hide.
+  //   kind 'air' = keeps you alive, 'extra' = safe to unplug. `aimed` = the socket you're looking at.
+  let powerKey = '';
+  function setPower(spec) {
+    const key = spec ? JSON.stringify(spec) : '';
+    if (key === powerKey) return;
+    powerKey = key;
+    powerBoard.hidden = !spec;
+    if (!spec) return;
+    const used = spec.machines.filter((m) => m.plugged).length;
+    const free = Math.max(0, spec.plugs - used);
+    const extra = used - spec.plugs;
+    let status;
+    let tone = 'ok';
+    if (spec.overloaded || extra > 0) {
+      tone = 'bad';
+      status = `Too many machines! You have ${spec.plugs} plug${spec.plugs === 1 ? '' : 's'} but ${used} are ON. Turn OFF ${extra} so the rest can work.`;
+    } else if (free === 0) {
+      tone = 'full';
+      status = 'Every plug is used. To turn something ON, turn another machine OFF first.';
+    } else status = `${free} free plug${free === 1 ? '' : 's'}. Look at a machine and press E to turn it ON.`;
+    const rows = spec.machines
+      .map((m) => {
+        const tag = m.kind === 'air' ? '<span class="pb-tag is-life">keeps you alive</span>' : m.kind === 'extra' ? '<span class="pb-tag">extra</span>' : '';
+        const state = m.plugged ? 'ON' : 'OFF';
+        const hint = spec.aimed === m.id ? `<span class="pb-press"><kbd>E</kbd> ${m.plugged ? 'turn OFF' : free > 0 && !spec.overloaded ? 'turn ON' : 'no free plug'}</span>` : '';
+        return `<li class="pb-row ${m.plugged ? 'is-on' : 'is-off'} ${spec.aimed === m.id ? 'is-aimed' : ''}"><span class="pb-state">${state}</span><span class="pb-name">${escapeHtml(m.label)}${tag}</span>${hint}</li>`;
+      })
+      .join('');
+    const plugsHtml = Array.from({ length: spec.plugs }, (_, i) => `<span class="pb-plug ${i < Math.min(used, spec.plugs) ? 'is-used' : ''}"></span>`).join('');
+    powerBoard.dataset.tone = tone;
+    powerBoard.innerHTML = `
+      <p class="pb-head"><span>Power panel</span><span class="pb-plugs" aria-label="${used} of ${spec.plugs} plugs used">${plugsHtml}</span></p>
+      <ol class="pb-list">${rows}</ol>
+      <p class="pb-status">${escapeHtml(status)}</p>`;
+  }
+
   function setRealNumbers(onClick) {
     realBtn.hidden = !onClick;
     realBtn.onclick = onClick || null;
@@ -515,6 +556,28 @@ export function createUI(container) {
     cheerLayer.replaceChildren(pop);
     sound.play(big ? 'win' : 'star');
     setTimeout(() => pop.remove(), big ? 2400 : 1700);
+  }
+  // A level is done: confetti rains down over the whole screen and the crowd claps.
+  const rain = $('.confetti-rain');
+  function celebrate() {
+    sound.play('clap');
+    sound.play('win');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const count = reduce ? 30 : 140;
+    const bits = [];
+    for (let i = 0; i < count; i++) {
+      const bit = el('span', 'rain-bit');
+      bit.style.left = `${Math.random() * 100}%`;
+      bit.style.background = CONFETTI[i % CONFETTI.length];
+      bit.style.setProperty('--drift', `${(Math.random() - 0.5) * 160}px`);
+      bit.style.setProperty('--spin', `${Math.random() * 1080 - 540}deg`);
+      bit.style.animationDuration = `${2.4 + Math.random() * 2}s`;
+      bit.style.animationDelay = `${Math.random() * 1.2}s`;
+      if (i % 3 === 0) bit.classList.add('is-round');
+      bits.push(bit);
+    }
+    rain.replaceChildren(...bits);
+    setTimeout(() => rain.replaceChildren(), 5000);
   }
   function countdown() {
     return new Promise((resolve) => {
@@ -554,9 +617,11 @@ export function createUI(container) {
     checklist,
     pause,
     setRealNumbers,
+    power: setPower,
     sound,
     task: setTask,
     cheer,
+    celebrate,
     countdown,
     help: openHelp,
     puzzle: (options) => puzzle.open(options),

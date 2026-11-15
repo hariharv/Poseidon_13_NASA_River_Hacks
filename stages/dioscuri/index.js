@@ -12,9 +12,12 @@ import { buildWorld, EYE, FLOAT_START, ROOM, DESK_SPOT, ARM_BASE, L1, L2, DECK_Y
 import { createControls } from './controls.js';
 import { createArms } from '../hermes/arms.js';
 import { disposeTree } from '../hermes/world.js';
-import { powerState, canPlug, oxygenStep, experimentStep, shares, orbitPhase, plugsFor, clampTarget, starsFor, DEBRIS } from './sim.js';
+import { MACHINES, powerState, canPlug, oxygenStep, experimentStep, shares, orbitPhase, plugsFor, clampTarget, starsFor, DEBRIS } from './sim.js';
 import { rulesFor } from '../../core/rules.js';
+import { plugPrompt } from '../../core/plugs.js';
 
+// Where the arm's hand may go, measured from the shoulder: in front of it, over the deck, and in view.
+const ARM_WORK_AREA = { minZ: 1.0, maxX: 6.8, maxY: 4.2 };
 const ARM_FACTS = 'https://www.asc-csa.gc.ca/eng/iss/canadarm2/data-sheet.asp';
 const ORBIT_FACTS = 'https://www.nasa.gov/missions/station/spot-the-station-frequently-asked-questions/';
 
@@ -285,9 +288,9 @@ function run(game, { demo }) {
     if (plugged.has(id)) {
       plugged.delete(id);
       game.sound.play('clunk');
-      game.ui.buoy(`Unplugged the ${socket.machine.label.toLowerCase()}.`);
+      game.ui.buoy(`Turned OFF the ${socket.machine.label.toLowerCase()}. That frees a plug.`);
     } else if (power().overloaded || !canPlug(plugged, plugs)) {
-      game.ui.buoy('No plugs left! *Unplug something* first.', { interrupt: true });
+      game.ui.buoy('No free plug! Turn another machine *OFF* first. The *power panel* list shows which ones are ON.', { interrupt: true });
       return;
     } else {
       plugged.add(id);
@@ -355,7 +358,7 @@ function run(game, { demo }) {
           title: `Only ${plugs} energy plugs at night`,
           text: [
             "The station just flew into *Earth's shadow*. The *solar panels* (flat plates that turn sunlight into energy) can't make any power in the dark.",
-            `Until sunrise there are only *${plugs} plugs*, from the batteries.${p.overloaded ? ' Too many machines are plugged in, so *nothing works*. Float to the *power panel* on the left wall and unplug some.' : ''}`,
+            `Until sunrise there are only *${plugs} plugs*, from the batteries.${p.overloaded ? ' Too many machines are plugged in, so *nothing works*. Float to the *power panel* on the left wall and turn some *OFF*.' : ''}`,
           ],
           choices: [{ id: 'ok', label: p.overloaded ? 'Fix the power' : 'Got it' }],
         });
@@ -363,7 +366,7 @@ function run(game, { demo }) {
         game.demo.check('plain-language');
         controls.requestLock();
       } else {
-        game.ui.buoy(`Sunset! Only *${plugs} plugs* until sunrise.${p.overloaded ? ' Unplug something!' : ''}`, { interrupt: true });
+        game.ui.buoy(`Sunset! Only *${plugs} plugs* until sunrise.${p.overloaded ? ' Turn a machine OFF!' : ''}`, { interrupt: true });
       }
       if (p.overloaded) world.panel.setHint(true);
     } else if (orbit > 0) {
@@ -419,10 +422,10 @@ function run(game, { demo }) {
     const seated = controls.mode === 'desk';
     let now;
     if (alert) now = seated ? 'SPACE JUNK! Park the arm in the yellow STOW ring' : 'SPACE JUNK! Get to the arm controls and park the arm in the STOW ring';
-    else if (p.overloaded) now = 'Too many machines! Unplug some (power panel, left wall)';
+    else if (p.overloaded) now = 'Too many machines ON! Turn some OFF (power panel, left wall)';
     else if (!p.airOn) now = 'Plug in the AIR MACHINE (power panel, left wall)';
     else if (ready && !seated) now = `Start the ${ready.exp.label} experiment (science bench, right wall)`;
-    else if (unpowered && !seated) now = p.free > 0 ? `Plug in ${unpowered.exp.label} (power panel, left wall)` : `Make room: unplug something, then plug in ${unpowered.exp.label}`;
+    else if (unpowered && !seated) now = p.free > 0 ? `Plug in ${unpowered.exp.label} (power panel, left wall)` : `Make room: turn a machine OFF, then turn ON ${unpowered.exp.label}`;
     else if (box && seated && !p.armOn) now = 'The robot arm has no plug! (power panel, left wall)';
     else if (box && seated) now = carrying ? `Put the ${carrying.exp.label} box in the ${carrying.exp.colourName} slot (right)` : `Grab the ${box.exp.label} box by its gold handle (left)`;
     else if (box) now = 'Float to the ARM CONTROLS at the window and press E';
@@ -475,7 +478,7 @@ function run(game, { demo }) {
           e.done = true;
           game.ui.cheer({ title: `${e.exp.label} DONE!`, sub: 'great science' });
           game.sound.play('success');
-          game.ui.buoy(`The *${e.exp.name}* experiment is finished! You can unplug it to free a plug.`, { interrupt: true });
+          game.ui.buoy(`The *${e.exp.name}* experiment is finished! You can turn it *OFF* to free a plug.`, { interrupt: true });
         }
       }
       e.station.state = !e.placed ? 'waiting' : !e.started ? 'ready' : e.done ? 'done' : powered ? 'running' : 'paused';
@@ -534,7 +537,7 @@ function run(game, { demo }) {
         if (p.armOn && elapsed > stunnedUntil) {
           tip.addScaledVector(input, r.armSpeed * dt * (carrying ? 0.85 : 1));
           const minY = DECK_Y + (carrying ? BOX_HALF.y * 2 + 0.55 : 0.32);
-          const local = clampTarget({ x: tip.x - ARM_BASE.x, y: tip.y - ARM_BASE.y, z: tip.z - ARM_BASE.z }, L1, L2 - 0.2, minY - ARM_BASE.y);
+          const local = clampTarget({ x: tip.x - ARM_BASE.x, y: tip.y - ARM_BASE.y, z: tip.z - ARM_BASE.z }, L1, L2 - 0.2, minY - ARM_BASE.y, ARM_WORK_AREA);
           tip.set(local.x + ARM_BASE.x, local.y + ARM_BASE.y, local.z + ARM_BASE.z);
         } else if (t - noPowerSaidAt > 6) {
           noPowerSaidAt = t;
@@ -612,7 +615,7 @@ function run(game, { demo }) {
     let prompt = null;
     if (controls.mode === 'float' && aimed) {
       if (aimed.kind === 'desk') prompt = 'Press [E] to sit at the arm controls';
-      else if (aimed.kind === 'socket') prompt = plugged.has(aimed.item.machine.id) ? `Press [E] to unplug the ${aimed.item.machine.label.toLowerCase()}` : `Press [E] to plug in the ${aimed.item.machine.label.toLowerCase()}`;
+      else if (aimed.kind === 'socket') prompt = plugPrompt({ label: aimed.item.machine.label, plugged: plugged.has(aimed.item.machine.id), free: p.free, overloaded: p.overloaded });
       else {
         const e = exps.find((x) => x.station === aimed.item);
         prompt = e.placed && !e.started ? `Press [E] to start the ${e.exp.label} experiment` : `${e.exp.label}: ${e.station.state === 'waiting' ? 'waiting for its box' : e.station.state}`;
@@ -620,6 +623,13 @@ function run(game, { demo }) {
     } else if (controls.mode === 'desk') prompt = armPrompt ?? (easy ? 'Steer: W A S D, Space, Shift · [Q] get up' : null);
     game.ui.target(Boolean(aimed) || Boolean(armPrompt?.startsWith('Press')));
     setPrompt(prompt);
+    // the power board: while you're at the panel, or whenever too many machines are ON
+    const nearPanel = controls.mode === 'float' && camera.position.distanceTo(world.panel.sockets[0].position) < 3.2;
+    game.ui.power(
+      nearPanel || p.overloaded || aimed?.kind === 'socket'
+        ? { plugs, overloaded: p.overloaded, aimed: aimed?.kind === 'socket' ? aimed.item.machine.id : null, machines: MACHINES.map((m) => ({ id: m.id, label: m.label, kind: m.kind, plugged: plugged.has(m.id) })) }
+        : null,
+    );
   }
 
   function screen(title, lines, colour) {
@@ -644,11 +654,12 @@ function run(game, { demo }) {
         : `All boxes in place! Press *Q* to get up and start the experiments at the *science bench* (right wall).`,
       { interrupt: true },
     );
-    if (plugged.has('arm') && !left) later(6000, () => game.ui.buoy("You don't need the robot arm any more. *Unplug it* to save a plug for science!"));
+    if (plugged.has('arm') && !left) later(6000, () => game.ui.buoy("You don't need the robot arm any more. Turn it *OFF* to save a plug for science!"));
   }
 
   function complete() {
     stage = 'done';
+    game.ui.power(null);
     alert = null;
     world.stow.setAlert(false);
     setPrompt(null);

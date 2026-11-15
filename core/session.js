@@ -92,6 +92,7 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
             save.recordStage(id, result.stars ?? 1);
             if (result.badge) save.addBadge(result.badge);
           }
+          if (result.passed) ui.celebrate?.(); // confetti and clapping: you finished the level!
           const didYouKnow = lesson?.facts[factIndex++ % lesson.facts.length];
           await ui.card({
             tone: 'win',
@@ -167,6 +168,7 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
       ui.hud.target(false);
       ui.setMenu?.(null);
       ui.task?.(null);
+      ui.power?.(null);
       ui.hud.hide();
     }
 
