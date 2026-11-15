@@ -8,7 +8,7 @@ import { buildWorld, disposeTree, AIR_STATION, SPAWN } from './world.js';
 import { createPlayer } from './player.js';
 import { createArms } from './arms.js';
 import { createBubbles } from './bubbles.js';
-import { oxygenStep, workStep, starsFor } from './sim.js';
+import { oxygenStep, starsFor } from './sim.js';
 import { rulesFor } from '../../core/rules.js';
 
 const NBL_FACTS = 'https://www.nasa.gov/centers/johnson/pdf/167748main_FS_NBL508c.pdf';
@@ -31,7 +31,7 @@ const CONTROLS = [
   { label: 'Swim', value: 'W A S D or the arrow keys' },
   { label: 'Look around', value: 'Move the mouse (or ← →)' },
   { label: 'Float up / sink down', value: 'Space / Shift' },
-  { label: 'Fix a panel', value: 'Hold E (or hold the mouse button)' },
+  { label: 'Fix a panel', value: 'Press E, then match the wires before time runs out' },
 ];
 
 export default {
@@ -87,6 +87,9 @@ function run(game, { demo }) {
   let nextDiverBubble = 2;
   let promptText = null;
   let workingNow = false;
+  let fixing = null; // the panel whose wire puzzle is open
+  let fixHeld = false;
+  let wasLow = false;
   const timers = new Set();
   const said = new Set();
   const once = (key, text) => {
@@ -111,7 +114,7 @@ function run(game, { demo }) {
     swimSpeed: r.swimSpeed,
     onPointerChange(locked) {
       if (locked) setPaused(false);
-      else if (phase === 'play' && game.running && !player.dragMode) setPaused(true);
+      else if (phase === 'play' && game.running && !player.dragMode && !game.ui.puzzleOpen) setPaused(true);
     },
     onPointerError(dragMode) {
       if (dragMode && paused) setPaused(false);
@@ -157,7 +160,7 @@ function run(game, { demo }) {
         ? ['A copy of NASA\'s spacewalk training pool. *Fix 1 broken panel.* Your oxygen starts at 60.']
         : [
             "You're 40 feet underwater in NASA's training pool. There's a pretend space station down here!",
-            'Your job: *fix 3 broken panels* before your oxygen runs low.',
+            'Your job: *fix 3 broken panels* before your oxygen runs low. Each one has a wire puzzle, and the clock is ticking!',
           ],
       facts: CONTROLS,
       choices: [{ id: 'go', label: 'Dive in' }],
@@ -166,6 +169,7 @@ function run(game, { demo }) {
     phase = 'play';
     player.setEnabled(true);
     player.requestLock();
+    updateTask();
     game.demo.check('browser-playable');
     game.demo.check('two-bars');
 
@@ -255,39 +259,86 @@ function run(game, { demo }) {
     });
   }
 
+  // ---------- fixing a panel: a wire puzzle against the clock ----------
+  function startFix(panel) {
+    fixing = panel;
+    player.setEnabled(false);
+    if (once('first-work', 'Working hard makes you breathe faster. *Suits only carry so much air!*')) {
+      game.demo.check('every-choice-costs');
+    }
+    game.ui
+      .puzzle({
+        kind: 'wires',
+        title: `Fix panel ${panel.index + 1}`,
+        text: 'Connect each wire to the plug with the *same colour and shape*. Your oxygen drops faster while you work!',
+        seconds: r.puzzleSeconds,
+        size: r.puzzleWires,
+      })
+      .then((ok) => {
+        fixing = null;
+        if (!game.running) return;
+        player.setEnabled(true);
+        player.requestLock();
+        if (ok) {
+          panel.setWork(1);
+          panel.markFixed(t);
+          game.progress.change(((fixedCount + 1) / world.panels.length) * 100 - game.progress.value);
+          onPanelFixed();
+          updateTask();
+        } else {
+          game.ui.buoy('Sparks! The clock ran out. *Press E* to try that panel again.', { interrupt: true });
+        }
+      });
+  }
+
+  // ---------- the Task chip and Help ----------
+  const PANEL_WHERE = ['on the side of the big white module', 'on top of the long metal beam (swim up!)', 'round the back of the station'];
+  function updateTask() {
+    const next = world.panels.find((p) => !p.fixed);
+    const low = game.oxygen.value < r.lowOxygen;
+    game.ui.task({
+      now: !next ? 'All panels fixed!' : low ? 'Refill your air at the blue air station' : `Fix panel ${next.index + 1}: ${PANEL_WHERE[next.index]}`,
+      steps: [
+        ...world.panels.map((p) => ({ text: `Fix panel ${p.index + 1} (${PANEL_WHERE[p.index]})`, done: p.fixed, now: p === next && !low })),
+        { text: 'Low on air? Swim into the bubble at the blue air station', now: low },
+      ],
+      tips: [
+        'Follow the *red light beams* to find the broken panels.',
+        'Get close, look right at the panel and *press E*. Then match the wires before the timer runs out.',
+        'The *blue beam* shows the way back to the air station.',
+      ],
+    });
+  }
+
   // ---------- one step of play ----------
   const breathAt = new THREE.Vector3();
   function step(dt) {
     const inZone = camera.position.distanceTo(AIR_STATION) < r.refillRadius;
-    const target = inZone ? null : findTarget();
-    const working = Boolean(target && player.wantsFix);
+    const target = fixing ?? (inZone ? null : findTarget());
+    const pressed = player.wantsFix && !fixHeld;
+    fixHeld = player.wantsFix;
+    if (target && pressed && !fixing && !game.ui.puzzleOpen) startFix(target);
+    const working = Boolean(fixing); // the wire puzzle is open: hard work, fast breathing
     workingNow = working;
-    const refilling = inZone && game.oxygen.value < 100;
+    // in the bubble you don't use air; once it's full it just stays full (no flicker)
+    const refilling = inZone && game.oxygen.value < 99.95;
     world.air.state.active = inZone;
     world.air.state.low = game.oxygen.value < r.lowOxygen;
 
     player.update(dt, t, { anchored: working });
 
-    const o = oxygenStep({ working, refilling }, dt, r);
+    const o = inZone && !refilling ? { delta: 0, reason: 'refill' } : oxygenStep({ working, refilling }, dt, r);
     game.oxygen.change(o.delta, o.reason);
     if (!game.running) return; // Sim over: the engine takes it from here
 
     elapsed += dt;
     minOxygen = Math.min(minOxygen, game.oxygen.value);
 
-    if (working) {
-      target.setWork(target.work + workStep(true, dt, r));
-      lastProgressAt = t;
-      const total = (world.panels.reduce((s, p) => s + p.work, 0) / world.panels.length) * 100;
-      game.progress.change(total - game.progress.value);
-      if (once('first-work', 'Working hard makes you breathe faster. *Suits only carry so much air!*')) {
-        game.demo.check('every-choice-costs');
-      }
-      if (target.work >= 1 && !target.fixed) {
-        target.markFixed(t);
-        onPanelFixed();
-        if (phase !== 'play') return;
-      }
+    if (working) lastProgressAt = t;
+    const lowNow = game.oxygen.value < r.lowOxygen;
+    if (lowNow !== wasLow) {
+      wasLow = lowNow;
+      updateTask();
     }
 
     // your breath makes bubbles: more when you work, none while refilling
@@ -318,7 +369,7 @@ function run(game, { demo }) {
     }
     if (refilling) once('refill', '*Refilling takes time.* Real astronauts plan their air before every job.');
     if (!demo && !said.has('near-panel') && nearestUnfixed() < 7) {
-      once('near-panel', 'A broken panel! Look right at it and *hold E* to fix it.');
+      once('near-panel', 'A broken panel! Look right at it and *press E*. Then match the wires, fast!');
     }
     if (easy && !demo && t - lastProgressAt > 30 && !inZone && fixedCount < world.panels.length) {
       if (once('idle-hint', 'Follow the *red light beams* to find the broken panels. One is up high, one is round the back!')) {
@@ -326,10 +377,10 @@ function run(game, { demo }) {
       }
     }
 
-    game.ui.target(Boolean(target));
-    if (inZone) setPrompt(refilling ? 'Refilling air… stay in the bubble' : 'Air full! Go fix a panel');
-    else if (working) setPrompt(`Fixing… bolt ${Math.min(3, target.boltsDone + 1)} of 3`);
-    else if (target) setPrompt(player.locked ? 'Hold [E] or the mouse button to fix' : 'Hold [E] to fix');
+    game.ui.target(Boolean(target) && !fixing);
+    if (fixing) setPrompt(null);
+    else if (inZone) setPrompt(refilling ? 'Refilling air… stay in the bubble' : 'Air full! Go fix a panel');
+    else if (target) setPrompt(`Press [E] to open panel ${target.index + 1}`);
     else if (easy) setPrompt(panelHint());
     else setPrompt(null);
   }

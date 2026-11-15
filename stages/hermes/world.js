@@ -465,6 +465,10 @@ function buildPanel(scene, spot, index, hints) {
     markFixed(t) {
       panel.fixed = true;
       fixedAt = t;
+      // the sign changes from "needs fixing" to "fixed!"
+      face.material.map?.dispose();
+      face.material.map = labelTexture({ text: `PANEL ${index + 1}`, sub: 'fixed!', bg: '#1d6b45' });
+      face.material.needsUpdate = true;
       ledMat.color.set('#5bd98a');
       beamMat.color.set('#5bd98a');
     },

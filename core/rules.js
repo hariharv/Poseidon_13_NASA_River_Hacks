@@ -17,7 +17,9 @@ export const RULES = {
       base: {
         startOxygen: 100,
         panels: 3,
-        panelWorkSeconds: 16, // seconds of holding "fix" per panel
+        panelWorkSeconds: 16, // about how long fixing a panel takes (sim tests)
+        puzzleSeconds: 16, // time to connect the wires on a broken panel
+        puzzleWires: 3,
         breathePerSec: 0.45, // oxygen used just by breathing
         workPerSec: 1.8, // extra oxygen used while working hard
         refillPerSec: 12, // oxygen gained at the air station
@@ -31,6 +33,8 @@ export const RULES = {
       easy: {},
       hard: {
         panelWorkSeconds: 20,
+        puzzleSeconds: 12,
+        puzzleWires: 4,
         breathePerSec: 0.7,
         workPerSec: 2.2,
         refillPerSec: 9,
@@ -41,6 +45,7 @@ export const RULES = {
         startOxygen: 60,
         panels: 1,
         panelWorkSeconds: 7,
+        puzzleSeconds: 18,
         breathePerSec: 0.6,
         workPerSec: 3.5,
         refillPerSec: 18,
