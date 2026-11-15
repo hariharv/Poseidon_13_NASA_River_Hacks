@@ -186,7 +186,6 @@ export function showTitle({ root, sound = null }) {
     <div class="title-bar is-top">
       <img class="title-logo" src="${spaceAppsLogo}" alt="NASA Space Apps Challenge" />
       <p class="title-team">Team <strong>Poseidon 13</strong> presents</p>
-      <button type="button" class="title-sound" hidden>🔊 Sound on</button>
     </div>
     <h1 class="title-name"><span>Path to</span><span>Olympus</span></h1>
     <p class="title-word" aria-hidden="true"></p>
@@ -213,24 +212,7 @@ export function showTitle({ root, sound = null }) {
   const flash = $('.title-flash');
   const captionBox = $('.title-caption');
 
-  // Browsers only play sound after a click or key press. This button turns it on without starting the game.
-  const soundBtn = $('.title-sound');
   sound?.unlock?.(); // some browsers allow sound straight away
-  const checkSound = () => (soundBtn.hidden = !sound || sound.ready);
-  setTimeout(checkSound, 200);
-  const soundTimer = setInterval(checkSound, 1000);
-  soundBtn.addEventListener('pointerup', (e) => e.stopPropagation());
-  soundBtn.addEventListener('keydown', (e) => e.stopPropagation());
-  soundBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    sound?.unlock?.();
-    setTimeout(() => {
-      if (sound?.ready) {
-        soundBtn.hidden = true;
-        sfx('chime');
-      }
-    }, 120);
-  });
   setTimeout(() => sfx('boom'), 520); // the title slams in
   let renderer = null;
   try {
@@ -367,7 +349,6 @@ export function showTitle({ root, sound = null }) {
       screen.classList.add('is-leaving');
       setTimeout(() => {
         cancelAnimationFrame(raf);
-        clearInterval(soundTimer);
         window.removeEventListener('resize', onResize);
         current?.world.dispose?.();
         next?.world.dispose?.();

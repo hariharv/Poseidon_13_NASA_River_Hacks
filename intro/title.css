@@ -386,18 +386,3 @@
   }
 }
 
-/* turn the sound on without starting the game */
-.title-sound {
-  margin-left: auto;
-  appearance: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font: inherit;
-  font-size: clamp(13px, 1.5vw, 16px);
-  color: var(--night);
-  background: var(--visor-gold);
-  box-shadow: 0 3px 0 #c98a10;
-  animation: start-pulse 1.4s ease-in-out infinite;
-}
