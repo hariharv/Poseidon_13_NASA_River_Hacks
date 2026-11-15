@@ -1,27 +1,51 @@
 import { describe, it, expect } from 'vitest';
-import { powerState, canPlug, oxygenStep, scienceStep, orbitPhase, plugsFor, solveArm, armPoints, clampTarget, starsFor, NO_AIR } from './sim.js';
+import {
+  powerState,
+  canPlug,
+  oxygenStep,
+  experimentStep,
+  shares,
+  orbitPhase,
+  plugsFor,
+  solveArm,
+  armPoints,
+  clampTarget,
+  starsFor,
+  NO_AIR,
+  EXPERIMENTS,
+  MACHINES,
+} from './sim.js';
 import { rulesFor } from '../../core/rules.js';
 
 const r = rulesFor('dioscuri', 'easy');
 const set = (...ids) => new Set(ids);
 
 describe('Dioscuri: science is why we go to space, but it costs energy', () => {
-  it('in sunlight there are enough plugs for air AND fast science', () => {
-    const p = powerState(set('air', 'science', 'boost'), plugsFor('day', r));
+  it('has a box, a slot, a puzzle and a power socket for every experiment', () => {
+    expect(EXPERIMENTS).toHaveLength(3);
+    for (const e of EXPERIMENTS) {
+      expect(MACHINES.some((m) => m.id === e.id)).toBe(true);
+      expect(['wires', 'sequence', 'timing']).toContain(e.puzzle);
+    }
+    expect(new Set(EXPERIMENTS.map((e) => e.puzzle)).size).toBe(3); // three different puzzles
+  });
+
+  it('by day there are enough plugs for air AND all three experiments (if you unplug the arm and lights)', () => {
+    const p = powerState(set('air', 'plants', 'crystals', 'blobs'), plugsFor('day', r));
     expect(p.overloaded).toBe(false);
     expect(p.airOn).toBe(true);
-    expect(p.scienceRate).toBe(2);
+    expect(['plants', 'crystals', 'blobs'].every((id) => p.has(id))).toBe(true);
   });
 
-  it("in Earth's shadow, air + science is safe but slow", () => {
-    const p = powerState(set('air', 'science'), plugsFor('night', r));
-    expect(p.scienceRate).toBe(1);
-    expect(oxygenStep({ airOn: p.airOn }, 1, r).delta).toBeGreaterThanOrEqual(0);
+  it("in Earth's shadow there's only room for air plus ONE experiment", () => {
+    const night = plugsFor('night', r);
+    expect(powerState(set('air', 'plants'), night).overloaded).toBe(false);
+    expect(powerState(set('air', 'plants', 'crystals'), night).overloaded).toBe(true);
   });
 
-  it("in Earth's shadow, fast science means no fresh air", () => {
-    const p = powerState(set('science', 'boost'), plugsFor('night', r));
-    expect(p.scienceRate).toBe(2);
+  it('two experiments at night means no fresh air', () => {
+    const p = powerState(set('plants', 'crystals'), plugsFor('night', r));
+    expect(p.has('plants') && p.has('crystals')).toBe(true);
     const o = oxygenStep({ airOn: p.airOn }, 1, r);
     expect(o.delta).toBeLessThan(0);
     expect(o.reason).toBe(NO_AIR);
@@ -36,23 +60,26 @@ describe('Dioscuri: science is why we go to space, but it costs energy', () => {
     expect(night.armOn).toBe(false);
   });
 
-  it('the boost does nothing without the science box', () => {
-    expect(powerState(set('air', 'boost'), 4).scienceRate).toBe(0);
+  it('an experiment only grows when it is started AND has a plug', () => {
+    expect(experimentStep({ started: true, powered: true, done: false }, 1, r)).toBeGreaterThan(0);
+    expect(experimentStep({ started: false, powered: true, done: false }, 1, r)).toBe(0);
+    expect(experimentStep({ started: true, powered: false, done: false }, 1, r)).toBe(0);
+    expect(experimentStep({ started: true, powered: true, done: true }, 1, r)).toBe(0);
+  });
+
+  it('the boxes and the experiments add up to a full Progress bar', () => {
+    const { boxes, perExperiment } = shares(r);
+    expect(boxes + perExperiment * r.boxes).toBeCloseTo(100);
+  });
+
+  it("one experiment can't finish in a single night, so you have to plan around the sunsets", () => {
+    const { perExperiment } = shares(r);
+    expect(experimentStep({ started: true, powered: true }, r.nightSeconds, r)).toBeLessThan(perExperiment);
   });
 
   it('you can only plug in as many machines as you have plugs', () => {
     expect(canPlug(set('air'), 2)).toBe(true);
     expect(canPlug(set('air', 'arm'), 2)).toBe(false);
-  });
-
-  it('a whole night of fast science with no air machine costs a lot of oxygen', () => {
-    expect(-oxygenStep({ airOn: false }, r.nightSeconds, r).delta).toBeGreaterThan(30);
-  });
-
-  it('the experiment takes longer than one sunny day, so you always live through a sunset', () => {
-    const left = 100 - r.grabShare - r.placeShare;
-    expect(scienceStep({ scienceRate: 2 }, r.daySeconds, r)).toBeLessThan(left);
-    expect(scienceStep({ scienceRate: 2 }, r.nightSeconds, r)).toBeLessThan(left);
   });
 });
 
@@ -70,13 +97,13 @@ describe('the orbit: day side, then night side', () => {
 });
 
 describe('the robot arm', () => {
-  const L1 = 4.2;
-  const L2 = 4;
+  const L1 = 4.0;
+  const L2 = 3.8;
   for (const target of [
-    { x: -6, y: 0.3, z: -2 },
-    { x: 6, y: 0.5, z: -2 },
-    { x: 0, y: 2, z: -5 },
-    { x: 2, y: -1, z: -3 },
+    { x: -5.6, y: 0.5, z: 3.8 },
+    { x: 5.6, y: 0.5, z: 1.2 },
+    { x: 0, y: 2, z: 3 },
+    { x: 2, y: -1, z: 3 },
   ]) {
     it(`puts the hand exactly on (${target.x}, ${target.y}, ${target.z})`, () => {
       const angles = solveArm(target, L1, L2);
@@ -100,15 +127,25 @@ describe('the robot arm', () => {
   });
 });
 
-describe('modes', () => {
-  it('Hard has a smaller grab zone and uses oxygen faster', () => {
+describe('modes: each one a bit harder', () => {
+  it('Hard has more space junk, shorter puzzles and a smaller grab zone', () => {
     const hard = rulesFor('dioscuri', 'hard');
+    expect(hard.debris).toBeGreaterThan(r.debris);
+    expect(hard.puzzleSeconds).toBeLessThan(r.puzzleSeconds);
     expect(hard.grabRadius).toBeLessThan(r.grabRadius);
     expect(hard.breathePerSec).toBeGreaterThan(r.breathePerSec);
   });
 
-  it('the judge demo has a short day so the sunset comes quickly', () => {
-    expect(rulesFor('dioscuri', 'demo').daySeconds).toBeLessThan(r.daySeconds);
+  it('Stage 3 has more to juggle than Stage 2 (more machines than plugs, plus junk)', () => {
+    expect(MACHINES.length).toBeGreaterThan(rulesFor('odysseus', 'easy').plugsLevel + r.dayPlugs - 1);
+    expect(r.debris).toBeGreaterThan(0);
+  });
+
+  it('the judge demo is short: one box, no junk, a quick day', () => {
+    const demo = rulesFor('dioscuri', 'demo');
+    expect(demo.boxes).toBe(1);
+    expect(demo.debris).toBe(0);
+    expect(demo.daySeconds).toBeLessThan(r.daySeconds);
   });
 
   it('gives 1 to 3 stars for safe and quick', () => {

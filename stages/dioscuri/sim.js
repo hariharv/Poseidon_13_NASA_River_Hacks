@@ -2,13 +2,22 @@
 // The big idea: science is why we go to space, but it costs energy.
 
 export const NO_AIR = 'The air machine had no plug, so nothing was making fresh air.';
+export const DEBRIS = 'Space junk hit the robot arm because it was not stowed in time.';
+
+// The three experiments in the science boxes. Each has its own colour, slot and start-up puzzle.
+export const EXPERIMENTS = [
+  { id: 'plants', label: 'PLANTS', name: 'space plants', colour: '#5bd98a', colourName: 'green', puzzle: 'wires', puzzleTitle: 'Hook up the water pump' },
+  { id: 'crystals', label: 'CRYSTALS', name: 'crystals', colour: '#46b4ff', colourName: 'blue', puzzle: 'sequence', puzzleTitle: 'Type in the start code' },
+  { id: 'blobs', label: 'WATER BLOBS', name: 'water blobs', colour: '#a98bff', colourName: 'purple', puzzle: 'timing', puzzleTitle: 'Stop the mixer in the green' },
+];
 
 // The power panel. Each machine takes 1 energy plug.
 export const MACHINES = [
   { id: 'air', label: 'AIR MACHINE', sub: 'makes fresh air', kind: 'air' },
   { id: 'arm', label: 'ROBOT ARM', sub: 'moves the arm', kind: 'work' },
-  { id: 'science', label: 'SCIENCE BOX', sub: 'grows the plants', kind: 'work' },
-  { id: 'boost', label: 'SCIENCE BOOST', sub: 'grows them 2x faster', kind: 'work' },
+  { id: 'plants', label: 'PLANTS', sub: 'grow lights', kind: 'work' },
+  { id: 'crystals', label: 'CRYSTALS', sub: 'crystal oven', kind: 'work' },
+  { id: 'blobs', label: 'WATER BLOBS', sub: 'blob mixer', kind: 'work' },
   { id: 'lights', label: 'BIG LIGHTS', sub: 'extra', kind: 'extra' },
 ];
 
@@ -17,17 +26,14 @@ export function powerState(plugged, plugs) {
   const used = plugged.size;
   const overloaded = used > plugs;
   const on = (id) => !overloaded && plugged.has(id);
-  const science = on('science');
   return {
     used,
     free: Math.max(0, plugs - used),
     overloaded,
     airOn: on('air'),
     armOn: on('arm'),
-    scienceOn: science,
-    // the boost only helps while the science box itself has power
-    scienceRate: science ? (on('boost') ? 2 : 1) : 0,
     lightsOn: on('lights'),
+    has: on,
   };
 }
 
@@ -43,8 +49,15 @@ export function oxygenStep({ airOn }, dt, r) {
   return { delta, reason: NO_AIR };
 }
 
-export function scienceStep(power, dt, r) {
-  return power.scienceRate * r.sciencePerSec * dt;
+// One experiment's progress in one step: it has to be started (puzzle solved) AND have a plug.
+export function experimentStep({ started, powered, done }, dt, r) {
+  return started && powered && !done ? r.experimentPerSec * dt : 0;
+}
+
+// How much of the Progress bar each part is worth.
+export function shares(r) {
+  const boxes = r.boxes * (r.grabShare + r.placeShare);
+  return { boxes, perExperiment: (100 - boxes) / r.boxes };
 }
 
 // Round and round the Earth: the sunlit side, then Earth's shadow, then sunlit again...

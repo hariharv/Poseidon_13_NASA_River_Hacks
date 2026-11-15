@@ -1,12 +1,14 @@
-// Sitting at the robot-arm desk: the mouse looks around (you stay in your seat),
-// W A S D / arrows + Space / Shift steer the arm, E or a click grabs or plugs.
+// Two ways to move in the robot-arm lab:
+//   float  drift around the lab: W A S D to push (the way you look), Space up, Shift down
+//   desk   sitting at the arm controls: W A S D / arrows + Space / Shift steer the arm
+// The mouse looks around. E (or a click) uses what you look at; Q gets up from the desk.
 // Uses pointer lock when it can, and falls back to click-and-drag to look.
 
 import * as THREE from 'three';
 
-export function createControls({ camera, dom, eye, onPointerChange, onPointerError }) {
+export function createControls({ camera, dom, seat, start, room, floatSpeed, onPointerChange, onPointerError }) {
   let yaw = 0;
-  let pitch = -0.32; // looking out and down at the arm
+  let pitch = -0.1;
   const keys = new Set();
   let locked = false;
   let dragMode = false;
@@ -17,11 +19,17 @@ export function createControls({ camera, dom, eye, onPointerChange, onPointerErr
   let lastY = 0;
   let enabled = true;
   let actions = 0;
+  let leaves = 0;
+  let mode = 'float';
+  const pos = start.clone();
+  const vel = new THREE.Vector3();
+  let glide = null; // { from, to, t } while moving to or from the seat
 
   const onKeyDown = (e) => {
     const onControl = e.target instanceof Element && e.target.closest('button, a, input, textarea, select');
     if (!onControl && ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
     if (e.code === 'KeyE' && !e.repeat && enabled) actions++;
+    if (e.code === 'KeyQ' && !e.repeat && enabled) leaves++;
     keys.add(e.code);
   };
   const onKeyUp = (e) => keys.delete(e.code);
@@ -65,8 +73,9 @@ export function createControls({ camera, dom, eye, onPointerChange, onPointerErr
   };
 
   function look(dx, dy) {
-    yaw = THREE.MathUtils.clamp(yaw - dx * 0.0022, -1.45, 1.45);
-    pitch = THREE.MathUtils.clamp(pitch - dy * 0.0022, -1.0, 0.75);
+    yaw -= dx * 0.0022;
+    if (mode === 'desk') yaw = THREE.MathUtils.clamp(yaw, -1.45, 1.45);
+    pitch = THREE.MathUtils.clamp(pitch - dy * 0.0022, -1.35, 1.2);
   }
   function requestLock() {
     if (dragMode) return;
@@ -87,22 +96,72 @@ export function createControls({ camera, dom, eye, onPointerChange, onPointerErr
   document.addEventListener('pointerlockerror', onLockError);
 
   const forward = new THREE.Vector3();
+  const right = new THREE.Vector3();
+  const wish = new THREE.Vector3();
   const move = new THREE.Vector3();
+  let pushing = false;
+
   return {
     update(dt, t) {
-      if (enabled) {
-        if (keys.has('KeyQ')) yaw = Math.min(1.45, yaw + 1.6 * dt);
-        if (keys.has('KeyR')) yaw = Math.max(-1.45, yaw - 1.6 * dt);
-      }
-      camera.position.set(eye.x, eye.y + Math.sin(t * 1.1) * 0.01, eye.z);
-      camera.rotation.set(pitch, yaw, 0, 'YXZ');
       const cp = Math.cos(pitch);
       forward.set(-Math.sin(yaw) * cp, Math.sin(pitch), -Math.cos(yaw) * cp);
+      right.set(Math.cos(yaw), 0, -Math.sin(yaw));
+      pushing = false;
+      if (glide) {
+        glide.t = Math.min(1, glide.t + dt / 0.6);
+        const k = glide.t * glide.t * (3 - 2 * glide.t);
+        pos.lerpVectors(glide.from, glide.to, k);
+        if (glide.t >= 1) glide = null;
+      } else if (mode === 'float') {
+        wish.set(0, 0, 0);
+        if (enabled) {
+          if (keys.has('KeyW') || keys.has('ArrowUp')) wish.add(forward);
+          if (keys.has('KeyS') || keys.has('ArrowDown')) wish.sub(forward);
+          if (keys.has('KeyD') || keys.has('ArrowRight')) wish.add(right);
+          if (keys.has('KeyA') || keys.has('ArrowLeft')) wish.sub(right);
+          if (keys.has('Space')) wish.y += 1;
+          if (keys.has('ShiftLeft') || keys.has('ShiftRight') || keys.has('KeyC')) wish.y -= 1;
+        }
+        if (wish.lengthSq() > 1) wish.normalize();
+        pushing = wish.lengthSq() > 0.01;
+        // weightless: you push, then drift (handrails make it easy to stop)
+        vel.addScaledVector(wish, floatSpeed * 3 * dt);
+        vel.multiplyScalar(Math.exp(-2.2 * dt));
+        if (vel.length() > floatSpeed) vel.setLength(floatSpeed);
+        pos.addScaledVector(vel, dt);
+        for (const [axis, lo, hi] of [['x', room.minX, room.maxX], ['y', room.minY, room.maxY], ['z', room.minZ, room.maxZ]]) {
+          if (pos[axis] < lo) (pos[axis] = lo), (vel[axis] = Math.abs(vel[axis]) * 0.3);
+          if (pos[axis] > hi) (pos[axis] = hi), (vel[axis] = -Math.abs(vel[axis]) * 0.3);
+        }
+      }
+      const bob = mode === 'float' ? Math.sin(t * 0.9) * 0.02 : Math.sin(t * 1.1) * 0.008;
+      camera.position.set(pos.x, pos.y + bob, pos.z);
+      camera.rotation.set(pitch, yaw, mode === 'float' ? Math.sin(t * 0.5) * 0.02 : 0, 'YXZ');
+    },
+    get mode() {
+      return mode;
+    },
+    get moving() {
+      return Boolean(glide);
+    },
+    get pushing() {
+      return pushing;
+    },
+    sit() {
+      mode = 'desk';
+      vel.set(0, 0, 0);
+      glide = { from: pos.clone(), to: seat.clone(), t: 0 };
+      yaw = 0;
+      pitch = -0.32; // looking out and down at the arm
+    },
+    stand() {
+      mode = 'float';
+      glide = { from: pos.clone(), to: seat.clone().add(new THREE.Vector3(0, 0.15, 1.1)), t: 0 };
     },
     // which way to move the arm's hand: x = right, y = up, z = away from you (-z)
     armInput() {
       move.set(0, 0, 0);
-      if (!enabled) return move;
+      if (!enabled || mode !== 'desk' || glide) return move;
       if (keys.has('KeyD') || keys.has('ArrowRight')) move.x += 1;
       if (keys.has('KeyA') || keys.has('ArrowLeft')) move.x -= 1;
       if (keys.has('KeyW') || keys.has('ArrowUp')) move.z -= 1;
@@ -115,16 +174,19 @@ export function createControls({ camera, dom, eye, onPointerChange, onPointerErr
     forward() {
       return forward.clone();
     },
-    get yaw() {
-      return yaw;
-    },
     takeAction() {
       if (!actions) return false;
       actions = 0;
       return true;
     },
+    takeLeave() {
+      if (!leaves) return false;
+      leaves = 0;
+      return true;
+    },
     clearActions() {
       actions = 0;
+      leaves = 0;
     },
     get locked() {
       return locked;
@@ -137,6 +199,7 @@ export function createControls({ camera, dom, eye, onPointerChange, onPointerErr
       if (!on) {
         keys.clear();
         actions = 0;
+        leaves = 0;
       }
     },
     requestLock,

@@ -1,28 +1,38 @@
-// The robot-arm trainer: a copy of the space station's Cupola window, the robot arm outside,
-// a cargo ship with the science box, and the experiment platform. Earth turns below,
-// with a sunlit side and a night side. One unit = one metre. You look out along -z.
+// The robot-arm lab: a copy of the space station's Cupola window with the robot arm outside,
+// a cargo ship with three science boxes, and the experiment platform with three coloured slots.
+// Inside you float around a little lab module: the arm controls at the window, the power panel
+// on the left wall, the science bench on the right wall. Earth turns below, day and night.
+// One unit = one metre. The window looks out along -z.
 
 import * as THREE from 'three';
 import { labelTexture, dotTexture } from '../hermes/textures.js';
 import { disposeTree } from '../hermes/world.js';
 import { suitColour } from '../hermes/arms.js';
 import { plateTexture, screenTexture } from '../odysseus/textures.js';
-import { MACHINES, solveArm } from './sim.js';
+import { MACHINES, EXPERIMENTS, solveArm } from './sim.js';
 
 export { disposeTree };
 
-export const EYE = new THREE.Vector3(0, 0, 0.35);
+export const EYE = new THREE.Vector3(0, 0, 0.35); // sitting at the arm controls
+export const FLOAT_START = new THREE.Vector3(0, 0.15, 2.9); // floating in the middle of the lab
+export const ROOM = { minX: -1.95, maxX: 1.95, minY: -1.3, maxY: 1.35, minZ: -0.55, maxZ: 4.75 };
+export const DESK_SPOT = new THREE.Vector3(0, -0.75, -0.65); // look here and press E to sit
 export const ARM_BASE = new THREE.Vector3(0, -2.2, -11.2); // the shoulder joint, at the back of the deck
 export const L1 = 4.0; // shoulder to elbow
 export const L2 = 3.8; // elbow to wrist
 export const TIP = 0.75; // wrist to the grabber's tip
 export const DECK_Y = -3.0;
-export const BOX_HOME = new THREE.Vector3(-6.3, DECK_Y + 0.42, -8.6); // box centre on the cargo pallet
-export const SLOT = new THREE.Vector3(6.3, DECK_Y + 0.42, -8.6); // box centre on the experiment platform
-export const BOX_HALF = new THREE.Vector3(0.55, 0.38, 0.4);
+export const BOX_HALF = new THREE.Vector3(0.5, 0.36, 0.38);
+const ROWS = [-7.4, -8.7, -10.0]; // one row per experiment, front to back
+const PALLET_TOP = DECK_Y + 0.12;
+const PLATFORM_TOP = DECK_Y + 0.24;
+export const BOX_HOMES = ROWS.map((z) => new THREE.Vector3(-5.6, PALLET_TOP + BOX_HALF.y, z));
+export const SLOTS = ROWS.map((z) => new THREE.Vector3(5.6, PLATFORM_TOP + BOX_HALF.y, z));
+export const STOW = new THREE.Vector3(0, -1.35, -8.7); // park the arm here when space junk is coming
 export const HAND_START = new THREE.Vector3(0, -1.0, -8.2); // where the grabber's tip starts
+const BOX_HOME = BOX_HOMES[1]; // (used by the cargo pallet)
 
-export function buildWorld({ hints = 'more', suit = 'orange' }) {
+export function buildWorld({ hints = 'more', suit = 'orange', boxes = 3 }) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#02030a');
   const animators = [];
@@ -33,12 +43,12 @@ export function buildWorld({ hints = 'more', suit = 'orange' }) {
   scene.add(sun);
   const ambient = new THREE.HemisphereLight('#9fc4ff', '#0b1430', 0.55);
   scene.add(ambient);
-  const cabin = new THREE.PointLight('#fff1d6', 6, 6, 1.4);
-  cabin.position.set(0, 1.1, 0.6);
+  const cabin = new THREE.PointLight('#fff1d6', 7, 9, 1.3);
+  cabin.position.set(0, 1.1, 1.8);
   scene.add(cabin);
-  const flood = new THREE.SpotLight('#dfe9ff', 0, 30, 0.75, 0.5, 1.2);
+  const flood = new THREE.SpotLight('#dfe9ff', 0, 30, 0.8, 0.5, 1.2);
   flood.position.set(0, 2, -3);
-  flood.target.position.set(0, DECK_Y, -8.5);
+  flood.target.position.set(0, DECK_Y, -8.6);
   scene.add(flood, flood.target);
 
   // ---------- space: stars, the Sun, Earth ----------
@@ -50,24 +60,31 @@ export function buildWorld({ hints = 'more', suit = 'orange' }) {
   animators.push((t, dt) => earth.update(t, dt));
 
   // ---------- outside the station ----------
-  const outside = buildOutside(scene);
+  buildOutside(scene);
   const arm = buildArm(scene);
-  const box = buildScienceBox(scene);
-  const platform = buildPlatform(scene, hints);
+  const exps = EXPERIMENTS.slice(0, boxes);
+  const scienceBoxes = exps.map((e, i) => buildScienceBox(scene, e, BOX_HOMES[i]));
+  animators.push((t) => scienceBoxes.forEach((b) => b.update(t)));
+  const platform = buildPlatform(scene, exps, hints);
   animators.push((t) => platform.update(t));
   const tipMarker = buildTipMarker(scene, hints);
+  const stow = buildStow(scene);
+  animators.push((t) => stow.update(t));
+  const debris = buildDebris(scene);
+  animators.push((t, dt) => debris.update(dt));
 
-  // ---------- inside the Cupola trainer ----------
+  // ---------- inside the lab ----------
   const inside = buildInside(scene, suit);
   const panel = buildPowerPanel(scene, hints);
   animators.push((t) => panel.update(t));
+  const bench = buildBench(scene, exps, hints);
+  animators.push((t) => bench.update(t));
 
   // ---------- day and night ----------
   const sunDir = new THREE.Vector3();
   let light = 1; // 1 = full sunlight, 0 = Earth's shadow
   let lightsOn = true;
   function setOrbit({ side, k }) {
-    // the Sun climbs and sets across the day side; at night it's behind Earth
     // high and behind you for most of the day (so the deck is lit), then it swings round
     // into the window and sets behind Earth's edge
     const elev = side === 'day' ? 62 - 80 * k * k : -40;
@@ -77,24 +94,23 @@ export function buildWorld({ hints = 'more', suit = 'orange' }) {
     sunDir.set(Math.sin(a) * Math.cos(e), Math.sin(e), -Math.cos(a) * Math.cos(e));
     sunSprite.position.copy(sunDir).multiplyScalar(820);
     sun.position.copy(sunDir).multiplyScalar(80);
-    // sunlight fades as the Sun sinks behind Earth's edge (about 9 degrees down)
     light = side === 'day' ? THREE.MathUtils.clamp((elev + 12) / 10, 0, 1) : 0;
   }
 
   return {
     scene,
     arm,
-    box,
+    boxes: scienceBoxes,
     platform,
     panel,
+    bench,
     inside,
     tipMarker,
+    stow,
+    debris,
     setOrbit,
     setLights(on) {
       lightsOn = on;
-    },
-    setScience(on, grown) {
-      box.setScience(on, grown);
     },
     update(t, dt, camera) {
       const warm = light < 1 && light > 0 ? 1 - Math.abs(light - 0.5) * 2 : 0; // sunset glow
@@ -104,7 +120,7 @@ export function buildWorld({ hints = 'more', suit = 'orange' }) {
       ambient.intensity = 0.22 + 0.7 * light;
       earth.setLight(light);
       flood.intensity = (1 - light) * 120;
-      cabin.intensity += ((lightsOn ? 6 : 0.6) - cabin.intensity) * Math.min(1, dt * 4);
+      cabin.intensity += ((lightsOn ? 7 : 1.2) - cabin.intensity) * Math.min(1, dt * 4);
       inside.setLights(lightsOn);
       for (const fn of animators) fn(t, dt, camera);
     },
@@ -263,7 +279,7 @@ function buildOutside(scene) {
   shipLabel.position.set(-12.6, DECK_Y + 1.8, -7.38);
   scene.add(shipLabel);
   // its open pallet, where the science box rides
-  const pallet = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 2), dark);
+  const pallet = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 4.4), dark);
   pallet.position.set(BOX_HOME.x, DECK_Y + 0.06, BOX_HOME.z);
   scene.add(pallet);
   void white;
@@ -363,125 +379,6 @@ function buildArm(scene) {
   };
 }
 
-// ---------- the science box: a little space garden ----------
-function buildScienceBox(scene) {
-  const group = new THREE.Group();
-  group.position.copy(BOX_HOME);
-  scene.add(group);
-  const shell = new THREE.MeshStandardMaterial({ color: '#f3f4f2', roughness: 0.5 });
-  const orange = new THREE.MeshStandardMaterial({ color: '#ff5b1f', roughness: 0.5 });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(BOX_HALF.x * 2, BOX_HALF.y * 2, BOX_HALF.z * 2), [shell, shell, orange, shell, shell, shell]);
-  group.add(body);
-  const label = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.2), new THREE.MeshStandardMaterial({ map: labelTexture({ text: 'SCIENCE', bg: '#1b1846', w: 256, h: 80 }) }));
-  label.position.set(-0.18, 0.18, BOX_HALF.z + 0.005);
-  group.add(label);
-  // a window into the garden
-  const windowMat = new THREE.MeshStandardMaterial({ color: '#0d0b26', roughness: 0.2, metalness: 0.3, emissive: '#8a5cff', emissiveIntensity: 0 });
-  const win = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.34), windowMat);
-  win.position.set(0.22, -0.08, BOX_HALF.z + 0.006);
-  group.add(win);
-  const sprouts = [];
-  const leaf = new THREE.MeshStandardMaterial({ color: '#5bd98a', roughness: 0.6, emissive: '#1b5e34', emissiveIntensity: 0.5 });
-  for (let i = 0; i < 4; i++) {
-    const s = new THREE.Group();
-    s.position.set(0.07 + i * 0.1, -0.24, BOX_HALF.z + 0.02);
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.16, 6), leaf);
-    stem.position.y = 0.08;
-    s.add(stem);
-    for (const side of [-1, 1]) {
-      const l = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), leaf);
-      l.scale.set(1.4, 0.5, 0.6);
-      l.position.set(side * 0.035, 0.15, 0);
-      s.add(l);
-    }
-    s.scale.setScalar(0.15);
-    group.add(s);
-    sprouts.push(s);
-  }
-  // the grapple fixture the arm grabs (a pin on a round plate)
-  const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.04, 20), new THREE.MeshStandardMaterial({ color: '#2b2f38', roughness: 0.5 }));
-  plate.position.y = BOX_HALF.y + 0.02;
-  group.add(plate);
-  const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.2, 10), new THREE.MeshStandardMaterial({ color: '#ffc145', roughness: 0.4, metalness: 0.5 }));
-  pin.position.y = BOX_HALF.y + 0.12;
-  group.add(pin);
-  // a glow ring around the handle, so you can see where to grab
-  const ringMat = new THREE.MeshBasicMaterial({ color: '#ffc145', transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false });
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.42, 32), ringMat);
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.y = BOX_HALF.y + 0.05;
-  group.add(ring);
-
-  return {
-    group,
-    get handle() {
-      return group.position.clone().add(new THREE.Vector3(0, BOX_HALF.y + 0.22, 0));
-    },
-    // hang from the grabber's tip
-    hangFrom(tip) {
-      group.position.set(tip.x, tip.y - BOX_HALF.y - 0.22, tip.z);
-    },
-    setAt(p) {
-      group.position.copy(p);
-    },
-    showRing(on, t = 0) {
-      ring.visible = on;
-      ringMat.opacity = 0.55 + 0.35 * Math.sin(t * 5);
-    },
-    setScience(on, grown) {
-      windowMat.emissiveIntensity = on ? 1.4 : 0.15;
-      sprouts.forEach((s, i) => s.scale.setScalar(0.15 + grown * (0.85 + (i % 2) * 0.25)));
-    },
-  };
-}
-
-// ---------- the experiment platform on the right ----------
-function buildPlatform(scene, hints) {
-  const metal = new THREE.MeshStandardMaterial({ color: '#5c6d7b', roughness: 0.5, metalness: 0.5 });
-  const base = new THREE.Mesh(new THREE.BoxGeometry(3, 0.24, 2.4), metal);
-  base.position.set(SLOT.x, DECK_Y + 0.12, SLOT.z);
-  scene.add(base);
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.6), new THREE.MeshStandardMaterial({ map: labelTexture({ text: 'EXPERIMENT', sub: 'put the science box here', bg: '#22955a', w: 360, h: 110 }) }));
-  sign.position.set(SLOT.x, DECK_Y + 0.5, SLOT.z + 1.25);
-  sign.rotation.x = -0.5;
-  scene.add(sign);
-  // where the box goes: a glowing outline on the platform
-  const outlineMat = new THREE.MeshBasicMaterial({ color: '#5bd98a', transparent: true, opacity: 0.8, depthWrite: false });
-  const outline = new THREE.Group();
-  const w = BOX_HALF.x * 2 + 0.2;
-  const d = BOX_HALF.z * 2 + 0.2;
-  for (const [sx, sz, lx, lz] of [[0, -d / 2, w, 0.06], [0, d / 2, w, 0.06], [-w / 2, 0, 0.06, d], [w / 2, 0, 0.06, d]]) {
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(lx, 0.02, lz), outlineMat);
-    bar.position.set(sx, 0, sz);
-    outline.add(bar);
-  }
-  outline.position.set(SLOT.x, DECK_Y + 0.26, SLOT.z);
-  scene.add(outline);
-  // a ghost box above it while you carry the box over (Easy only)
-  const ghost = new THREE.Mesh(
-    new THREE.BoxGeometry(BOX_HALF.x * 2, BOX_HALF.y * 2, BOX_HALF.z * 2),
-    new THREE.MeshBasicMaterial({ color: '#5bd98a', transparent: true, opacity: 0.18, depthWrite: false }),
-  );
-  ghost.position.copy(SLOT);
-  ghost.visible = false;
-  scene.add(ghost);
-  let active = false;
-  return {
-    setActive(on) {
-      active = on;
-      ghost.visible = on && hints === 'more';
-    },
-    done() {
-      active = false;
-      ghost.visible = false;
-      outline.visible = false;
-    },
-    update(t) {
-      outlineMat.opacity = active ? 0.6 + 0.35 * Math.sin(t * 5) : 0.35;
-    },
-  };
-}
-
 // A ring on the deck straight under the grabber, so you can judge how far away it is.
 function buildTipMarker(scene, hints) {
   const mat = new THREE.MeshBasicMaterial({ color: '#7fe0ff', transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide });
@@ -501,11 +398,224 @@ function buildTipMarker(scene, hints) {
   };
 }
 
-// ---------- inside: the window frame, the desk, the hand controllers, my sleeves ----------
+// ---------- a science box (one per experiment) ----------
+function buildScienceBox(scene, exp, home) {
+  const group = new THREE.Group();
+  group.position.copy(home);
+  scene.add(group);
+  const shell = new THREE.MeshStandardMaterial({ color: '#f3f4f2', roughness: 0.5 });
+  const band = new THREE.MeshStandardMaterial({ color: exp.colour, roughness: 0.5 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(BOX_HALF.x * 2, BOX_HALF.y * 2, BOX_HALF.z * 2), [shell, shell, band, shell, shell, shell]);
+  group.add(body);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(BOX_HALF.x * 2 + 0.01, 0.1, BOX_HALF.z * 2 + 0.01), band);
+  stripe.position.y = BOX_HALF.y - 0.12;
+  group.add(stripe);
+  const label = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.18), new THREE.MeshStandardMaterial({ map: labelTexture({ text: exp.label, bg: '#1b1846', w: 320, h: 80 }) }));
+  label.position.set(-0.12, 0.08, BOX_HALF.z + 0.005);
+  group.add(label);
+  // a window into the experiment
+  const windowMat = new THREE.MeshStandardMaterial({ color: '#0d0b26', roughness: 0.2, metalness: 0.3, emissive: exp.colour, emissiveIntensity: 0 });
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.26), windowMat);
+  win.position.set(0.24, -0.16, BOX_HALF.z + 0.006);
+  group.add(win);
+  const growers = [];
+  const growMat = new THREE.MeshStandardMaterial({ color: exp.colour, roughness: 0.4, emissive: exp.colour, emissiveIntensity: 0.35 });
+  for (let i = 0; i < 4; i++) {
+    let g;
+    if (exp.id === 'crystals') g = new THREE.Mesh(new THREE.OctahedronGeometry(0.05), growMat);
+    else if (exp.id === 'blobs') g = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), growMat);
+    else {
+      g = new THREE.Group();
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.12, 6), growMat);
+      stem.position.y = 0.06;
+      g.add(stem);
+      const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), growMat);
+      leaf.scale.set(1.6, 0.5, 0.6);
+      leaf.position.y = 0.12;
+      g.add(leaf);
+    }
+    g.position.set(0.1 + i * 0.09, -0.24, BOX_HALF.z + 0.03);
+    g.scale.setScalar(0.25);
+    group.add(g);
+    growers.push(g);
+  }
+  // the grapple fixture the arm grabs (a pin on a round plate)
+  const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.04, 20), new THREE.MeshStandardMaterial({ color: '#2b2f38', roughness: 0.5 }));
+  plate.position.y = BOX_HALF.y + 0.02;
+  group.add(plate);
+  const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.2, 10), new THREE.MeshStandardMaterial({ color: '#ffc145', roughness: 0.4, metalness: 0.5 }));
+  pin.position.y = BOX_HALF.y + 0.12;
+  group.add(pin);
+  const ringMat = new THREE.MeshBasicMaterial({ color: '#ffc145', transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false });
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.32, 0.4, 32), ringMat);
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = BOX_HALF.y + 0.05;
+  group.add(ring);
+
+  let glow = false;
+  let running = false;
+  let grown = 0;
+  return {
+    exp,
+    group,
+    home,
+    get handle() {
+      return group.position.clone().add(new THREE.Vector3(0, BOX_HALF.y + 0.22, 0));
+    },
+    hangFrom(tip) {
+      group.position.set(tip.x, tip.y - BOX_HALF.y - 0.22, tip.z);
+    },
+    setAt(p) {
+      group.position.copy(p);
+    },
+    showRing(on) {
+      glow = on;
+    },
+    setRunning(on, g) {
+      running = on;
+      grown = g;
+    },
+    update(t) {
+      ringMat.opacity = glow ? 0.55 + 0.35 * Math.sin(t * 5) : 0;
+      windowMat.emissiveIntensity = running ? 1.2 + 0.3 * Math.sin(t * 3) : 0.12;
+      growers.forEach((g, i) => {
+        const s = 0.25 + grown * (0.9 + (i % 2) * 0.25);
+        g.scale.setScalar(s);
+        if (exp.id === 'blobs' && running) g.position.y = -0.24 + Math.sin(t * 2 + i) * 0.02;
+        if (exp.id === 'crystals' && running) g.rotation.y += 0.02;
+      });
+    },
+  };
+}
+
+// ---------- the experiment platform: one coloured slot per box ----------
+function buildPlatform(scene, exps, hints) {
+  const metal = new THREE.MeshStandardMaterial({ color: '#5c6d7b', roughness: 0.5, metalness: 0.5 });
+  const base = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.24, 4.4), metal);
+  base.position.set(SLOTS[1].x, DECK_Y + 0.12, SLOTS[1].z);
+  scene.add(base);
+  const slots = exps.map((exp, i) => {
+    const mat = new THREE.MeshBasicMaterial({ color: exp.colour, transparent: true, opacity: 0.8, depthWrite: false });
+    const outline = new THREE.Group();
+    const w = BOX_HALF.x * 2 + 0.2;
+    const d = BOX_HALF.z * 2 + 0.2;
+    for (const [sx, sz, lx, lz] of [[0, -d / 2, w, 0.06], [0, d / 2, w, 0.06], [-w / 2, 0, 0.06, d], [w / 2, 0, 0.06, d]]) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(lx, 0.02, lz), mat);
+      bar.position.set(sx, 0, sz);
+      outline.add(bar);
+    }
+    outline.position.set(SLOTS[i].x, PLATFORM_TOP + 0.02, SLOTS[i].z);
+    scene.add(outline);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.26), new THREE.MeshStandardMaterial({ map: labelTexture({ text: exp.label, bg: '#1b1846', fg: exp.colour, w: 320, h: 76 }) }));
+    sign.position.set(SLOTS[i].x + 0.95, PLATFORM_TOP + 0.3, SLOTS[i].z);
+    sign.rotation.y = -Math.PI / 2;
+    sign.rotation.order = 'YXZ';
+    sign.rotation.x = -0.4;
+    scene.add(sign);
+    const ghost = new THREE.Mesh(
+      new THREE.BoxGeometry(BOX_HALF.x * 2, BOX_HALF.y * 2, BOX_HALF.z * 2),
+      new THREE.MeshBasicMaterial({ color: exp.colour, transparent: true, opacity: 0.18, depthWrite: false }),
+    );
+    ghost.position.copy(SLOTS[i]);
+    ghost.visible = false;
+    scene.add(ghost);
+    return { exp, mat, ghost, outline, active: false, filled: false };
+  });
+  return {
+    slots,
+    setActive(id) {
+      slots.forEach((s) => {
+        s.active = s.exp.id === id && !s.filled;
+        s.ghost.visible = s.active && hints === 'more';
+      });
+    },
+    fill(id) {
+      const s = slots.find((x) => x.exp.id === id);
+      s.filled = true;
+      s.active = false;
+      s.ghost.visible = false;
+      s.outline.visible = false;
+    },
+    update(t) {
+      slots.forEach((s) => (s.mat.opacity = s.active ? 0.6 + 0.35 * Math.sin(t * 5) : 0.35));
+    },
+  };
+}
+
+// ---------- the stow ring: park the arm here when space junk is coming ----------
+function buildStow(scene) {
+  const group = new THREE.Group();
+  group.position.copy(STOW);
+  scene.add(group);
+  const mat = new THREE.MeshBasicMaterial({ color: '#ffc145', transparent: true, opacity: 0.25, depthWrite: false });
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.05, 10, 48), mat);
+  ring.rotation.x = Math.PI / 2;
+  group.add(ring);
+  const sign = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.0, 0.3),
+    new THREE.MeshBasicMaterial({ map: labelTexture({ text: 'STOW', bg: '#c98a10', fg: '#1b1846', w: 256, h: 76 }), transparent: true, opacity: 0.35, depthWrite: false }),
+  );
+  sign.position.y = 0.55;
+  group.add(sign);
+  let alert = false;
+  return {
+    position: STOW,
+    setAlert(on) {
+      alert = on;
+    },
+    update(t) {
+      mat.opacity = alert ? 0.7 + 0.3 * Math.sin(t * 9) : 0.22;
+      sign.material.opacity = alert ? 1 : 0.35;
+      ring.scale.setScalar(alert ? 1 + 0.08 * Math.sin(t * 9) : 1);
+    },
+  };
+}
+
+// ---------- space junk: a few rocks that streak past over the deck ----------
+function buildDebris(scene) {
+  const mat = new THREE.MeshStandardMaterial({ color: '#8c8f99', roughness: 0.9 });
+  const rocks = Array.from({ length: 6 }, (_, i) => {
+    const m = new THREE.Mesh(new THREE.DodecahedronGeometry(0.12 + (i % 3) * 0.06), mat);
+    m.visible = false;
+    scene.add(m);
+    return { m, v: new THREE.Vector3(), spin: new THREE.Vector3(Math.random(), Math.random(), Math.random()) };
+  });
+  let life = 0;
+  return {
+    // send the junk flying past; `hit` aims one rock right at the arm's hand
+    launch(hitAt = null) {
+      life = 2.2;
+      rocks.forEach((r, i) => {
+        r.m.visible = true;
+        r.m.position.set(-34 - i * 3, -1.2 + (i % 3) * 0.8, -7.4 - (i % 4) * 1.1);
+        const target = hitAt && i === 0 ? hitAt : new THREE.Vector3(30, -1 + (i % 3) * 0.7, -8 - (i % 4));
+        r.v.subVectors(target, r.m.position).multiplyScalar(1 / 1.4);
+      });
+    },
+    update(dt) {
+      if (life <= 0) return;
+      life -= dt;
+      rocks.forEach((r) => {
+        r.m.position.addScaledVector(r.v, dt);
+        r.m.rotation.x += r.spin.x * dt * 6;
+        r.m.rotation.y += r.spin.y * dt * 6;
+        if (life <= 0) r.m.visible = false;
+      });
+    },
+  };
+}
+
+// ---------- inside: a little lab module you can float around in ----------
 function buildInside(scene, suit) {
   const frame = new THREE.MeshStandardMaterial({ color: '#c9cfd6', roughness: 0.45, metalness: 0.4 });
   const pad = new THREE.MeshStandardMaterial({ color: '#e9e5da', roughness: 0.9 });
   const dark = new THREE.MeshStandardMaterial({ color: '#2b2f38', roughness: 0.6 });
+  const box = (w, h, d, x, y, z, mat = pad) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    m.position.set(x, y, z);
+    scene.add(m);
+    return m;
+  };
 
   // front wall with a big eight-sided window (like the Cupola's)
   const wall = new THREE.Shape();
@@ -515,7 +625,7 @@ function buildInside(scene, suit) {
   wall.lineTo(-4, 3);
   wall.lineTo(-4, -3);
   const hole = new THREE.Path();
-  const R = 1.75;
+  const R = 1.6;
   for (let i = 0; i <= 8; i++) {
     const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
     const x = Math.cos(a) * R * 1.25;
@@ -527,39 +637,43 @@ function buildInside(scene, suit) {
   const front = new THREE.Mesh(new THREE.ShapeGeometry(wall), pad);
   front.position.z = -1.25;
   scene.add(front);
-  // window frame bars (the panes)
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
     const b = ((i + 1) / 8) * Math.PI * 2 + Math.PI / 8;
     const p1 = new THREE.Vector3(Math.cos(a) * R * 1.25, Math.sin(a) * R + 0.15, -1.24);
     const p2 = new THREE.Vector3(Math.cos(b) * R * 1.25, Math.sin(b) * R + 0.15, -1.24);
-    const len = p1.distanceTo(p2);
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(len, 0.12, 0.1), frame);
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(p1.distanceTo(p2), 0.12, 0.1), frame);
     bar.position.copy(p1).add(p2).multiplyScalar(0.5);
     bar.rotation.z = Math.atan2(p2.y - p1.y, p2.x - p1.x);
     scene.add(bar);
   }
-  // side walls, ceiling and floor of the little module
-  const box = (w, h, d, x, y, z, mat = pad) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-    m.position.set(x, y, z);
-    scene.add(m);
-    return m;
-  };
-  box(0.1, 3.4, 3.2, -2.3, 0, 0.35);
-  box(0.1, 3.4, 3.2, 2.3, 0, 0.35);
-  box(4.7, 0.1, 3.2, 0, 1.7, 0.35);
-  box(4.7, 0.1, 3.2, 0, -1.7, 0.35, dark);
-  // yellow handrails
+  // the module: side walls, ceiling, floor, back wall with a hatch
+  const len = 6.5;
+  const midZ = -1.25 + len / 2;
+  box(0.1, 3.4, len, -2.3, 0, midZ);
+  box(0.1, 3.4, len, 2.3, 0, midZ);
+  box(4.7, 0.1, len, 0, 1.7, midZ);
+  box(4.7, 0.1, len, 0, -1.7, midZ, dark);
+  box(4.7, 3.4, 0.1, 0, 0, midZ + len / 2);
+  const hatch = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.08, 10, 40), frame);
+  hatch.position.set(0, 0, midZ + len / 2 - 0.06);
+  scene.add(hatch);
+  // yellow handrails along both walls (astronauts pull themselves along these)
   const rail = new THREE.MeshStandardMaterial({ color: '#f2c230', roughness: 0.5 });
-  for (const x of [-2.2, 2.2]) box(0.05, 0.05, 1.4, x, 0.9, 0.2, rail);
+  for (const x of [-2.2, 2.2]) for (const y of [1.15, -1.15]) box(0.05, 0.05, len - 1, x, y, midZ, rail);
+  // ceiling light strips
+  const lightStrip = new THREE.MeshBasicMaterial({ color: '#fffbe8' });
+  for (const x of [-0.8, 0.8]) box(0.12, 0.03, len - 1.2, x, 1.64, midZ, lightStrip);
 
   // the robotics desk under the window
   box(2.6, 0.12, 0.8, 0, -0.95, -0.75, dark);
   box(2.6, 0.7, 0.1, 0, -1.3, -0.4, dark);
-  // two screens on the desk: the arm camera numbers
+  // on the front of the desk: easy to spot while floating, out of the way once you sit
+  const deskSign = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.22), new THREE.MeshBasicMaterial({ map: labelTexture({ text: 'ARM CONTROLS', bg: '#1b1846', fg: '#ffc145', w: 420, h: 84 }) }));
+  deskSign.position.set(0, -1.18, -0.34);
+  scene.add(deskSign);
+  // the arm camera screen, off to the right so it never blocks the window
   const screen = screenTexture(512, 256);
-  // the arm camera screen sits off to the right, so it never blocks the window
   const screenMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.31), new THREE.MeshBasicMaterial({ map: screen.texture }));
   screenMesh.position.set(1.02, -0.66, -0.86);
   screenMesh.rotation.set(-0.3, -0.55, 0, 'YXZ');
@@ -567,42 +681,73 @@ function buildInside(scene, suit) {
   const bezel = box(0.68, 0.36, 0.03, 1.035, -0.665, -0.875, dark);
   bezel.rotation.copy(screenMesh.rotation);
 
-  // hand controllers (joysticks) and my gloves on them
+  // hand controllers, and my gloves and sleeves on them (only while I'm sitting here)
+  const seated = new THREE.Group();
+  scene.add(seated);
   const sleeveMat = new THREE.MeshStandardMaterial({ color: suitColour(suit), roughness: 0.75 });
   const sticks = [-0.5, 0.5].map((x) => {
     const g = new THREE.Group();
     g.position.set(x, -0.89, -0.62);
     scene.add(g);
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.05, 16), dark);
-    g.add(base);
+    g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.05, 16), dark));
     const pivot = new THREE.Group();
     g.add(pivot);
     const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.2, 8), frame);
     stem.position.y = 0.1;
     pivot.add(stem);
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 8), dark);
+    knob.position.y = 0.21;
+    pivot.add(knob);
     const glove = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshStandardMaterial({ color: '#f3f4f2', roughness: 0.8 }));
     glove.scale.set(0.075, 0.068, 0.092);
     glove.position.y = 0.22;
     pivot.add(glove);
-    // my sleeve, from my shoulder down to the glove
     const hand = new THREE.Vector3(x, -0.67, -0.6);
     const shoulder = new THREE.Vector3(Math.sign(x) * 0.34, -0.72, 0.55);
     const along = new THREE.Vector3().subVectors(hand, shoulder);
     const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.11, along.length(), 16), sleeveMat);
     sleeve.position.copy(shoulder).addScaledVector(along, 0.5);
     sleeve.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), along.normalize());
-    scene.add(sleeve);
-    return pivot;
+    seated.add(sleeve);
+    return { pivot, glove };
   });
 
-  const lightStrip = new THREE.MeshBasicMaterial({ color: '#fffbe8' });
-  box(3, 0.03, 0.12, 0, 1.64, 0.4, lightStrip);
+  // the air machine: a vent on the left wall with ribbons that flutter while it blows
+  const vent = new THREE.Group();
+  vent.position.set(-2.2, 0.95, 3.1);
+  vent.rotation.y = Math.PI / 2;
+  scene.add(vent);
+  vent.add(new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.4, 0.1), new THREE.MeshStandardMaterial({ color: '#1a6fb0', roughness: 0.5 })));
+  const ventLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.12), new THREE.MeshBasicMaterial({ map: labelTexture({ text: 'AIR', bg: '#1a6fb0', w: 256, h: 52 }) }));
+  ventLabel.position.set(0, 0.28, 0.06);
+  vent.add(ventLabel);
+  const ribbonMat = new THREE.MeshBasicMaterial({ color: '#7fe0ff', side: THREE.DoubleSide });
+  const ribbons = [-0.2, 0, 0.2].map((x) => {
+    const p = new THREE.Group();
+    p.position.set(x, -0.15, 0.06);
+    const rb = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.32), ribbonMat);
+    rb.position.y = -0.16;
+    p.add(rb);
+    vent.add(p);
+    return p;
+  });
 
   let screenKey = '';
+  let airOn = true;
   return {
     tilt(left, right) {
-      sticks[0].rotation.set(left.x, 0, left.z);
-      sticks[1].rotation.set(right.x, 0, right.z);
+      sticks[0].pivot.rotation.set(left.x, 0, left.z);
+      sticks[1].pivot.rotation.set(right.x, 0, right.z);
+    },
+    setSeated(on) {
+      seated.visible = on;
+      sticks.forEach((s) => (s.glove.visible = on));
+    },
+    setAir(on) {
+      airOn = on;
+    },
+    animate(t) {
+      ribbons.forEach((p, i) => (p.rotation.x = airOn ? 0.9 + 0.35 * Math.sin(t * 9 + i * 2) : 0.05));
     },
     screen({ title, lines, colour }) {
       const key = title + lines.join('|') + colour;
@@ -628,52 +773,47 @@ function buildInside(scene, suit) {
   };
 }
 
-// The power panel on the left wall. Look at a socket and press E to plug or unplug it.
+// The power panel on the left wall. Float over, look at a socket and press E to plug or unplug it.
 function buildPowerPanel(scene, hints) {
   const group = new THREE.Group();
-  group.position.set(-2.22, -0.2, -0.15); // low enough to aim at with a quick glance left
+  group.position.set(-2.22, 0, 1.55);
   group.rotation.y = Math.PI / 2; // faces into the module (towards +x)
   scene.add(group);
-  group.add(new THREE.Mesh(new THREE.BoxGeometry(1.75, 1.55, 0.06), new THREE.MeshStandardMaterial({ color: '#23305c', roughness: 0.6 })));
-  const header = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.18), new THREE.MeshBasicMaterial({ map: labelTexture({ text: 'POWER PANEL', bg: '#1b1846', fg: '#ffc145', w: 512, h: 58 }) }));
-  header.position.set(0, 0.66, 0.035);
+  group.add(new THREE.Mesh(new THREE.BoxGeometry(1.95, 1.62, 0.06), new THREE.MeshStandardMaterial({ color: '#23305c', roughness: 0.6 })));
+  const header = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.18), new THREE.MeshBasicMaterial({ map: labelTexture({ text: 'POWER PANEL', bg: '#1b1846', fg: '#ffc145', w: 512, h: 58 }) }));
+  header.position.set(0, 0.7, 0.035);
   group.add(header);
   const overload = new THREE.Mesh(
-    new THREE.PlaneGeometry(1.6, 0.13),
+    new THREE.PlaneGeometry(1.8, 0.13),
     new THREE.MeshBasicMaterial({ map: labelTexture({ text: 'TOO MANY MACHINES!', bg: '#ff4d5e', fg: '#fff3d6', w: 512, h: 42 }), transparent: true }),
   );
-  overload.position.set(0, -0.69, 0.035);
+  overload.position.set(0, -0.72, 0.035);
   overload.visible = false;
   group.add(overload);
 
   const plugMat = new THREE.MeshStandardMaterial({ color: '#ffc145', roughness: 0.35, metalness: 0.6, emissive: '#5a3a00', emissiveIntensity: 0.6 });
   const holeMat = new THREE.MeshStandardMaterial({ color: '#0d0b26', roughness: 0.9 });
-  const colours = { air: '#1a6fb0', work: '#22955a', extra: '#5c6d7b' };
-  const spots = [
-    [-0.55, 0.22],
-    [0, 0.22],
-    [0.55, 0.22],
-    [-0.28, -0.4],
-    [0.28, -0.4],
-  ];
+  const colourFor = (m) => (m.kind === 'air' ? '#1a6fb0' : m.kind === 'extra' ? '#5c6d7b' : EXPERIMENTS.find((e) => e.id === m.id)?.colour ?? '#22955a');
   const sockets = MACHINES.map((machine, i) => {
-    const local = new THREE.Vector3(spots[i][0], spots[i][1], 0.04);
-    const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.36), new THREE.MeshStandardMaterial({ map: plateTexture({ text: machine.label, sub: machine.sub, bg: colours[machine.kind] }), roughness: 0.6 }));
+    const col = i % 3;
+    const row = Math.floor(i / 3);
+    const local = new THREE.Vector3(-0.62 + col * 0.62, 0.2 - row * 0.62, 0.04);
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.4), new THREE.MeshStandardMaterial({ map: plateTexture({ text: machine.label, sub: machine.sub, bg: colourFor(machine) }), roughness: 0.6 }));
     plate.position.copy(local);
     group.add(plate);
     const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.02, 14), holeMat);
     hole.rotation.x = Math.PI / 2;
-    hole.position.set(local.x + 0.06, local.y + 0.25, 0.05);
+    hole.position.set(local.x + 0.06, local.y + 0.27, 0.05);
     group.add(hole);
     const plug = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.1), plugMat);
-    plug.position.set(local.x + 0.06, local.y + 0.25, 0.09);
+    plug.position.set(local.x + 0.06, local.y + 0.27, 0.09);
     group.add(plug);
     const ledMat = new THREE.MeshBasicMaterial({ color: '#2b2f38' });
     const led = new THREE.Mesh(new THREE.SphereGeometry(0.026, 10, 8), ledMat);
-    led.position.set(local.x - 0.07, local.y + 0.25, 0.06);
+    led.position.set(local.x - 0.07, local.y + 0.27, 0.06);
     group.add(led);
     const ringMat = new THREE.MeshBasicMaterial({ color: '#ffc145', transparent: true, opacity: 0 });
-    const ring = new THREE.Mesh(new THREE.RingGeometry(0.31, 0.34, 4, 1), ringMat);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.33, 0.36, 4, 1), ringMat);
     ring.rotation.z = Math.PI / 4;
     ring.scale.set(1, 0.92, 1);
     ring.position.set(local.x, local.y + 0.04, 0.06);
@@ -683,7 +823,7 @@ function buildPowerPanel(scene, hints) {
   });
 
   const glowMat = new THREE.MeshBasicMaterial({ color: '#ffc145', transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false });
-  const glow = new THREE.Mesh(new THREE.PlaneGeometry(1.95, 1.75), glowMat);
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(2.15, 1.85), glowMat);
   glow.position.z = -0.02;
   group.add(glow);
 
@@ -713,6 +853,100 @@ function buildPowerPanel(scene, hints) {
         s.ringMat.opacity = s.aimed ? 0.9 : 0;
       }
       overload.material.opacity = overloadedNow ? 0.65 + 0.35 * Math.sin(t * 8) : 0;
+    },
+  };
+}
+
+// The science bench on the right wall: one station per experiment, each with a status screen
+// and a big START button. Look at a station and press E to start its experiment (a timed puzzle).
+function buildBench(scene, exps, hints) {
+  const group = new THREE.Group();
+  group.position.set(2.22, -0.05, 1.7);
+  group.rotation.y = -Math.PI / 2; // faces into the module (towards -x)
+  scene.add(group);
+  group.add(new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.5, 0.06), new THREE.MeshStandardMaterial({ color: '#1d3a35', roughness: 0.6 })));
+  const header = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 0.18), new THREE.MeshBasicMaterial({ map: labelTexture({ text: 'SCIENCE BENCH', bg: '#12302b', fg: '#5bd98a', w: 560, h: 50 }) }));
+  header.position.set(0, 0.64, 0.035);
+  group.add(header);
+  const stations = exps.map((exp, i) => {
+    const x = -0.72 + i * 0.72;
+    const screen = screenTexture(256, 220);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.64, 0.55), new THREE.MeshBasicMaterial({ map: screen.texture }));
+    face.position.set(x, 0.18, 0.04);
+    group.add(face);
+    const btnMat = new THREE.MeshStandardMaterial({ color: '#3a3f48', roughness: 0.4, emissive: '#000000' });
+    const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.12, 0.06, 24), btnMat);
+    btn.rotation.x = Math.PI / 2;
+    btn.position.set(x, -0.33, 0.06);
+    group.add(btn);
+    const ringMat = new THREE.MeshBasicMaterial({ color: '#ffc145', transparent: true, opacity: 0 });
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.33, 0.36, 4, 1), ringMat);
+    ring.rotation.z = Math.PI / 4;
+    ring.scale.set(0.95, 1.25, 1);
+    ring.position.set(x, -0.02, 0.05);
+    group.add(ring);
+    group.updateMatrixWorld(true);
+    let key = '';
+    const st = {
+      exp,
+      position: group.localToWorld(new THREE.Vector3(x, 0, 0.04)),
+      state: 'waiting',
+      fill: 0,
+      aimed: false,
+      ringMat,
+      btnMat,
+      draw() {
+        const k = st.state + Math.floor(st.fill * 100);
+        if (k === key) return;
+        key = k;
+        const g = screen.ctx;
+        const W = screen.w;
+        const H = screen.h;
+        g.fillStyle = '#0d0b26';
+        g.fillRect(0, 0, W, H);
+        g.fillStyle = exp.colour;
+        g.fillRect(0, 0, W, 44);
+        g.fillStyle = '#0d0b26';
+        g.font = 'bold 30px "Lilita One", system-ui, sans-serif';
+        g.textAlign = 'center';
+        g.fillText(exp.label, W / 2, 33);
+        const words = {
+          waiting: ['Waiting for', 'its box', '#6c7681'],
+          ready: ['READY!', 'press E to start', '#ffc145'],
+          running: ['Growing', `${Math.round(st.fill * 100)}%`, '#5bd98a'],
+          paused: ['NO POWER', `${Math.round(st.fill * 100)}% · plug it in`, '#ff9a4d'],
+          done: ['DONE!', 'great science', '#5bd98a'],
+        }[st.state];
+        g.fillStyle = words[2];
+        g.font = 'bold 40px "Lilita One", system-ui, sans-serif';
+        g.fillText(words[0], W / 2, 110);
+        g.fillStyle = '#fff3d6';
+        g.font = '22px "Atkinson Hyperlegible", system-ui, sans-serif';
+        g.fillText(words[1], W / 2, 148);
+        if (st.state === 'running' || st.state === 'paused' || st.state === 'done') {
+          g.fillStyle = 'rgba(255,255,255,0.15)';
+          g.fillRect(24, 172, W - 48, 22);
+          g.fillStyle = exp.colour;
+          g.fillRect(24, 172, (W - 48) * Math.min(1, st.fill), 22);
+        }
+        screen.redraw();
+      },
+    };
+    st.draw();
+    return st;
+  });
+  return {
+    stations,
+    update(t) {
+      for (const s of stations) {
+        s.draw();
+        s.ringMat.opacity = s.aimed ? 0.9 : 0;
+        const ready = s.state === 'ready';
+        s.btnMat.color.set(ready ? '#ffc145' : s.state === 'running' || s.state === 'done' ? '#5bd98a' : s.state === 'paused' ? '#ff9a4d' : '#3a3f48');
+        s.btnMat.emissive.set(ready ? '#5a3a00' : '#000000');
+        s.btnMat.emissiveIntensity = ready ? 0.6 + 0.4 * Math.sin(t * 6) : 0;
+      }
+      void hints;
     },
   };
 }

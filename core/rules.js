@@ -111,49 +111,70 @@ export const RULES = {
     dioscuri: {
       base: {
         startOxygen: 85,
-        // Part 1: move the science box with the robot arm
+        // Part 1: float to the arm controls, move each science box to its own coloured slot
+        boxes: 3,
         armSpeed: 2.6, // metres per second the arm's hand moves
-        grabRadius: 0.9, // metres from the box's handle to grab it
-        placeRadius: 1.1, // metres from the platform slot to set it down
-        grabShare: 15, // Progress for grabbing the box
-        placeShare: 25, // Progress for setting it on the platform (the rest comes from the experiment)
-        // Part 2: the experiment, through day and night
-        daySeconds: 40, // sunlit side of Earth: the solar panels make lots of energy
+        grabRadius: 0.9, // metres from a box's handle to grab it
+        placeRadius: 0.9, // metres from its slot to set it down
+        grabShare: 3, // Progress for grabbing a box
+        placeShare: 7, // Progress for setting it in its slot (the rest comes from the experiments)
+        floatSpeed: 2.2, // floating around inside the lab (m/s)
+        // Space junk: park the arm in the yellow ring before the countdown ends
+        debris: 1, // alerts per stage
+        debrisSeconds: 12,
+        debrisDamage: 12, // oxygen lost if it hits the arm
+        stowRadius: 1.0,
+        // Part 2: start each experiment at the science bench (a timed puzzle), then keep it powered
+        puzzleSeconds: 16,
+        puzzleSizes: { plants: 3, crystals: 4, blobs: 3 },
+        experimentPerSec: 0.55, // Progress per second for each experiment that has a plug
+        daySeconds: 45, // sunlit side of Earth: the solar panels make lots of energy
         nightSeconds: 30, // Earth's shadow: only the batteries
         dayPlugs: 4,
         nightPlugs: 2,
         startPlugged: ['air', 'arm', 'lights'],
-        sciencePerSec: 0.7, // Progress per second for each science plug
         breathePerSec: 0.5,
         airMachinePerSec: 0.9,
         staleAirPerSec: 1.3, // costs more than in Odysseus: each stage bites a bit harder
         lowOxygen: 35,
         veryLowOxygen: 18,
-        stars: { safeAbove: 35, speedySeconds: 200 },
+        stars: { safeAbove: 35, speedySeconds: 300 },
       },
       easy: {},
       hard: {
+        startOxygen: 80,
         armSpeed: 2.2,
         grabRadius: 0.7,
-        placeRadius: 0.85,
-        daySeconds: 32,
-        nightSeconds: 30,
-        sciencePerSec: 0.6,
+        placeRadius: 0.7,
+        debris: 2,
+        debrisSeconds: 9,
+        debrisDamage: 16,
+        stowRadius: 0.8,
+        puzzleSeconds: 11,
+        puzzleSizes: { plants: 4, crystals: 5, blobs: 4 },
+        experimentPerSec: 0.45,
+        daySeconds: 38,
+        nightSeconds: 32,
         breathePerSec: 0.65,
         airMachinePerSec: 0.8,
-        startOxygen: 80,
-        staleAirPerSec: 1.3,
-        stars: { speedySeconds: 240 },
+        stars: { speedySeconds: 360 },
       },
       demo: {
         startOxygen: 75,
+        boxes: 1,
         armSpeed: 3.6,
         grabRadius: 1.2,
-        placeRadius: 1.5,
-        daySeconds: 9,
+        placeRadius: 1.3,
+        grabShare: 10,
+        placeShare: 20,
+        floatSpeed: 3,
+        debris: 0,
+        puzzleSeconds: 18,
+        puzzleSizes: { plants: 3, crystals: 3, blobs: 2 },
+        experimentPerSec: 5,
+        daySeconds: 12,
         nightSeconds: 12,
-        sciencePerSec: 3.5,
-        stars: { speedySeconds: 60 },
+        stars: { speedySeconds: 75 },
       },
     },
     hera: {

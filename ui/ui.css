@@ -666,12 +666,12 @@
 /* ---------- Task chip (under the two bars) ---------- */
 .hud-task {
   position: absolute;
-  top: calc(max(4.5vh, 28px) + 92px);
-  left: max(5vw, 28px);
+  right: max(5vw, 28px);
+  bottom: calc(max(5vh, 24px) + 58px);
   display: flex;
   align-items: baseline;
   gap: 10px;
-  max-width: min(460px, 44vw);
+  max-width: min(420px, 40vw);
   padding: 8px 14px;
   border-radius: 14px;
   background: rgba(13, 11, 38, 0.62);
@@ -989,10 +989,14 @@
     transform: translateX(5px);
   }
 }
+/* the judge checklist takes the right edge in demo mode */
+:root[data-mode='demo']:not(.checklist-closed) .hud-task {
+  right: calc(min(340px, 40vw) + 32px);
+}
 @media (max-width: 720px) {
   .hud-task {
-    top: auto;
-    bottom: calc(max(5vh, 24px) + 130px);
+    right: 16px;
+    bottom: calc(max(5vh, 24px) + 150px);
     max-width: calc(100vw - 32px);
   }
 }
