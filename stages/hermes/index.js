@@ -27,6 +27,13 @@ const REAL_NUMBERS = [
   },
 ];
 
+// Each panel has a different repair puzzle, so every one feels new.
+const PANEL_PUZZLES = [
+  { kind: 'wires', title: 'connect the power wires', text: 'Match each wire to the plug with the *same colour and shape*.' },
+  { kind: 'sequence', title: 'type the panel code', text: 'Watch the lights, then press them *in the same order*.' },
+  { kind: 'timing', title: 'tighten the bolts', text: 'Stop the wrench in the *green zone*.' },
+];
+
 const CONTROLS = [
   { label: 'Swim', value: 'W A S D or the arrow keys' },
   { label: 'Look around', value: 'Move the mouse (or ← →)' },
@@ -87,7 +94,13 @@ function run(game, { demo }) {
   let nextDiverBubble = 2;
   let promptText = null;
   let workingNow = false;
-  let fixing = null; // the panel whose wire puzzle is open
+  let fixing = null; // the panel whose puzzle is open
+  let introT = 0;
+  let diveDone = null; // resolves when the dive-in has finished
+  let leaking = false; // the surprise air-hose leak (after the first panel)
+  let leakFixing = false;
+  let nextLeakBubble = 0;
+  let patchesFound = 0;
   let fixHeld = false;
   let wasLow = false;
   const timers = new Set();
@@ -166,6 +179,15 @@ function run(game, { demo }) {
       choices: [{ id: 'go', label: 'Dive in' }],
     });
     if (!game.running) return;
+    // dive in: splash at the surface, sink down to the station, then 3-2-1-GO!
+    phase = 'intro';
+    player.position.y = 11.3;
+    bubbles.emit(camera.position.clone(), 40, 1.6);
+    game.sound.play('whoosh');
+    await new Promise((resolve) => (diveDone = resolve));
+    if (!game.running) return;
+    await game.ui.countdown();
+    if (!game.running) return;
     phase = 'play';
     player.setEnabled(true);
     player.requestLock();
@@ -232,7 +254,9 @@ function run(game, { demo }) {
     fixedCount++;
     const left = world.panels.length - fixedCount;
     if (left > 0) {
+      game.ui.cheer({ title: 'PANEL FIXED!', sub: left === 1 ? 'one more to go' : `${left} to go` });
       game.ui.buoy(left === 1 ? 'Panel fixed! *One more to go.*' : `Panel fixed! *${left} to go.*`);
+      if (fixedCount === 1 && !demo) later(6000, startLeak);
       if (fixedCount === 1 && easy) {
         later(4200, () => game.ui.buoy('Did you see the blue bar drop while you worked? *More progress means less oxygen.*'));
       }
@@ -243,6 +267,7 @@ function run(game, { demo }) {
 
   function complete() {
     phase = 'done';
+    game.ui.cheer({ title: world.panels.length > 1 ? 'ALL PANELS FIXED!' : 'PANEL FIXED!', sub: patches.length > 1 ? `golden patches: ${patchesFound} of ${patches.length}` : '', big: true });
     setPrompt(null);
     game.ui.target(false);
     player.setEnabled(false);
@@ -268,11 +293,11 @@ function run(game, { demo }) {
     }
     game.ui
       .puzzle({
-        kind: 'wires',
-        title: `Fix panel ${panel.index + 1}`,
-        text: 'Connect each wire to the plug with the *same colour and shape*. Your oxygen drops faster while you work!',
+        kind: PANEL_PUZZLES[panel.index % PANEL_PUZZLES.length].kind,
+        title: `Panel ${panel.index + 1}: ${PANEL_PUZZLES[panel.index % PANEL_PUZZLES.length].title}`,
+        text: `${PANEL_PUZZLES[panel.index % PANEL_PUZZLES.length].text} Your oxygen drops faster while you work!`,
         seconds: r.puzzleSeconds,
-        size: r.puzzleWires,
+        size: PANEL_PUZZLES[panel.index % PANEL_PUZZLES.length].kind === 'wires' ? r.puzzleWires : PANEL_PUZZLES[panel.index % PANEL_PUZZLES.length].kind === 'sequence' ? r.puzzleWires + 1 : easy ? 3 : 4,
       })
       .then((ok) => {
         fixing = null;
@@ -297,27 +322,84 @@ function run(game, { demo }) {
     const next = world.panels.find((p) => !p.fixed);
     const low = game.oxygen.value < r.lowOxygen;
     game.ui.task({
-      now: !next ? 'All panels fixed!' : low ? 'Refill your air at the blue air station' : `Fix panel ${next.index + 1}: ${PANEL_WHERE[next.index]}`,
+      now: !next
+        ? 'All panels fixed!'
+        : leaking
+          ? 'Clamp the leaking air hose (follow the bubbles at the air station)'
+          : low
+            ? 'Refill your air at the blue air station'
+            : `Fix panel ${next.index + 1}: ${PANEL_WHERE[next.index]}`,
       steps: [
-        ...world.panels.map((p) => ({ text: `Fix panel ${p.index + 1} (${PANEL_WHERE[p.index]})`, done: p.fixed, now: p === next && !low })),
-        { text: 'Low on air? Swim into the bubble at the blue air station', now: low },
+        ...world.panels.map((p) => ({ text: `Fix panel ${p.index + 1} (${PANEL_WHERE[p.index]})`, done: p.fixed, now: p === next && !low && !leaking })),
+        { text: 'Low on air? Swim into the bubble at the blue air station', now: low && !leaking },
+        ...(leaking ? [{ text: 'Clamp the leaking air hose (bubbles under the air station)', now: true }] : []),
+        { text: `Bonus: find the golden patches (${patchesFound} of ${patches.length})`, done: patchesFound >= patches.length },
       ],
       tips: [
         'Follow the *red light beams* to find the broken panels.',
         'Get close, look right at the panel and *press E*. Then match the wires before the timer runs out.',
         'The *blue beam* shows the way back to the air station.',
+        'Golden patches are hidden around the station: one up high, one down low, one round the back. Swim through them!',
       ],
+    });
+  }
+
+  // ---------- golden patches: hidden bonus collectibles ----------
+  const PATCH_FACTS = [
+    'The real pool holds *6.2 million gallons* of water. That fills about 9 Olympic pools!',
+    'Astronauts practise about *10 hours* in the pool for every *1 hour* of a real spacewalk.',
+    'The water is kept warm, about *85°F*, so divers and astronauts stay comfy.',
+  ];
+  const patchSpots = demo ? [[0, 5.3, 7]] : [[13, 10.6, 1.2], [-9, 1.6, 2.6], [6, 6.2, -10.6]];
+  const patches = patchSpots.map((p) => buildPatch(world.scene, new THREE.Vector3(...p)));
+  function collectPatches() {
+    for (const pt of patches) {
+      if (pt.found || pt.position.distanceTo(camera.position) > 1.4) continue;
+      pt.collect();
+      patchesFound++;
+      game.ui.cheer({ title: 'GOLDEN PATCH!', sub: `${patchesFound} of ${patches.length} found` });
+      game.ui.buoy(PATCH_FACTS[(patchesFound - 1) % PATCH_FACTS.length], { interrupt: true });
+      updateTask();
+    }
+  }
+
+  // ---------- the surprise: the air hose springs a leak ----------
+  const LEAK = AIR_STATION.clone().add(new THREE.Vector3(0.9, -1.3, -1.1));
+  function startLeak() {
+    if (leaking || phase !== 'play') return;
+    leaking = true;
+    game.sound.play('hiss');
+    game.ui.buoy("*Uh oh!* The air hose sprang a *leak*! The air station won't give you air until you clamp it. Follow the stream of bubbles!", { interrupt: true });
+    updateTask();
+  }
+  function fixLeak() {
+    leakFixing = true;
+    player.setEnabled(false);
+    game.ui.puzzle({ kind: 'timing', title: 'Clamp the leak', text: 'Stop the clamp in the *green zone*, three times!', seconds: r.puzzleSeconds, size: 3 }).then((ok) => {
+      leakFixing = false;
+      if (!game.running) return;
+      player.setEnabled(true);
+      player.requestLock();
+      if (ok) {
+        leaking = false;
+        game.ui.cheer({ title: 'LEAK SEALED!', sub: 'the air station works again' });
+        game.ui.buoy('Nice work! Real astronauts practise fixing broken gear in the pool, too.');
+        updateTask();
+      } else game.ui.buoy('Still leaking! Look at the bubbles and *press E* to try again.', { interrupt: true });
     });
   }
 
   // ---------- one step of play ----------
   const breathAt = new THREE.Vector3();
   function step(dt) {
-    const inZone = camera.position.distanceTo(AIR_STATION) < r.refillRadius;
-    const target = fixing ?? (inZone ? null : findTarget());
+    const atStation = camera.position.distanceTo(AIR_STATION) < r.refillRadius;
+    const inZone = atStation && !leaking; // a leaking hose gives no air
+    const target = fixing ?? (atStation ? null : findTarget());
     const pressed = player.wantsFix && !fixHeld;
     fixHeld = player.wantsFix;
-    if (target && pressed && !fixing && !game.ui.puzzleOpen) startFix(target);
+    const atLeak = leaking && !leakFixing && camera.position.distanceTo(LEAK) < 2.6 && player.forward().dot(toPanel.subVectors(LEAK, camera.position).normalize()) > 0.55;
+    if (atLeak && pressed && !game.ui.puzzleOpen) fixLeak();
+    else if (target && pressed && !fixing && !game.ui.puzzleOpen) startFix(target);
     const working = Boolean(fixing); // the wire puzzle is open: hard work, fast breathing
     workingNow = working;
     // in the bubble you don't use air; once it's full it just stays full (no flicker)
@@ -377,8 +459,16 @@ function run(game, { demo }) {
       }
     }
 
-    game.ui.target(Boolean(target) && !fixing);
-    if (fixing) setPrompt(null);
+    collectPatches();
+    if (leaking && t >= nextLeakBubble) {
+      bubbles.emit(LEAK, 10, 0.25);
+      nextLeakBubble = t + 0.12;
+    }
+    game.ui.clock(elapsed, r.stars.speedySeconds);
+    game.ui.target((Boolean(target) && !fixing) || atLeak);
+    if (fixing || leakFixing) setPrompt(null);
+    else if (atLeak) setPrompt('Press [E] to clamp the leak');
+    else if (atStation && leaking) setPrompt('The hose is leaking! Fix the leak first (bubbles below)');
     else if (inZone) setPrompt(refilling ? 'Refilling air… stay in the bubble' : 'Air full! Go fix a panel');
     else if (target) setPrompt(`Press [E] to open panel ${target.index + 1}`);
     else if (easy) setPrompt(panelHint());
@@ -397,6 +487,17 @@ function run(game, { demo }) {
 
     if (live) step(dt);
     else player.update(paused || game.ui.busy ? 0 : dt, t);
+    if (phase === 'intro' && !paused) {
+      introT += dt;
+      const k = Math.min(1, introT / 2.2);
+      player.position.y = THREE.MathUtils.lerp(11.3, SPAWN.pos.y, 1 - (1 - k) ** 3);
+      if (Math.random() < 0.5) bubbles.emit(camera.position.clone().add(new THREE.Vector3(0, -0.4, -0.6)), 3, 1.2);
+      if (k >= 1 && diveDone) {
+        diveDone();
+        diveDone = null;
+      }
+    }
+    patches.forEach((pt) => pt.update(t));
 
     if (!paused && t >= nextDiverBubble) {
       world.divers.forEach((d) => bubbles.emit(d.mouth, 5, 0.15));
@@ -429,4 +530,81 @@ function run(game, { demo }) {
     renderer.dispose();
     renderer.domElement.remove();
   };
+}
+
+// A golden mission patch floating in the water: spins, bobs and glows until you swim through it.
+function buildPatch(scene, position) {
+  const group = new THREE.Group();
+  group.position.copy(position);
+  scene.add(group);
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#1b1846';
+  g.beginPath();
+  g.arc(64, 64, 60, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = '#ffc145';
+  g.lineWidth = 10;
+  g.stroke();
+  g.fillStyle = '#ffc145';
+  g.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    const rr = i % 2 ? 18 : 42;
+    g.lineTo(64 + Math.cos(a) * rr, 64 + Math.sin(a) * rr);
+  }
+  g.fill();
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const face = new THREE.MeshStandardMaterial({ map: tex, emissive: '#ffc145', emissiveMap: tex, emissiveIntensity: 0.6, roughness: 0.4 });
+  const rim = new THREE.MeshStandardMaterial({ color: '#ffc145', roughness: 0.3, metalness: 0.6, emissive: '#7a4f00' });
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.06, 32), [rim, face, face]);
+  disc.rotation.x = Math.PI / 2;
+  group.add(disc);
+  const glowMat = new THREE.SpriteMaterial({ map: glowTexture(), color: '#ffd76a', transparent: true, opacity: 0.55, depthWrite: false });
+  const glow = new THREE.Sprite(glowMat);
+  glow.scale.setScalar(1.8);
+  group.add(glow);
+  let found = false;
+  let foundAt = 0;
+  let lastT = 0;
+  return {
+    position,
+    get found() {
+      return found;
+    },
+    collect() {
+      found = true;
+      foundAt = lastT;
+    },
+    update(t) {
+      lastT = t;
+      if (!found) {
+        group.rotation.y = t * 1.6;
+        group.position.y = position.y + Math.sin(t * 1.8) * 0.12;
+        glowMat.opacity = 0.4 + 0.2 * Math.sin(t * 3);
+      } else {
+        const k = Math.min(1, (t - foundAt) / 0.5);
+        group.scale.setScalar(1 + k * 0.8);
+        group.rotation.y += 0.4;
+        glowMat.opacity = 0.6 * (1 - k);
+        face.opacity = 1 - k;
+        group.visible = k < 1;
+      }
+    },
+  };
+}
+
+function glowTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, 'rgba(255,255,255,1)');
+  r.addColorStop(0.4, 'rgba(255,255,255,0.4)');
+  r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r;
+  g.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
 }
