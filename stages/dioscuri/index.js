@@ -18,13 +18,13 @@ import { rulesFor } from '../../core/rules.js';
 const ARM_FACTS = 'https://www.asc-csa.gc.ca/eng/iss/canadarm2/data-sheet.asp';
 const ORBIT_FACTS = 'https://www.nasa.gov/missions/station/spot-the-station-frequently-asked-questions/';
 
-const hard = rulesFor('dioscuri', 'hard');
+const rules = rulesFor('dioscuri', 'easy');
 const REAL_NUMBERS = [
   { label: "Length of the station's robot arm, Canadarm2", value: 'about 17 m (as long as 4 cars)', source: 'Canadian Space Agency data sheet', url: ARM_FACTS },
   { label: 'Joints in Canadarm2', value: '7: three at the shoulder, one elbow, three at the wrist', source: 'Canadian Space Agency data sheet', url: ARM_FACTS },
   { label: 'Time for the station to go once around Earth', value: '90 minutes, so 16 sunrises and sunsets a day', source: 'NASA Spot the Station FAQ', url: ORBIT_FACTS },
-  { label: 'In this sim: energy plugs on the sunny side / in the shadow', value: `${hard.dayPlugs} / ${hard.nightPlugs} (for 6 machines)`, source: 'Game rules (Hard mode)' },
-  { label: 'In this sim: oxygen lost if space junk hits the arm', value: `${hard.debrisDamage}`, source: 'Game rules (Hard mode)' },
+  { label: 'In this sim: energy plugs on the sunny side / in the shadow', value: `${rules.dayPlugs} / ${rules.nightPlugs} (for 6 machines)`, source: 'Game rules' },
+  { label: 'In this sim: oxygen lost if space junk hits the arm', value: `${rules.debrisDamage}`, source: 'Game rules' },
 ];
 
 const CONTROLS = [
@@ -49,7 +49,7 @@ export default {
 
 function run(game, { demo }) {
   const r = game.rules;
-  const easy = game.mode !== 'hard';
+  const easy = true; // one mode now: Zeus Jr. always gives the extra hints
   const world = buildWorld({ hints: easy ? 'more' : 'fewer', suit: game.player.suit, boxes: r.boxes });
   const { boxes: boxShare, perExperiment } = shares(r);
 

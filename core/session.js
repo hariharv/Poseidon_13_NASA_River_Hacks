@@ -116,8 +116,8 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
       ui.sound?.music?.('calm');
       startFacts(game);
       ui.setRealNumbers(
-        mode === 'hard' && stage.realNumbers?.length
-          ? () => ui.card({ eyebrow: 'Hard mode', title: 'Real numbers', facts: stage.realNumbers, choices: [{ id: 'ok', label: 'Back to training' }] })
+        !demo && stage.realNumbers?.length
+          ? () => ui.card({ eyebrow: stage.name, title: 'Real numbers', facts: stage.realNumbers, choices: [{ id: 'ok', label: 'Back to training' }] })
           : null,
       );
 

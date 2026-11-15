@@ -9,8 +9,9 @@ import { createSave } from './save.js';
 import { playStage, STAGES } from './session.js';
 import { createData, createWeb } from '../data/index.js';
 import { loadStage } from './stages.js';
+import { CHECKLIST } from './checklist.js';
 
-const MODES = ['easy', 'hard', 'demo'];
+const MODES = ['easy', 'demo'];
 const params = new URLSearchParams(location.search);
 const stageParam = params.get('stage');
 const modeParam = MODES.includes(params.get('mode')) ? params.get('mode') : 'easy';
@@ -102,7 +103,7 @@ async function pickStage(built, last) {
     eyebrow: last ? 'Where to next?' : 'Stage select',
     title: allDone ? 'Every stage is open' : 'Pick any stage',
     text: allDone
-      ? "You've finished them all! Play any stage again to beat your stars, or try *Hard* mode from the title screen."
+      ? "You've finished them all! Play any stage again to beat your stars."
       : "You've finished a stage, so you can jump to *any* stage you like. The first button is the next one in order.",
     choices: [
       { id: suggested.id, label: `${last ? 'Next' : 'Continue'}: ${label(suggested)}` },
@@ -116,7 +117,6 @@ async function pickStage(built, last) {
 // Judge Demo: every built stage's short version, back to back, with the checklist on screen.
 async function runJudgeDemo() {
   ui.checklist.show();
-  ui.checklist.tick('easy-hard-modes'); // both modes were on the title screen the judge just saw
   ui.checklist.tick('intro-character'); // and the character maker on the homepage before it
   // Judges can start anywhere: play everything in order, or jump straight to one stage.
   // (During any stage, Menu -> "Skip to the next stage" moves on.)
@@ -137,7 +137,7 @@ async function runJudgeDemo() {
   }
   await ui.card({
     eyebrow: 'Judge Demo complete',
-    title: `${ui.checklist.count} of 15 proven live`,
+    title: `${ui.checklist.count} of ${CHECKLIST.length} proven live`,
     text: `${built.length} of ${STAGES.length} stages are in the demo so far. The rest join as each teammate merges.`,
     choices: [{ id: 'ok', label: 'Back to the title screen' }],
   });

@@ -44,7 +44,7 @@ change the calls above; a stage that ignores them still works.
 | Addition | Why |
 |---|---|
 | `game.root` | The DOM element the stage draws its 3D scene into. |
-| `game.mode` | `'easy' \| 'hard' \| 'demo'`, so a stage can show more or fewer hints. |
+| `game.mode` | `'easy' \| 'demo'` (there is one play mode, plus the short Judge Demo). |
 | `game.rules` | This stage's numbers from `/core/rules.js`, already adjusted for the mode. Balancing never means editing a stage. |
 | `game.player` | The saved `player.json` (read-only), so gloves and sleeves use my suit colour. |
 | `game.running` | `false` once the stage has finished or hit "Sim over". Stop your loop when it flips. |
@@ -55,7 +55,7 @@ change the calls above; a stage that ignores them still works.
 | `game.ui.pause(on, onResume)` | The "Paused · click to keep training" screen. |
 | `game.ui.busy` | `true` while a card is on screen. Pause your stage's clock while it is. |
 | `start(game)` / `demo(game)` may **return a cleanup function** | The engine calls it on finish, Sim over and Try again, so the stage can dispose its renderer and listeners. |
-| optional `realNumbers: [{ label, value, source, url }]` on the stage | Hard mode's "Real numbers" button shows these. |
+| optional `realNumbers: [{ label, value, source, url }]` on the stage | The "Real numbers" button shows these during normal play. |
 
 ## Judge checklist ids (for `game.demo.check`)
 
@@ -73,11 +73,10 @@ change the calls above; a stage that ignores them still works.
 | `browser-playable` | 10. No download, no account |
 | `teaches-one-thing` | 11. "That's why astronauts can't just use unlimited power" |
 | `what-really-happened` | 12. A "What really happened" moment linked to real NASA data |
-| `easy-hard-modes` | 13. Easy and Hard modes |
-| `intro-character` | 14. Intro at Olympus Academy and the 3D character maker |
-| `five-topics` | 15. All five challenge topics |
+| `intro-character` | 13. Intro at Olympus Academy and the 3D character maker |
+| `five-topics` | 14. All five challenge topics |
 
 ## URL switches
 
 - `/?stage=hermes` — run one stage alone (skips the loading screen).
-- `&mode=easy | hard | demo` — pick the mode (default `easy`).
+- `&mode=easy | demo` — pick the mode (default `easy`).

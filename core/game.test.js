@@ -138,8 +138,8 @@ describe('createGame', () => {
 
   it('gives the stage its mode-adjusted numbers', () => {
     const easy = make({ mode: 'easy' }).game;
-    const hard = make({ mode: 'hard' }).game;
-    expect(hard.rules.breathePerSec).toBeGreaterThan(easy.rules.breathePerSec);
+    const demo = make({ mode: 'demo' }).game;
+    expect(demo.rules.panels).toBeLessThan(easy.rules.panels);
   });
 
   it('can start with less oxygen when the rules say so', () => {

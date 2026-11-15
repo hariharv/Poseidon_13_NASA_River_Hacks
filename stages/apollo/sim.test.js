@@ -101,13 +101,6 @@ describe('progress and stars', () => {
     expect(new Set(MACHINES.map((m) => m.id)).size).toBe(MACHINES.length);
   });
 
-  it('Hard asks for more and gives less', () => {
-    const hard = rulesFor('apollo', 'hard');
-    expect(hard.waterStart).toBeLessThan(r.waterStart);
-    expect(hard.goals.ice).toBeGreaterThan(r.goals.ice);
-    expect(hard.storm.maxRedOutside).toBeLessThan(r.storm.maxRedOutside);
-  });
-
   it('the judge demo is short', () => {
     const demo = rulesFor('apollo', 'demo');
     expect(demo.days * demo.dayLength).toBeLessThan(50);

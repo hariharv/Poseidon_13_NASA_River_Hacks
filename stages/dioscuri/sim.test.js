@@ -128,13 +128,6 @@ describe('the robot arm', () => {
 });
 
 describe('modes: each one a bit harder', () => {
-  it('Hard has more space junk, shorter puzzles and a smaller grab zone', () => {
-    const hard = rulesFor('dioscuri', 'hard');
-    expect(hard.debris).toBeGreaterThan(r.debris);
-    expect(hard.puzzleSeconds).toBeLessThan(r.puzzleSeconds);
-    expect(hard.grabRadius).toBeLessThan(r.grabRadius);
-    expect(hard.breathePerSec).toBeGreaterThan(r.breathePerSec);
-  });
 
   it('Stage 3 has more to juggle than Stage 2 (more machines than plugs, plus junk)', () => {
     expect(MACHINES.length).toBeGreaterThan(rulesFor('odysseus', 'easy').plugsLevel + r.dayPlugs - 1);

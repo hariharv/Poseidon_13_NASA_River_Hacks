@@ -1,11 +1,10 @@
 // Every balancing number lives here, so tuning never means editing a stage.
-// Each stage has `base` numbers plus optional `easy`, `hard` and `demo` overrides.
+// Each stage has `base` numbers plus optional `easy` and `demo` overrides.
 // Stages read them through `game.rules` (already merged for the current mode).
 
 export const RULES = {
   modes: {
-    easy: { label: 'Easy', ages: 'Ages 7-9', hints: 'more' },
-    hard: { label: 'Hard', ages: 'Ages 10-12', hints: 'fewer', realNumbers: true },
+    easy: { label: 'Training', ages: 'Ages 7-12', hints: 'more' },
     demo: { label: 'Judge Demo', ages: '2-3 minutes', hints: 'more' },
   },
 
@@ -33,18 +32,6 @@ export const RULES = {
         stars: { safeAbove: 20, speedySeconds: 150 },
       },
       easy: {},
-      hard: {
-        panelWorkSeconds: 20,
-        puzzleSeconds: 12,
-        puzzleWires: 4,
-        flowGrid: 6,
-        flowSeconds: 35,
-        breathePerSec: 0.7,
-        workPerSec: 2.2,
-        refillPerSec: 9,
-        swimSpeed: 4,
-        stars: { speedySeconds: 180 },
-      },
       demo: {
         startOxygen: 60,
         panels: 1,
@@ -91,20 +78,6 @@ export const RULES = {
         stars: { safeAbove: 30, speedySeconds: 210 },
       },
       easy: {},
-      hard: {
-        tools: 8,
-        maskRefillPerSec: 6,
-        blobs: 7,
-        blobPenalty: 4,
-        breathePerSec: 0.65,
-        workPerSec: 2.8,
-        airMachinePerSec: 0.8,
-        startOxygen: 85,
-        staleAirPerSec: 1.3,
-        toolSpeed: 1.2,
-        uploadPerSec: 0.75,
-        stars: { speedySeconds: 260 },
-      },
       demo: {
         startOxygen: 75,
         tools: 3,
@@ -151,24 +124,6 @@ export const RULES = {
         stars: { safeAbove: 35, speedySeconds: 300 },
       },
       easy: {},
-      hard: {
-        startOxygen: 80,
-        armSpeed: 2.2,
-        grabRadius: 0.7,
-        placeRadius: 0.7,
-        debris: 2,
-        debrisSeconds: 9,
-        debrisDamage: 16,
-        stowRadius: 0.8,
-        puzzleSeconds: 11,
-        puzzleSizes: { plants: 4, crystals: 5, blobs: 4 },
-        experimentPerSec: 0.45,
-        daySeconds: 38,
-        nightSeconds: 32,
-        breathePerSec: 0.65,
-        airMachinePerSec: 0.8,
-        stars: { speedySeconds: 360 },
-      },
       demo: {
         startOxygen: 75,
         boxes: 1,
@@ -229,25 +184,6 @@ export const RULES = {
         stars: { safeAbove: 40, speedySeconds: 230 },
       },
       easy: {},
-      hard: {
-        startOxygen: 75,
-        flyPerSec: 0.85,
-        aimRing: 0.055,
-        drift: 0.08,
-        warnSeconds: 15,
-        stormSeconds: 34,
-        stormDosePerSec: 2.0,
-        bags: 4,
-        noAirPerSec: 1.3,
-        breathePerSec: 0.26,
-        faults: [20, 55, 80],
-        faultSpin: 0.3,
-        burnShake: 0.22,
-        faultPuzzleSeconds: 10,
-        faultCode: 5,
-        junk: { every: 4.5, maxAtOnce: 2, approachSeconds: 4.5, hitCone: 0.15, hitOxygen: 9, leakPerSec: 1.2, fixSeconds: 22, fixGrid: 5 },
-        stars: { safeAbove: 45, speedySeconds: 260 },
-      },
       demo: {
         startOxygen: 75,
         flyPerSec: 4,
@@ -304,17 +240,6 @@ export const RULES = {
         stars: { safeAbove: 30, progressFor: 80 },
       },
       easy: {},
-      hard: {
-        startOxygen: 75,
-        dayLength: 14,
-        waterStart: 3,
-        breathePerSec: 0.62,
-        coldPerSec: 1.1,
-        suitPerSec: 0.95,
-        storm: { warnSeconds: 6, outsidePerSec: 4.5, insidePerSec: 0.9, maxRedOutside: 5 },
-        goals: { harvest: 4, radio: 4, ice: 4 },
-        puzzleSeconds: 10,
-      },
       demo: {
         startOxygen: 75,
         days: 5,

@@ -329,13 +329,6 @@
   letter-spacing: 0;
   opacity: 0.9;
 }
-.mode-btn.is-hard {
-  background: var(--twill-2);
-  box-shadow: 0 6px 0 #14113f, inset 0 0 0 3px rgba(255, 243, 214, 0.25);
-}
-.mode-btn.is-hard:active {
-  box-shadow: 0 2px 0 #14113f, inset 0 0 0 3px rgba(255, 243, 214, 0.25);
-}
 .demo-link {
   appearance: none;
   border: none;

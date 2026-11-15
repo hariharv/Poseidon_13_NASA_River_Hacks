@@ -13,7 +13,6 @@ export const CHECKLIST = [
   { id: 'browser-playable', group: 'Made for kids 7-12', label: 'Plays in the browser: no download, no account' },
   { id: 'teaches-one-thing', group: 'Made for kids 7-12', label: 'Teaches one real thing about astronaut limits' },
   { id: 'what-really-happened', group: 'Bonus points', label: '"What really happened" moment from real NASA data' },
-  { id: 'easy-hard-modes', group: 'Bonus points', label: 'Easy and Hard modes' },
   { id: 'intro-character', group: 'Challenge topics', label: 'Olympus Academy intro and 3D character maker' },
   { id: 'five-topics', group: 'Challenge topics', label: 'Life support, shielding, power, food, comms delay' },
 ];

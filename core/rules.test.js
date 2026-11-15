@@ -7,11 +7,9 @@ describe('rulesFor', () => {
     expect(r.panels).toBe(RULES.stages.hermes.base.panels);
   });
 
-  it('applies the mode overrides on top of the base', () => {
-    const easy = rulesFor('hermes', 'easy');
-    const hard = rulesFor('hermes', 'hard');
-    expect(hard.breathePerSec).toBeGreaterThan(easy.breathePerSec);
-    expect(hard.workPerSec).toBeGreaterThan(easy.workPerSec);
+  it('there is no Hard mode any more: asking for it just gives the normal numbers', () => {
+    expect(rulesFor('hermes', 'hard')).toEqual(rulesFor('hermes', 'easy'));
+    expect(RULES.modes.hard).toBeUndefined();
   });
 
   it('gives the judge demo fewer panels and a shorter job', () => {
@@ -22,7 +20,7 @@ describe('rulesFor', () => {
   });
 
   it('merges nested objects instead of replacing them', () => {
-    const r = rulesFor('hermes', 'hard');
+    const r = rulesFor('hermes', 'demo');
     expect(r.stars.safeAbove).toBeDefined();
     expect(r.stars.speedySeconds).toBeDefined();
   });

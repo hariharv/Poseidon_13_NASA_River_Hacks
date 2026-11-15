@@ -3,7 +3,6 @@ import { flareStrength, stormClock, shelterProtection, oxygenStep, flightStep, s
 import { rulesFor } from '../../core/rules.js';
 
 const r = rulesFor('hera', 'easy');
-const hard = rulesFor('hera', 'hard');
 
 describe('flareStrength: the real flare class sets how strong the storm is', () => {
   it('X flares are about ten times stronger than M flares, so their storm hits harder', () => {
@@ -68,10 +67,10 @@ describe('oxygenStep: every choice costs something', () => {
     expect(noHose.delta).toBeLessThan(hose.delta);
     expect(noHose.reason).toBe('no-air-hose');
   });
-  it('in Easy you can survive flying through a storm (just), in Hard you cannot', () => {
+  it('you can survive flying through a storm (just), but it costs a lot of air', () => {
     const stormCost = (rules) => -oxygenStep({ ...calm, light: 'red', strength: 1 }, 1, rules).delta * rules.stormSeconds;
     expect(stormCost(r)).toBeLessThan(r.startOxygen);
-    expect(stormCost(hard) + hard.breathePerSec * 120).toBeGreaterThan(hard.startOxygen);
+    expect(stormCost(r)).toBeGreaterThan(r.startOxygen / 4);
   });
 });
 
@@ -103,10 +102,6 @@ describe('minutesLater: how long the real particles took', () => {
 describe('Hera is harder than the stages before it', () => {
   it('starts with less oxygen than Stage 3', () => {
     expect(r.startOxygen).toBeLessThan(rulesFor('dioscuri', 'easy').startOxygen);
-  });
-  it('Hard mode gives less warning and needs a bigger shelter', () => {
-    expect(hard.warnSeconds).toBeLessThan(r.warnSeconds);
-    expect(hard.bags).toBeGreaterThan(r.bags);
   });
 });
 
@@ -142,10 +137,5 @@ describe('space junk: steer it out of your path', () => {
   it('a hull leak keeps costing oxygen until you seal it', () => {
     expect(leakStep(true, 1, j)).toBeLessThan(0);
     expect(leakStep(false, 1, j)).toBe(0);
-  });
-  it('Hard sends junk faster and more often', () => {
-    expect(hard.junk.every).toBeLessThan(j.every);
-    expect(hard.junk.approachSeconds).toBeLessThan(j.approachSeconds);
-    expect(hard.junk.maxAtOnce).toBeGreaterThan(j.maxAtOnce);
   });
 });

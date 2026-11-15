@@ -14,16 +14,16 @@ import { rulesFor } from '../../core/rules.js';
 const NBL_FACTS = 'https://www.nasa.gov/wp-content/uploads/2017/06/167748main_fs_nbl508c.pdf';
 const TRAINING_FACTS = 'https://www.nasa.gov/wp-content/uploads/2015/10/160410main_space_training_fact_sheet.pdf';
 
-const hard = rulesFor('hermes', 'hard');
+const rules = rulesFor('hermes', 'easy');
 const REAL_NUMBERS = [
   { label: 'Size of the real pool', value: '202 × 102 × 40 ft (62 × 31 × 12 m)', source: 'NASA Neutral Buoyancy Lab fact sheet', url: NBL_FACTS },
   { label: 'Water in the pool', value: '6.2 million gallons', source: 'NASA Neutral Buoyancy Lab fact sheet', url: NBL_FACTS },
   { label: 'Pool practice for each hour of a real spacewalk', value: 'about 10 hours', source: 'NASA space training fact sheet', url: TRAINING_FACTS },
-  { label: 'In this sim: oxygen used per second just floating', value: `${hard.breathePerSec}`, source: 'Game rules (Hard mode)' },
+  { label: 'In this sim: oxygen used per second just floating', value: `${rules.breathePerSec}`, source: 'Game rules' },
   {
     label: 'In this sim: oxygen used per second while working',
-    value: `${(hard.breathePerSec + hard.workPerSec).toFixed(1)} (${((hard.breathePerSec + hard.workPerSec) / hard.breathePerSec).toFixed(1)}× more)`,
-    source: 'Game rules (Hard mode)',
+    value: `${(rules.breathePerSec + rules.workPerSec).toFixed(1)} (${((rules.breathePerSec + rules.workPerSec) / rules.breathePerSec).toFixed(1)}× more)`,
+    source: 'Game rules',
   },
 ];
 
@@ -56,7 +56,7 @@ export default {
 
 function run(game, { demo }) {
   const r = game.rules;
-  const easy = game.mode !== 'hard';
+  const easy = true; // one mode now: Zeus Jr. always gives the extra hints
   const world = buildWorld({ hints: easy ? 'more' : 'fewer', panelCount: r.panels });
 
   // ---------- renderer ----------

@@ -64,8 +64,7 @@ export function showLoadingScreen({ root, stages, tasks, player, progress }) {
       </div>
       <div class="loading-modes" hidden>
         <div class="mode-row">
-          <button class="btn mode-btn" type="button" data-mode="easy">Easy<small>Ages 7-9 · more help from Zeus Jr.</small></button>
-          <button class="btn mode-btn is-hard" type="button" data-mode="hard">Hard<small>Ages 10-12 · real numbers</small></button>
+          <button class="btn mode-btn" type="button" data-mode="easy">Start training<small>Ages 7-12 · Zeus Jr. helps you all the way</small></button>
         </div>
         <button class="demo-link" type="button" data-mode="demo">Judge Demo · the whole game in 2-3 minutes</button>
         ${matchMedia('(pointer: coarse)').matches ? '<p class="loading-touch-note">Best on a computer with a keyboard and mouse.</p>' : ''}

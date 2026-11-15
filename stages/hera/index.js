@@ -23,7 +23,7 @@ const SRC = {
   debris: 'https://orbitaldebris.jsc.nasa.gov/faq/',
 };
 
-const hard = rulesFor('hera', 'hard');
+const rules = rulesFor('hera', 'easy');
 const REAL_NUMBERS = [
   { label: 'Time for the light from a solar flare to reach Earth', value: 'about 8 minutes', source: 'NASA Solar Flares FAQ', url: SRC.flare },
   { label: 'Time for the fastest flare particles to arrive', value: 'about 15-30 minutes (slower ones: hours to days)', source: 'NASA Space Radiation Analysis Group', url: SRC.particles },
@@ -33,7 +33,7 @@ const REAL_NUMBERS = [
   { label: 'Large pieces of space junk tracked around Earth', value: 'about 50,000', source: 'NASA Orbital Debris Program Office', url: SRC.debris },
   { label: 'How fast space junk flies near Earth', value: '7-8 km per second (about 15,700-17,900 mph)', source: 'NASA Orbital Debris Program Office', url: SRC.debris },
   { label: 'Times the space station has moved to dodge junk (since 1999)', value: '41', source: 'NASA Orbital Debris Program Office', url: SRC.debris },
-  { label: 'In this sim: oxygen lost per second in the red storm, out of the shelter', value: `${hard.stormDosePerSec} × the flare's strength`, source: 'Game rules (Hard mode)' },
+  { label: 'In this sim: oxygen lost per second in the red storm, out of the shelter', value: `${rules.stormDosePerSec} × the flare's strength`, source: 'Game rules' },
 ];
 
 const CONTROLS = [
@@ -59,7 +59,7 @@ export default {
 
 function run(game, { demo }) {
   const r = game.rules;
-  const easy = game.mode !== 'hard';
+  const easy = true; // one mode now: Zeus Jr. always gives the extra hints
 
   // ---------- renderer ----------
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -547,7 +547,7 @@ function run(game, { demo }) {
     }
     spin.x += input.x * r.turnRate * 2.6 * dt;
     spin.y += input.y * r.turnRate * 2.6 * dt;
-    // little wobbles (the trainers add these), stronger in Hard
+    // little wobbles (the trainers add these)
     spin.x += (Math.sin(t * 0.37) + Math.sin(t * 0.91 + 1)) * r.drift * 0.5 * dt;
     spin.y += (Math.sin(t * 0.53 + 2) + Math.sin(t * 1.13)) * r.drift * 0.35 * dt;
     if (faultOn) spin.x += r.faultSpin * 1.4 * dt;

@@ -21,7 +21,7 @@ const SRC = {
   mars: 'https://www.nasa.gov/centers-and-facilities/goddard/space-communications-7-things-you-need-to-know/',
 };
 
-const hard = rulesFor('apollo', 'hard');
+const rules = rulesFor('apollo', 'easy');
 const REAL_NUMBERS = [
   { label: 'How long one lunar night lasts', value: 'about 14 and a half Earth days', source: 'NASA Fission Surface Power', url: SRC.night },
   { label: 'Moon gravity compared with Earth', value: 'one-sixth', source: 'NASA Moon facts', url: SRC.moon },
@@ -29,7 +29,7 @@ const REAL_NUMBERS = [
   { label: 'How cold the never-sunlit polar craters get', value: 'as low as -203 °C (-334 °F)', source: "NASA: the Moon's south pole", url: SRC.pole },
   { label: 'Distance to the Moon (radio takes about 1.3 s to cross it)', value: '384,400 km', source: 'NASA Moon facts', url: SRC.moon },
   { label: 'Radio delay from Mars, one way', value: '4 to 24 minutes', source: 'NASA Space Communications', url: SRC.mars },
-  { label: 'In this sim: suit air lost per second on a moonwalk', value: `${hard.breathePerSec + hard.suitPerSec}`, source: 'Game rules (Hard mode)' },
+  { label: 'In this sim: suit air lost per second on a moonwalk', value: `${rules.breathePerSec + rules.suitPerSec}`, source: 'Game rules' },
 ];
 
 const CONTROLS = [
@@ -54,7 +54,7 @@ export default {
 
 function run(game, { demo }) {
   const r = game.rules;
-  const easy = game.mode !== 'hard';
+  const easy = true; // one mode now: Zeus Jr. always gives the extra hints
   const name = game.player.name;
 
   // ---------- renderer ----------
@@ -360,7 +360,7 @@ function run(game, { demo }) {
         player.setEnabled(true);
         player.requestLock();
         if (!ok) {
-          game.ui.buoy('The ice is stuck hard. Look at it and press E to try again!', { interrupt: true });
+          game.ui.buoy('The ice is stuck rules. Look at it and press E to try again!', { interrupt: true });
           return;
         }
         world.crater.mine(chunk);

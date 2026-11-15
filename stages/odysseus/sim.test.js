@@ -105,11 +105,6 @@ describe('the flight: heavy, float, heavy, float...', () => {
 });
 
 describe('modes', () => {
-  it('Hard has more tools and faster oxygen use', () => {
-    const hard = rulesFor('odysseus', 'hard');
-    expect(hard.tools).toBeGreaterThan(r.tools);
-    expect(hard.breathePerSec).toBeGreaterThan(r.breathePerSec);
-  });
 
   it('the judge demo is short: fewer tools, shorter floats, no flicker', () => {
     const demo = rulesFor('odysseus', 'demo');

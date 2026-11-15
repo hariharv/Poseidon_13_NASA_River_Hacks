@@ -26,13 +26,13 @@ import { rulesFor } from '../../core/rules.js';
 const C9_FACTS = 'https://www.nasa.gov/news-release/phoenix-teachers-to-experiment-aboard-nasas-weightless-wonder/';
 const G_FACTS = 'https://www.nasa.gov/centers-and-facilities/armstrong/relevant-environment-provides-testing-for-technology-payloads/';
 
-const hard = rulesFor('odysseus', 'hard');
+const rules = rulesFor('odysseus', 'easy');
 const REAL_NUMBERS = [
   { label: "Weightless time on each hill (NASA's C-9 \"Weightless Wonder\")", value: 'about 25 seconds', source: 'NASA news release', url: C9_FACTS },
   { label: 'How heavy you feel, then how light', value: '1.8 g, then 0 g for about 22 seconds', source: 'NASA Armstrong', url: G_FACTS },
-  { label: 'In this sim: oxygen used per second while gliding', value: `${(hard.breathePerSec - hard.airMachinePerSec).toFixed(2)} (the air machine keeps up)`, source: 'Game rules (Hard mode)' },
-  { label: 'In this sim: oxygen used per second while pushing', value: `${(hard.breathePerSec + hard.workPerSec - hard.airMachinePerSec).toFixed(2)}`, source: 'Game rules (Hard mode)' },
-  { label: 'In this sim: oxygen used per second with no air machine', value: `${(hard.breathePerSec + hard.staleAirPerSec).toFixed(2)}`, source: 'Game rules (Hard mode)' },
+  { label: 'In this sim: oxygen used per second while gliding', value: `${(rules.breathePerSec - rules.airMachinePerSec).toFixed(2)} (the air machine keeps up)`, source: 'Game rules' },
+  { label: 'In this sim: oxygen used per second while pushing', value: `${(rules.breathePerSec + rules.workPerSec - rules.airMachinePerSec).toFixed(2)}`, source: 'Game rules' },
+  { label: 'In this sim: oxygen used per second with no air machine', value: `${(rules.breathePerSec + rules.staleAirPerSec).toFixed(2)}`, source: 'Game rules' },
 ];
 
 const SIGN_COLOURS = { float: '#ffc145', heavy: '#ff5b1f', level: '#5bd98a', power: '#ff4d5e' };
@@ -58,7 +58,7 @@ export default {
 
 function run(game, { demo }) {
   const r = game.rules;
-  const easy = game.mode !== 'hard';
+  const easy = true; // one mode now: Zeus Jr. always gives the extra hints
   const world = buildWorld({ hints: easy ? 'more' : 'fewer' });
 
   // ---------- renderer ----------
@@ -428,7 +428,7 @@ function run(game, { demo }) {
     const o = atMask ? { delta: atMask, reason: 'refill' } : oxygenStep({ airOn: true, thrusting: floating && player.thrusting }, dt, r);
     game.oxygen.change(o.delta * (atMask ? dt : 1), o.reason);
     if (!game.running) return;
-    if (floating && player.thrusting && once('first-push', 'Pushing yourself around makes you breathe hard. *One push and glide* saves air!')) {
+    if (floating && player.thrusting && once('first-push', 'Pushing yourself around makes you breathe rules. *One push and glide* saves air!')) {
       game.demo.check('every-choice-costs');
     }
 
