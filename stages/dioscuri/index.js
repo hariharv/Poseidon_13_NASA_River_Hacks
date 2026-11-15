@@ -203,6 +203,8 @@ function run(game, { demo }) {
       choices: [{ id: 'go', label: 'Start floating' }],
     });
     if (!game.running) return;
+    await game.ui.countdown();
+    if (!game.running) return;
     stage = 'play';
     controls.setEnabled(true);
     controls.requestLock();
@@ -318,6 +320,7 @@ function run(game, { demo }) {
         controls.requestLock();
         if (ok) {
           e.started = true;
+          game.ui.cheer({ title: 'EXPERIMENT STARTED!', sub: e.exp.name });
           const p = power();
           game.ui.buoy(
             p.has(e.exp.id)
@@ -381,6 +384,7 @@ function run(game, { demo }) {
     alert = null;
     world.stow.setAlert(false);
     if (safe) {
+      game.ui.cheer({ title: 'DODGED!', sub: 'the junk zoomed past' });
       world.debris.launch();
       game.sound.play('whoosh');
       game.ui.buoy('Phew! The junk zoomed past. *Real station crews move the arm out of the way too.*', { interrupt: true });
@@ -441,6 +445,7 @@ function run(game, { demo }) {
   const delta = new THREE.Vector3();
   function step(dt) {
     elapsed += dt;
+    game.ui.clock(elapsed, r.stars.speedySeconds);
     orbitT += dt;
     const o = orbitPhase(orbitT, r);
     world.setOrbit(o);
@@ -463,6 +468,7 @@ function run(game, { demo }) {
         e.fill = Math.min(1, e.fill + experimentStep({ started: true, powered, done: false }, dt, r) / perExperiment);
         if (e.fill >= 1) {
           e.done = true;
+          game.ui.cheer({ title: `${e.exp.label} DONE!`, sub: 'great science' });
           game.sound.play('success');
           game.ui.buoy(`The *${e.exp.name}* experiment is finished! You can unplug it to free a plug.`, { interrupt: true });
         }
@@ -620,6 +626,7 @@ function run(game, { demo }) {
     game.sound.play('thud');
     updateProgress();
     const left = exps.filter((x) => !x.placed).length;
+    game.ui.cheer({ title: 'BOX IN PLACE!', sub: left ? `${left} to go` : 'now start the experiments' });
     game.ui.buoy(
       left
         ? `*${e.exp.label}* box in place! ${left === 1 ? 'One more box' : `${left} more boxes`} to go. Its experiment is ready at the *science bench* too.`
@@ -639,6 +646,7 @@ function run(game, { demo }) {
     world.panel.sockets.forEach((s) => (s.aimed = false));
     world.bench.stations.forEach((s) => (s.aimed = false));
     setBanner('done', 'Experiments done', 'great science!', '✿', 1);
+    game.ui.cheer({ title: 'ALL EXPERIMENTS DONE!', big: true });
     game.ui.buoy(
       demo
         ? 'The experiment worked, and you kept breathing. *Science costs energy, so air comes first.*'

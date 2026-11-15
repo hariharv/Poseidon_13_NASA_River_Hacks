@@ -222,6 +222,8 @@ function run(game, { demo }) {
       choices: [{ id: 'go', label: 'Strap in' }],
     });
     if (!game.running) return;
+    await game.ui.countdown();
+    if (!game.running) return;
     stage = 'fly';
     controls.setEnabled(true);
     controls.requestLock();
@@ -272,6 +274,7 @@ function run(game, { demo }) {
       later(7000, () => game.ui.buoy('Radiation is invisible! Apollo astronauts saw tiny *flashes of light* in their eyes when particles zipped through.'));
     } else if (phase === 'clear' && prev === 'storm') {
       clearAt = elapsed;
+      game.ui.cheer({ title: 'ALL CLEAR!', sub: where === 'shelter' ? 'you stayed safe' : 'the storm passed' });
       game.ui.buoy(
         where === 'shelter'
           ? '*All clear!* The storm passed. Float back to your *seat* and finish the burn.'
@@ -294,6 +297,7 @@ function run(game, { demo }) {
     );
   }
   function fixFault() {
+    game.ui.cheer({ title: 'THRUSTER FIXED!', sub: 'back on course' });
     faultOn = false;
     faultIndex++;
     world.setJetBlink(false);
@@ -362,6 +366,7 @@ function run(game, { demo }) {
       game.sound.play('whoosh');
       later(850, () => game.sound.play('thud'));
       if (bagsPlaced >= r.bags) {
+        game.ui.cheer({ title: 'SHELTER BUILT!', sub: hose ? 'radiation is 4x slower in here' : 'now the air hose!' });
         game.ui.buoy(
           hose ? '*Shelter built!* Now the radiation reaches you about four times slower.' : '*Shelter built!* Now plug in the *air hose* so you can breathe in here.',
           { interrupt: true },
@@ -406,6 +411,7 @@ function run(game, { demo }) {
   // ---------- each frame of play ----------
   function step(dt) {
     elapsed += dt;
+    game.ui.clock(elapsed, r.stars.speedySeconds);
     const clock = stormClock(flashAt == null ? null : elapsed - flashAt, r);
     if (clock.light !== game.storm.value) game.storm.light(clock.light);
     if (clock.phase !== lastPhase) {
@@ -452,7 +458,7 @@ function run(game, { demo }) {
       const gain = burning ? flightStep(error, dt, r) * r.burnBoost : 0;
       if (gain > 0) game.progress.change(gain);
       if (!burning && error <= r.aimRing) once('ontarget', "*On target!* Now *hold Space* to fire the engine. Keep the diamond in the ring while it shakes!");
-      if (gain > 0 && error <= r.aimRing) once('burning', "That's it! The engine is firing and the *Progress bar* fills. Real pilots call this a *burn*.");
+      if (gain > 0 && error <= r.aimRing && once('burning', "That's it! The engine is firing and the *Progress bar* fills. Real pilots call this a *burn*.")) game.ui.cheer({ title: 'ENGINE BURN!', sub: 'keep it in the ring' });
       if (burning && error > r.aimRing * 2) once('offburn', 'Off target! The engine only helps when the *diamond is in the ring*.');
       if (error > 0.5) once('lost', 'Lost the diamond? Follow the *yellow arrow* on your window.');
     }
@@ -623,6 +629,7 @@ function run(game, { demo }) {
   // ---------- done ----------
   function complete() {
     stage = 'done';
+    game.ui.cheer({ title: 'COURSE SET FOR THE MOON!', big: true });
     game.ui.prompt(null);
     game.ui.target(false);
     controls.setEnabled(false);
