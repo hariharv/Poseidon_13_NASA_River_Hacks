@@ -85,6 +85,7 @@ export function createTouch(host) {
   zone.addEventListener('pointermove', (e) => e.pointerId === stickId && moveStick(e));
   zone.addEventListener('pointerup', (e) => e.pointerId === stickId && endStick());
   zone.addEventListener('pointercancel', (e) => e.pointerId === stickId && endStick());
+  zone.addEventListener('lostpointercapture', (e) => e.pointerId === stickId && endStick()); // e.g. a card popped up
 
   // ---------- the buttons ----------
   for (const btn of layer.querySelectorAll('.tc-btn')) {
@@ -103,6 +104,7 @@ export function createTouch(host) {
     };
     btn.addEventListener('pointerup', up);
     btn.addEventListener('pointercancel', up);
+    btn.addEventListener('lostpointercapture', up);
     btn.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
@@ -140,6 +142,7 @@ export function createTouch(host) {
   };
   look.addEventListener('pointerup', endLook);
   look.addEventListener('pointercancel', endLook);
+  look.addEventListener('lostpointercapture', endLook);
 
   // A real keyboard (an iPad with one, a laptop with a touch screen): hide the stick and buttons.
   window.addEventListener('keydown', (e) => {

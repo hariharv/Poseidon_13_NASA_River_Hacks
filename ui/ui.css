@@ -1674,8 +1674,11 @@ html[data-device='touch'] .buoy-say svg {
   width: 46px;
   height: auto;
 }
+html[data-device='touch'] .pause-hint {
+  display: none; /* no P key on a touch screen: tap Keep training */
+}
 html[data-device='touch'] .hud-task {
-  top: calc(max(3vh, 12px) + 104px);
+  top: calc(max(4.5vh, 28px) + 168px); /* under the stage's sign, not on top of it */
   bottom: auto;
   right: max(3vw, 12px);
   max-width: 34vw;
@@ -1687,10 +1690,144 @@ html[data-device='touch'] .puzzle kbd,
 html[data-device='touch'] .card kbd {
   display: none;
 }
-/* short screens (phones on their side): everything a little smaller */
+/* short screens (phones on their side): everything smaller so the game still shows */
 @media (max-height: 500px) {
-  html[data-device='touch'] {
-    --ui-scale: 0.82;
+  :root[data-device='touch'],
+  :root[data-device='touch'][data-mode] {
+    --ui-scale: 0.7;
+  }
+  html[data-device='touch'] .hud-bar {
+    grid-template-columns: 20px 5.2em minmax(80px, 15vw) 2.6em;
+    gap: 6px;
+    padding: 4px 10px 4px 8px;
+  }
+  html[data-device='touch'] .hud {
+    gap: 6px;
+  }
+  html[data-device='touch'] .buoy-say {
+    max-width: min(42vw, 360px);
+  }
+  html[data-device='touch'] .buoy-say svg {
+    display: none;
+  }
+  html[data-device='touch'] .buoy-bubble {
+    margin: 0;
+    padding: 8px 12px;
+    font-size: 1em;
+    line-height: 1.3;
+  }
+  html[data-device='touch'] .hud-btn {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 6px 10px;
+  }
+  html[data-device='touch'] .hud-extras {
+    top: calc(max(3vh, 12px) + 40px);
+  }
+  html[data-device='touch'] .hud-task {
+    display: none; /* no room on a phone: Zeus Jr. shows your job instead, and Help has the steps */
+  }
+  html[data-device='touch'] .tc-stick {
+    width: clamp(96px, 26vmin, 120px);
+  }
+  html[data-device='touch'] .tc-btn {
+    width: clamp(54px, 15vmin, 64px);
+  }
+  html[data-device='touch'] .tc-use {
+    width: clamp(66px, 18vmin, 78px);
+  }
+}
+
+/* while a card or a mini game is open, the stick and buttons step aside */
+.ui-layer:has(.puzzle-layer:not([hidden])) .touch-layer,
+.ui-layer:has(.card-layer:not([hidden])) .touch-layer {
+  display: none;
+}
+
+/* mini games on short screens (phones on their side): compact, so everything fits without scrolling */
+@media (max-height: 500px) {
+  .puzzle {
+    width: min(760px, 100%);
+    padding: 12px 16px 10px;
+  }
+  .puzzle-eyebrow {
+    margin: 0;
+  }
+  .puzzle-title {
+    font-size: 1.3em;
+  }
+  .puzzle-text {
+    margin: 2px 0 6px;
+  }
+  .puzzle-how {
+    margin: 0 0 8px;
+    padding: 5px 10px;
+    font-size: 0.78em;
+  }
+  .puzzle-how ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 18px;
+  }
+  .puzzle-status {
+    margin: 6px 0 0;
+  }
+  .flow {
+    width: min(100%, 48vh);
+  }
+  .pipes-wrap {
+    width: min(100%, calc(48vh + 68px));
+  }
+  .memory {
+    width: min(100%, 64vh);
+    gap: 6px;
+  }
+  .balance-meter {
+    height: 110px;
+  }
+  .balance {
+    margin-bottom: 6px;
+  }
+  .pad {
+    height: 54px;
+  }
+  .wire-end {
+    height: 36px;
+  }
+}
+
+/* cards on short screens: wider, tighter, facts side by side, and the buttons always in view */
+@media (max-height: 500px) {
+  .card-layer {
+    padding: 8px;
+  }
+  .card {
+    width: min(720px, 100%);
+    max-height: calc(100vh - 16px);
+    padding: 16px 20px 0;
+    border-radius: 20px;
+  }
+  .card-title {
+    font-size: 1.5em;
+  }
+  .card-text {
+    margin: 0 0 6px;
+    line-height: 1.35;
+  }
+  .card-facts {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin: 0 0 8px;
+  }
+  .card-facts li {
+    padding: 6px 10px;
+  }
+  .card-choices {
+    position: sticky;
+    bottom: 0;
+    margin: 0 -20px;
+    padding: 10px 20px 14px;
+    background: var(--twill);
   }
 }
 
