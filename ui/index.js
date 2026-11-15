@@ -121,6 +121,8 @@ export function createUI(container) {
     },
     hide() {
       visor.hidden = true;
+      clearTimeout(promptTimer);
+      promptNow = null;
       prompt.hidden = true;
       setTask(null);
       puzzle.close();
@@ -132,6 +134,8 @@ export function createUI(container) {
       lastStorm = 'green';
       plugs.hidden = true;
       storm.hidden = true;
+      clearTimeout(promptTimer);
+      promptNow = null;
       prompt.hidden = true;
       crosshair.classList.remove('is-target');
     },
@@ -170,7 +174,25 @@ export function createUI(container) {
   }
 
   // ---------- Prompt ("Hold [E] to fix") ----------
+  // Each prompt stays up for at least a moment, so a prompt that flips back and forth
+  // (standing right on the edge of a zone) can't strobe.
+  let promptShownAt = 0;
+  let promptTimer = null;
+  let promptNow = null;
   function showPrompt(text) {
+    const next = text || null;
+    clearTimeout(promptTimer);
+    if (next === promptNow) return;
+    const wait = 350 - (performance.now() - promptShownAt);
+    if (wait > 0) {
+      promptTimer = setTimeout(() => applyPrompt(next), wait);
+      return;
+    }
+    applyPrompt(next);
+  }
+  function applyPrompt(text) {
+    promptNow = text;
+    promptShownAt = performance.now();
     if (!text) {
       prompt.hidden = true;
       return;
