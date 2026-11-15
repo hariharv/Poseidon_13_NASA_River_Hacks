@@ -106,6 +106,9 @@ export function createGame({
       target: (on) => ui.hud.target?.(on),
       pause: (on, onResume) => ui.pause?.(on, onResume),
       task: (spec) => ui.task?.(spec),
+      cheer: (options) => ui.cheer?.(options),
+      countdown: () => (ui.countdown ? ui.countdown() : Promise.resolve()),
+      clock: (seconds, goal) => ui.hud.clock?.(seconds, goal),
       puzzle: (options) => (ui.puzzle ? ui.puzzle(options) : Promise.resolve(true)),
       get puzzleOpen() {
         return Boolean(ui.puzzleOpen);

@@ -27,6 +27,7 @@ export function createUI(container) {
         ${barMarkup('progress', 'Progress')}
       </div>
       <div class="hud-extras">
+        <div class="hud-clock" hidden aria-label="Stage clock"><span class="hud-clock-time">0:00</span><span class="hud-clock-goal"></span></div>
         <div class="hud-plugs" hidden aria-label="Energy plugs"></div>
         <div class="hud-storm" hidden data-colour="green"><span class="storm-dot"></span><span class="storm-text">Calm</span></div>
         <button class="real-numbers-btn" type="button" hidden>Real numbers</button>
@@ -57,6 +58,7 @@ export function createUI(container) {
     <aside class="checklist" hidden aria-label="Judge checklist"></aside>
     <button class="checklist-open" type="button" hidden>Judge checklist</button>
     <div class="puzzle-layer" hidden></div>
+    <div class="cheer-layer" aria-live="polite"></div>
     <div class="card-layer" hidden></div>
   `;
   container.append(layer);
@@ -81,6 +83,11 @@ export function createUI(container) {
   const taskBox = $('.hud-task');
   const taskText = $('.hud-task-text');
   const checklistOpen = $('.checklist-open');
+  const clockBox = $('.hud-clock');
+  const clockTime = $('.hud-clock-time');
+  const clockGoal = $('.hud-clock-goal');
+  let clockText = '';
+  let clockGoalText = '';
   const puzzleLayer = $('.puzzle-layer');
 
   const sound = createSound();
@@ -127,7 +134,25 @@ export function createUI(container) {
       setTask(null);
       puzzle.close();
     },
+    // the stage clock (top right): how long you've taken, and the time to beat for the speed star
+    clock(seconds, goal) {
+      clockBox.hidden = false;
+      const t = fmtTime(seconds);
+      if (t !== clockText) {
+        clockText = t;
+        clockTime.textContent = t;
+      }
+      const g = goal ? (seconds <= goal ? `★ under ${fmtTime(goal)}` : '★ missed, keep going!') : '';
+      if (g !== clockGoalText) {
+        clockGoalText = g;
+        clockGoal.textContent = g;
+        clockBox.classList.toggle('is-late', Boolean(goal) && seconds > goal);
+      }
+    },
     reset({ low = 30 } = {}) {
+      clockBox.hidden = true;
+      clockText = '';
+      clockGoalText = '';
       lowAt = low;
       lastOxygen = 100;
       lastProgress = 0;
@@ -454,6 +479,52 @@ export function createUI(container) {
 
   const puzzle = createPuzzle(puzzleLayer, sound);
 
+  // ---------- Celebrations and the 3-2-1-GO countdown ----------
+  // ui.cheer({ title, sub, big }) pops up big words with a burst of confetti (a win, a combo...).
+  // ui.countdown() shows 3, 2, 1, GO! and resolves when it's done.
+  const cheerLayer = $('.cheer-layer');
+  const CONFETTI = ['#ffc145', '#ff5b1f', '#46b4ff', '#5bd98a', '#a98bff', '#ff6fae'];
+  function cheer({ title, sub = '', big = false, quiet = false } = {}) {
+    if (!title) return;
+    const pop = el('div', `cheer${big ? ' is-big' : ''}`);
+    pop.innerHTML = `<p class="cheer-title">${rich(title)}</p>${sub ? `<p class="cheer-sub">${rich(sub)}</p>` : ''}`;
+    if (!quiet) {
+      for (let i = 0; i < (big ? 28 : 16); i++) {
+        const bit = el('span', 'confetti');
+        const a = (i / (big ? 28 : 16)) * Math.PI * 2 + Math.random() * 0.4;
+        const d = 90 + Math.random() * (big ? 160 : 90);
+        bit.style.setProperty('--x', `${Math.cos(a) * d}px`);
+        bit.style.setProperty('--y', `${Math.sin(a) * d - 30}px`);
+        bit.style.setProperty('--r', `${Math.random() * 720 - 360}deg`);
+        bit.style.background = CONFETTI[i % CONFETTI.length];
+        pop.append(bit);
+      }
+    }
+    cheerLayer.replaceChildren(pop);
+    sound.play(big ? 'win' : 'star');
+    setTimeout(() => pop.remove(), big ? 2400 : 1700);
+  }
+  function countdown() {
+    return new Promise((resolve) => {
+      const steps = ['3', '2', '1', 'GO!'];
+      let i = 0;
+      const show = () => {
+        const n = el('div', `count${i === steps.length - 1 ? ' is-go' : ''}`);
+        n.textContent = steps[i];
+        cheerLayer.replaceChildren(n);
+        sound.play(i === steps.length - 1 ? 'success' : 'beep');
+        i++;
+        if (i < steps.length) setTimeout(show, 650);
+        else
+          setTimeout(() => {
+            n.remove();
+            resolve();
+          }, 550);
+      };
+      show();
+    });
+  }
+
   return {
     hud,
     buoy,
@@ -469,6 +540,8 @@ export function createUI(container) {
     setRealNumbers,
     sound,
     task: setTask,
+    cheer,
+    countdown,
     help: openHelp,
     puzzle: (options) => puzzle.open(options),
     get puzzleOpen() {
@@ -491,6 +564,11 @@ function barMarkup(kind, label) {
       <div class="hud-track" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="hud-fill"></div></div>
       <span class="hud-num">0</span>
     </div>`;
+}
+
+function fmtTime(seconds) {
+  const s = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
 function stepMarkup(st) {
