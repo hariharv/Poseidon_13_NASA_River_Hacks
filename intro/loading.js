@@ -166,7 +166,8 @@ export function showLoadingScreen({ root, stages, tasks, player, progress }) {
       patches.forEach((g) => {
         const id = g.dataset.stage;
         const available = stages.find((s) => s.id === id)?.available;
-        g.classList.toggle('is-locked', !available || (id !== 'hermes' && !progress.completed.includes(prevOf(stages, id))));
+        // finish any stage and every stage opens up
+        g.classList.toggle('is-locked', !available || (!returning && id !== 'hermes'));
       });
       patches[0].classList.add('is-next');
       say(
@@ -195,14 +196,9 @@ export function showLoadingScreen({ root, stages, tasks, player, progress }) {
   });
 }
 
-function prevOf(stages, id) {
-  const i = stages.findIndex((s) => s.id === id);
-  return i > 0 ? stages[i - 1].id : null;
-}
-
 function mapSvg(stages) {
   return `
-<svg viewBox="0 0 1200 560" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Six training stages on the path to the Moon">
+<svg viewBox="0 0 1200 560" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Five training stages on the path to the Moon">
   <defs>
     <radialGradient id="moon-glow">
       <stop offset="0.55" stop-color="#FFC145" stop-opacity="0.35"/>

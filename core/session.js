@@ -22,6 +22,7 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
       if (menuOpen || !game.running) return;
       menuOpen = true;
       if (document.pointerLockElement) document.exitPointerLock();
+      const canJump = save.loadProgress().completed.length > 0; // finished a stage = every stage is open
       const choice = await ui.card({
         eyebrow: `Stage ${index + 1} · ${stage.name}`,
         title: 'Menu',
@@ -30,6 +31,7 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
           { id: 'resume', label: 'Keep training' },
           { id: 'restart', label: 'Start this stage again' },
           ...(demo ? [{ id: 'skip', label: 'Skip to the next stage' }] : []),
+          ...(!demo && canJump ? [{ id: 'jump', label: 'Jump to another stage' }] : []),
           { id: 'quit', label: 'Back to the main menu' },
         ],
       });
@@ -38,6 +40,9 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
       if (choice === 'restart') {
         teardown(game);
         attempt();
+      } else if (choice === 'jump') {
+        teardown(game);
+        resolve({ jumped: true });
       } else if (choice === 'skip') {
         teardown(game);
         resolve({ skipped: true });

@@ -70,27 +70,47 @@ async function runSingleStage(id, mode) {
   location.href = location.pathname;
 }
 
-// Normal play: the stages in order, starting from the first one not finished yet.
-// (The Olympus Academy intro and character maker slot in here once Person 5 lands them.)
+// Normal play. A brand-new player starts at Stage 1. Once you've finished any stage, you can
+// jump to any stage you like: after each stage (and from the Menu) a picker shows every stage,
+// with the next one first.
 async function runTraining(mode) {
-  const done = save.loadProgress().completed;
-  // Pick up at the first built stage not finished yet. Once every built stage is done,
-  // start again from Stage 1 so the player can replay (or try Hard) instead of hitting "Coming soon".
-  const next = STAGES.findIndex((s) => s.available && !done.includes(s.id));
-  const start = next === -1 ? 0 : next;
-  for (const stage of STAGES.slice(start)) {
-    if (!stage.available) {
-      await ui.card({
-        eyebrow: 'Coming soon',
-        title: `${stage.name} is still being built`,
-        text: `Next up is the *${stage.place.toLowerCase()}*. Our team is building it right now.`,
-        choices: [{ id: 'ok', label: 'Back to the title screen' }],
-      });
-      return;
-    }
-    const result = await playStage(stage.id, { ...ctx, mode });
+  const built = STAGES.filter((s) => s.available);
+  let last = null; // the stage just finished
+  for (;;) {
+    const done = save.loadProgress().completed;
+    const id = done.length ? await pickStage(built, last) : built[0]?.id;
+    if (!id) return;
+    const result = await playStage(id, { ...ctx, mode });
     if (result?.quit || result?.crashed) return;
+    last = result?.passed ? id : null; // jumped out from the Menu: no "next" to suggest
   }
+}
+
+// "Where to next?": the suggested stage first, then every built stage.
+async function pickStage(built, last) {
+  const progress = save.loadProgress();
+  const afterLast = last ? built[built.findIndex((s) => s.id === last) + 1] : null;
+  const firstNotDone = built.find((s) => !progress.completed.includes(s.id));
+  const suggested = afterLast ?? firstNotDone ?? built[0];
+  const tag = (s) => {
+    const stars = progress.stars[s.id] ?? 0;
+    return progress.completed.includes(s.id) ? ` ✓ ${'★'.repeat(stars)}` : '';
+  };
+  const label = (s) => `Stage ${STAGES.indexOf(s) + 1} · ${s.name} (${s.place})${tag(s)}`;
+  const allDone = built.every((s) => progress.completed.includes(s.id));
+  const pick = await ui.card({
+    eyebrow: last ? 'Where to next?' : 'Stage select',
+    title: allDone ? 'Every stage is open' : 'Pick any stage',
+    text: allDone
+      ? "You've finished them all! Play any stage again to beat your stars, or try *Hard* mode from the title screen."
+      : "You've finished a stage, so you can jump to *any* stage you like. The first button is the next one in order.",
+    choices: [
+      { id: suggested.id, label: `${last ? 'Next' : 'Continue'}: ${label(suggested)}` },
+      ...built.filter((s) => s !== suggested).map((s) => ({ id: s.id, label: label(s) })),
+      { id: 'quit', label: 'Back to the title screen' },
+    ],
+  });
+  return pick === 'quit' ? null : pick;
 }
 
 // Judge Demo: every built stage's short version, back to back, with the checklist on screen.
