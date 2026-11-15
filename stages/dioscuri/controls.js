@@ -6,6 +6,8 @@
 
 import * as THREE from 'three';
 import { isTouch, dragLookNow } from '../../core/device.js';
+import { pushOutOfBox } from '../../core/collide.js';
+import { SOLIDS } from './world.js';
 
 export function createControls({ camera, dom, seat, start, room, floatSpeed, onPointerChange, onPointerError }) {
   let yaw = 0;
@@ -153,6 +155,7 @@ export function createControls({ camera, dom, seat, start, room, floatSpeed, onP
           if (pos[axis] < lo) (pos[axis] = lo), (vel[axis] = Math.abs(vel[axis]) * 0.3);
           if (pos[axis] > hi) (pos[axis] = hi), (vel[axis] = -Math.abs(vel[axis]) * 0.3);
         }
+        for (const box of SOLIDS) pushOutOfBox(pos, vel, box, 0.3, 0.3); // the arm desk is solid
       }
       const bob = mode === 'float' ? Math.sin(t * 0.9) * 0.02 : Math.sin(t * 1.1) * 0.008;
       camera.position.set(pos.x, pos.y + bob, pos.z);

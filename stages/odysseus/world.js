@@ -7,6 +7,9 @@ import { labelTexture, dotTexture, beamTexture } from '../hermes/textures.js';
 import { disposeTree } from '../hermes/world.js';
 import { paddingTexture, matTexture, skyTexture, screenTexture, plateTexture } from './textures.js';
 import { MACHINES } from './sim.js';
+import { pushOutOfBox } from '../../core/collide.js';
+
+export { pushOutOfBox };
 
 export { disposeTree };
 
@@ -53,36 +56,6 @@ export const SOLIDS = [
   { min: new THREE.Vector3(-1.7, 0, 7.6), max: new THREE.Vector3(-1.08, 0.66, 8.0) }, // speaker
   { min: new THREE.Vector3(0.82, 1.68, 6.28), max: new THREE.Vector3(1.7, 2.12, 6.72) }, // air machine
 ];
-// Push a ball (radius r) out of a solid box, and bounce its velocity off the face it hit.
-export function pushOutOfBox(p, v, box, r, bounce = 0.4) {
-  const cx = Math.max(box.min.x, Math.min(p.x, box.max.x));
-  const cy = Math.max(box.min.y, Math.min(p.y, box.max.y));
-  const cz = Math.max(box.min.z, Math.min(p.z, box.max.z));
-  const dx = p.x - cx;
-  const dy = p.y - cy;
-  const dz = p.z - cz;
-  const d2 = dx * dx + dy * dy + dz * dz;
-  if (d2 >= r * r) return false;
-  if (d2 > 1e-8) {
-    const d = Math.sqrt(d2);
-    const nx = dx / d;
-    const ny = dy / d;
-    const nz = dz / d;
-    p.x = cx + nx * r;
-    p.y = cy + ny * r;
-    p.z = cz + nz * r;
-    const vn = v.x * nx + v.y * ny + v.z * nz;
-    if (vn < 0) {
-      v.x -= (1 + bounce) * vn * nx;
-      v.y -= (1 + bounce) * vn * ny;
-      v.z -= (1 + bounce) * vn * nz;
-    }
-  } else {
-    p.y = box.max.y + r; // the centre got inside: pop it out on top
-    if (v.y < 0) v.y = 0;
-  }
-  return true;
-}
 // Floating things never pass through each other: overlapping balls are pushed apart and bounce.
 export function separate(items) {
   for (let i = 0; i < items.length; i++) {

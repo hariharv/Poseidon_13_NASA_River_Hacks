@@ -16,6 +16,12 @@ export { disposeTree };
 export const EYE = new THREE.Vector3(0, 0, 0.35); // sitting at the arm controls
 export const FLOAT_START = new THREE.Vector3(0, 0.15, 2.9); // floating in the middle of the lab
 export const ROOM = { minX: -1.95, maxX: 1.95, minY: -1.3, maxY: 1.35, minZ: -0.55, maxZ: 4.75 };
+// Solid things inside the lab you bump into instead of floating through: the arm desk under the
+// window (top, front panel and the arm-camera screen on its right).
+export const SOLIDS = [
+  { min: { x: -1.3, y: -1.7, z: -1.2 }, max: { x: 1.3, y: -0.88, z: -0.34 } }, // desk
+  { min: { x: 0.65, y: -0.9, z: -1.1 }, max: { x: 1.4, y: -0.42, z: -0.62 } }, // arm camera screen
+];
 export const DESK_SPOT = new THREE.Vector3(0, -0.75, -0.65); // look here and press E to sit
 export const ARM_BASE = new THREE.Vector3(0, -2.2, -11.2); // the shoulder joint, at the back of the deck
 export const L1 = 4.0; // shoulder to elbow
