@@ -1,5 +1,5 @@
 // Boots the game.
-//   /                         homepage (team + make your astronaut) -> loading screen -> pick a mode -> training
+//   /                         title cutscenes -> homepage (team + make your astronaut) -> loading screen -> pick a mode -> training
 //   /?stage=hermes            one stage alone (for stage builders)
 //   /?stage=hermes&mode=demo  that stage's judge version
 
@@ -37,6 +37,9 @@ if (stageParam) {
 async function showTitle() {
   // Homepage first: Team Poseidon 13 and "Make your astronaut". Then the menu (loading screen).
   ui.sound.music('title'); // starts on the first click (browsers only allow sound after one)
+  // Title screen first: cutscenes from the game until the player presses Start.
+  const { showTitle: showCutscenes } = await import('../intro/title.js');
+  await showCutscenes({ root: app });
   const { showHome } = await import('../intro/home.js');
   // the homepage saves player.json the moment you change your name (or anything else)
   const player = await showHome({ root: app, player: save.loadPlayer(), progress: save.loadProgress(), onChange: (p) => save.savePlayer(p) });
