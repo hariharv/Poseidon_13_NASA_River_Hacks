@@ -3,7 +3,7 @@
 // Uses pointer lock when it can, and falls back to click-and-drag to look.
 
 import * as THREE from 'three';
-import { isTouch } from '../../core/device.js';
+import { isTouch, dragLookNow } from '../../core/device.js';
 import { ROOM, groundAt, inBaseFootprint, OBSTACLES } from './world.js';
 
 const EYE = 1.6;
@@ -69,13 +69,25 @@ export function createPlayer({ camera, dom, spawn, rules, onPointerChange, onPoi
     }
   };
   let everLocked = false;
+  let refusals = 0; // mouse-lock refusals in a row
+  let lastRefusal = -1e9;
   const onLockChange = () => {
     locked = document.pointerLockElement === dom;
-    if (locked) everLocked = true;
+    if (locked) {
+      everLocked = true;
+      refusals = 0;
+    }
     onPointerChange?.(locked);
   };
   const onLockError = () => {
-    if (!everLocked) dragMode = true;
+    // Touch screens and browsers that block pointer lock use click-and-drag. Otherwise (asked
+    // without a click, or just after Esc) pause, so the next click locks the mouse again.
+    const now = performance.now();
+    if (now - lastRefusal < 300) return; // one refusal sends both an event and a failed promise
+    lastRefusal = now;
+    refusals++;
+    if (dragLookNow(everLocked, refusals)) dragMode = true;
+    if (!dragMode) onPointerChange?.(false);
     onPointerError?.(dragMode);
   };
 

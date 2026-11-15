@@ -7,7 +7,7 @@ import { createSound } from './sound.js';
 import { createPuzzle } from './puzzle.js';
 import { CHECKLIST } from '../core/checklist.js';
 import { device, isTouch, touchWords } from '../core/device.js';
-import { createTouch } from './touch.js';
+import { createTouch, buttonNames } from './touch.js';
 
 const ICONS = {
   oxygen:
@@ -684,7 +684,7 @@ function rich(t) {
 
 // On a phone or iPad, keyboard words ("press E", "W A S D") become the on-screen buttons' words.
 function words(t) {
-  return isTouch() ? touchWords(String(t ?? '')) : t;
+  return isTouch() ? touchWords(String(t ?? ''), buttonNames()) : t;
 }
 
 function el(tag, className) {

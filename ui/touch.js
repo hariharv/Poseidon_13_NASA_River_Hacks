@@ -23,6 +23,12 @@ const capture = (el, e) => {
     /* not a real pointer (tests) or already gone */
   }
 };
+// The names on this stage's buttons, in capitals, for the words the game shows ("tap FIX").
+let names = null;
+export function buttonNames() {
+  return names;
+}
+
 const DEAD = 0.35; // how far the stick must move before it counts
 const LOOK_SPEED = 1.6; // a finger drag turns a bit more than a mouse drag
 
@@ -156,6 +162,7 @@ export function createTouch(host) {
     show(stageId) {
       if (!isTouch()) return;
       const l = LABELS[stageId] ?? { use: 'Use', up: 'Up' };
+      names = Object.fromEntries(Object.entries(l).map(([k, v]) => [k, v.toUpperCase()]));
       const set = (cls, text) => {
         const b = layer.querySelector(cls);
         b.hidden = !text;
@@ -175,6 +182,7 @@ export function createTouch(host) {
       b.hidden = !on;
     },
     hide() {
+      names = null;
       releaseAll();
       endStick();
       layer.hidden = true;
