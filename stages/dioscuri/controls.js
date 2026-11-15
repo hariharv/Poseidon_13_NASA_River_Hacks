@@ -73,8 +73,9 @@ export function createControls({ camera, dom, seat, start, room, floatSpeed, onP
   };
 
   function look(dx, dy) {
-    yaw -= dx * 0.0022;
-    if (mode === 'desk') yaw = THREE.MathUtils.clamp(yaw, -1.45, 1.45);
+    yaw -= dx * 0.0022; // turn all the way round, even at the arm controls
+    if (yaw > Math.PI) yaw -= Math.PI * 2;
+    if (yaw < -Math.PI) yaw += Math.PI * 2;
     pitch = THREE.MathUtils.clamp(pitch - dy * 0.0022, -1.35, 1.2);
   }
   function requestLock() {
