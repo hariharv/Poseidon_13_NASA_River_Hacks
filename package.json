@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "fetch:web": "node tools/fetch-web.js"
   },
   "dependencies": {
     "three": "^0.187.0"

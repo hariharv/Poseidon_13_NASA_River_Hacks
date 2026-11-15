@@ -10,7 +10,7 @@ describe('Odysseus Real World Window (game.web.window("zerog"))', () => {
     expect(card.title).toMatch(/zero-G plane/i);
     expect(card.links.length).toBeGreaterThanOrEqual(2);
     for (const link of card.links) {
-      expect(link.url).toMatch(/^https:\/\/www\.nasa\.gov\//);
+      expect(link.url).toMatch(/^https:\/\/([a-z-]+\.)*nasa\.gov\//); // www., science., spinoff. ...
       expect(link.foundOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     }
   });

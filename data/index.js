@@ -45,18 +45,32 @@ export function createData() {
   };
 }
 
+// Real-world facts were gathered ahead of time with SerpApi (tools/fetch-web.js) and saved in
+// web_cache.json (rows with via: 'SerpApi'). The game never searches while kids play.
+const fromSerpApi = (r) => r.via === 'SerpApi';
+
 export function createWeb(ui) {
   return {
+    // Short lines for Zeus Jr. from the facts found with SerpApi ([] if none were gathered yet).
+    facts(queryId) {
+      return webCache
+        .filter((r) => r.queryId === queryId && fromSerpApi(r) && r.text)
+        .map((r) => ({ text: r.text, source: r.source, url: r.url, foundOn: r.foundOn }));
+    },
+
     window(queryId) {
       const place = PLACES[queryId];
       const rows = webCache.filter((r) => r.queryId === queryId);
       if (!place || !rows.length) return Promise.resolve(null);
+      const found = rows.filter(fromSerpApi);
       return ui.card({
         eyebrow: place.eyebrow,
         title: place.title,
         text: place.text,
         links: rows.map((r) => ({ title: r.title, url: r.url, source: r.source, foundOn: r.foundOn })),
-        note: rows.some((r) => r.sample) ? 'Saved links. Live news cards arrive with the SerpAPI search.' : undefined,
+        note: found.length
+          ? `Some of these were found with SerpApi on ${found[0].foundOn}, only from trusted space sites (SafeSearch on).`
+          : 'Saved links from NASA and other space agencies.',
         choices: [{ id: 'ok', label: 'Cool!' }],
       });
     },

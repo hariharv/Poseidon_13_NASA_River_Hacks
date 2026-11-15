@@ -142,6 +142,9 @@ export const LESSONS = {
   },
 };
 
+// Which saved web search (gathered with SerpApi by tools/fetch-web.js) goes with each stage.
+export const WEB_SEARCH = { hermes: 'nbl', odysseus: 'zerog', dioscuri: 'lab', hera: 'ship', apollo: 'moon' };
+
 export function lessonFor(stageId) {
   return LESSONS[stageId] ?? null;
 }

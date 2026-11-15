@@ -9,27 +9,10 @@
 //   'timing'   stop the moving needle inside the green zone, a few times in a row
 //   'flow'     drag a power line between each pair of same-coloured dots; lines can't cross
 //              (size = grid width, 4-7). A perfect board fills every square.
-//   'memory'   flip cards two at a time and find the matching pairs (size = pairs, 3-5)
-//   'pipes'    click pipe pieces to turn them until power flows to the bulb (size = grid, 3-5)
-//   'balance'  hold Space to keep a needle inside a drifting green zone until the bar fills
-//              (size = seconds in the green, 3-6)
 //
-// Every puzzle shows a short "How to play" box. Works with the mouse, and with keys:
-// 1-4 pick, Space / E for the timing needle and the balance.
+// Works with the mouse, and with keys: 1-4 pick, Space / E for the timing needle.
 
 import { makeFlow, same, touching, stepToward } from './flow.js';
-import { makePipes, rotate, flowFrom, N as PN, E as PE, S as PS, W as PW } from './pipes.js';
-
-// "How to play" for each kind: short steps a 7-year-old can follow.
-export const HOW_TO = {
-  wires: ['Click a wire on the left (or press its number).', 'Click the plug with the same colour and shape.', 'Connect them all before the timer runs out.'],
-  sequence: ['Watch the coloured lights flash.', 'Press them in the same order (click them, or keys 1-4).', 'Got one wrong? They flash again. Watch closely!'],
-  timing: ['A needle slides back and forth.', 'Press Space (or the Stop button) when it is in the green.', 'Hit the green enough times. A miss takes one away!'],
-  flow: ['Press on a dot and drag.', 'Draw a line to the dot with the same colour and shape.', "Lines can't cross. Connect every pair!"],
-  memory: ['Click a card to flip it over.', 'Flip a second card. Same colour and shape? It stays!', 'Not a match? They flip back. Find every pair.'],
-  pipes: ['Click a pipe piece to turn it.', 'Make one path from the power ⚡ on the left to the bulb 💡 on the right.', 'Pieces light up gold when the power reaches them.'],
-  balance: ['Hold Space (or press and hold the button) to push the needle up.', 'Let go and it falls back down.', 'Keep it inside the green zone until the bar is full.'],
-};
 
 const COLOURS = [
   { id: 'red', hex: '#ff4d5e', shape: '●', name: 'red circle' },
@@ -49,8 +32,6 @@ export function createPuzzle(layer, sound) {
     layer.hidden = true;
     layer.replaceChildren();
     window.removeEventListener('keydown', onKey, true);
-    onClose?.();
-    onClose = null;
     cancelAnimationFrame(raf);
     sound?.play(result ? 'success' : 'fail');
     const f = finish;
@@ -60,16 +41,14 @@ export function createPuzzle(layer, sound) {
 
   let raf = 0;
   let onKey = () => {};
-  let onClose = null; // extra clean-up for a puzzle (like a keyup listener)
 
-  function frame({ title, text, seconds, body, how }) {
+  function frame({ title, text, seconds, body }) {
     layer.innerHTML = `
       <div class="puzzle" role="dialog" aria-label="${escapeHtml(title)}">
         <div class="puzzle-timer" aria-hidden="true"><div class="puzzle-timer-fill"></div></div>
         <p class="puzzle-eyebrow">Quick! <span class="puzzle-secs">${Math.ceil(seconds)}</span> s</p>
         <h2 class="puzzle-title">${escapeHtml(title)}</h2>
         ${text ? `<p class="puzzle-text">${rich(text)}</p>` : ''}
-        ${how ? `<div class="puzzle-how"><p class="puzzle-how-title">How to play</p><ol>${how.map((h) => `<li>${rich(h)}</li>`).join('')}</ol></div>` : ''}
         <div class="puzzle-body">${body}</div>
         <p class="puzzle-status" aria-live="polite"></p>
       </div>`;
@@ -119,7 +98,7 @@ export function createPuzzle(layer, sound) {
         <svg class="wires-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
         <div class="wires-col">${right.map((c) => `<button type="button" class="wire-end is-plug" data-side="r" data-id="${c.id}" style="--c:${c.hex}" aria-label="${c.name} plug"><span>${c.shape}</span></button>`).join('')}</div>
       </div>`;
-    const ui = frame({ title, text: text ?? 'Click a wire, then the plug with the same colour and shape.', seconds, body, how: HOW_TO.wires });
+    const ui = frame({ title, text: text ?? 'Click a wire, then the plug with the same colour and shape.', seconds, body });
     const svg = layer.querySelector('.wires-lines');
     const done = new Set();
     let picked = null;
@@ -177,7 +156,7 @@ export function createPuzzle(layer, sound) {
     const pads = COLOURS.slice(0, 4);
     const order = Array.from({ length: n }, () => pads[Math.floor(Math.random() * pads.length)].id);
     const body = `<div class="pads">${pads.map((c, i) => `<button type="button" class="pad" data-id="${c.id}" style="--c:${c.hex}" aria-label="${c.name}"><span>${c.shape}</span><kbd>${i + 1}</kbd></button>`).join('')}</div>`;
-    const ui = frame({ title, text: text ?? 'Watch the lights, then press them in the same order.', seconds, body, how: HOW_TO.sequence });
+    const ui = frame({ title, text: text ?? 'Watch the lights, then press them in the same order.', seconds, body });
     const padEls = [...layer.querySelectorAll('.pad')];
     let input = 0;
     let showingOrder = true;
@@ -245,7 +224,7 @@ export function createPuzzle(layer, sound) {
         ${cellsHtml.join('')}
         <svg class="flow-lines" viewBox="0 0 ${n} ${n}" aria-hidden="true"></svg>
       </div>`;
-    const ui = frame({ title, text: text ?? "Drag from each dot to the dot with the *same colour and shape*. Lines can't cross!", seconds, body, how: HOW_TO.flow });
+    const ui = frame({ title, text: text ?? "Drag from each dot to the dot with the *same colour and shape*. Lines can't cross!", seconds, body });
     const grid = layer.querySelector('.flow');
     const svg = layer.querySelector('.flow-lines');
     const cellEls = [...layer.querySelectorAll('.flow-cell')];
@@ -366,7 +345,7 @@ export function createPuzzle(layer, sound) {
       </div>
       <div class="gauge-hits">${Array.from({ length: hitsNeeded }, () => '<span></span>').join('')}</div>
       <button type="button" class="btn gauge-btn">Stop! <kbd>Space</kbd></button>`;
-    const ui = frame({ title, text: text ?? 'Stop the needle inside the green zone.', seconds, body, how: HOW_TO.timing });
+    const ui = frame({ title, text: text ?? 'Stop the needle inside the green zone.', seconds, body });
     const zone = layer.querySelector('.gauge-zone');
     const needle = layer.querySelector('.gauge-needle');
     const dots = [...layer.querySelectorAll('.gauge-hits span')];
@@ -427,169 +406,6 @@ export function createPuzzle(layer, sound) {
     };
   }
 
-  // ---------- memory (match the pairs) ----------
-  function memory({ title, text, seconds, size }) {
-    const pairs = Math.max(3, Math.min(COLOURS.length, size ?? 4));
-    const deck = shuffle([...COLOURS.slice(0, pairs), ...COLOURS.slice(0, pairs)]);
-    const body = `<div class="memory" style="--cols:${pairs <= 3 ? 3 : 4}">${deck
-      .map((c, i) => `<button type="button" class="mem-card" data-i="${i}" style="--c:${c.hex}" aria-label="Card ${i + 1}"><span class="mem-back">?</span><span class="mem-face">${c.shape}</span></button>`)
-      .join('')}</div>`;
-    const ui = frame({ title, text: text ?? 'Find the matching pairs!', seconds, body, how: HOW_TO.memory });
-    let up = [];
-    let found = 0;
-    let busy = false;
-    const flip = (btn) => {
-      if (!btn || busy || btn.classList.contains('is-up')) return;
-      btn.classList.add('is-up');
-      sound?.play('tap');
-      up.push(btn);
-      if (up.length < 2) return;
-      const [a, b] = up;
-      up = [];
-      if (deck[a.dataset.i].id === deck[b.dataset.i].id) {
-        a.classList.add('is-matched');
-        b.classList.add('is-matched');
-        a.disabled = b.disabled = true;
-        found++;
-        sound?.play('clunk');
-        ui.status(`${found} of ${pairs} pairs found`, true);
-        if (found === pairs) setTimeout(() => close(true), 350);
-      } else {
-        busy = true;
-        sound?.play('warn');
-        ui.status('Not a match. Remember where they were!');
-        setTimeout(() => {
-          a.classList.remove('is-up');
-          b.classList.remove('is-up');
-          busy = false;
-        }, 750);
-      }
-    };
-    layer.querySelector('.memory').addEventListener('click', (e) => flip(e.target.closest('.mem-card')));
-    onKey = () => {};
-  }
-
-  // ---------- pipes (turn the pieces) ----------
-  function pipes({ title, text, seconds, size }) {
-    const board = makePipes(size ?? 4);
-    const n = board.size;
-    const cells = [];
-    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) cells.push(`<button type="button" class="pipe-cell" data-r="${r}" data-c="${c}" aria-label="Pipe piece"></button>`);
-    const body = `
-      <div class="pipes-wrap" style="--n:${n}">
-        <span class="pipes-end is-power" style="--row:${board.start}" aria-label="Power">⚡</span>
-        <div class="pipes">${cells.join('')}</div>
-        <span class="pipes-end is-bulb" style="--row:${board.end}" aria-label="Light bulb">💡</span>
-      </div>`;
-    const ui = frame({ title, text: text ?? 'Turn the pipes so the power reaches the bulb!', seconds, body, how: HOW_TO.pipes });
-    const els = [...layer.querySelectorAll('.pipe-cell')];
-    const bulb = layer.querySelector('.is-bulb');
-    let won = false;
-    const arm = (side) => ({ [PN]: 'M50 50 L50 0', [PE]: 'M50 50 L100 50', [PS]: 'M50 50 L50 100', [PW]: 'M50 50 L0 50' })[side];
-    function draw() {
-      const { lit, solved } = flowFrom(board.grid, board.start, board.end);
-      els.forEach((el) => {
-        const r = Number(el.dataset.r);
-        const c = Number(el.dataset.c);
-        const m = board.grid[r][c];
-        const on = lit.has(`${r},${c}`);
-        const d = [PN, PE, PS, PW].filter((side) => m & side).map(arm).join(' ');
-        el.classList.toggle('is-lit', on);
-        el.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="${d}" stroke-width="22" stroke-linecap="round" fill="none"/><circle cx="50" cy="50" r="13"/></svg>`;
-      });
-      bulb.classList.toggle('is-on', solved);
-      const count = lit.size;
-      if (solved && !won) {
-        won = true;
-        ui.status('Power is flowing! The bulb is on!', true);
-        setTimeout(() => close(true), 600);
-      } else if (!won) ui.status(count ? `Power reaches ${count} piece${count === 1 ? '' : 's'}` : 'Turn the first piece so it touches the power ⚡', count > 0);
-    }
-    layer.querySelector('.pipes').addEventListener('click', (e) => {
-      const el = e.target.closest('.pipe-cell');
-      if (!el || won) return;
-      const r = Number(el.dataset.r);
-      const c = Number(el.dataset.c);
-      board.grid[r][c] = rotate(board.grid[r][c], 1);
-      sound?.play('tap');
-      draw();
-    });
-    onKey = () => {};
-    draw();
-  }
-
-  // ---------- balance (hold it steady) ----------
-  function balance({ title, text, seconds, size }) {
-    const needSecs = Math.max(3, Math.min(6, size ?? 4));
-    const body = `
-      <div class="balance">
-        <div class="balance-meter">
-          <div class="balance-zone"></div>
-          <div class="balance-needle"></div>
-        </div>
-        <div class="balance-fill"><span></span></div>
-      </div>
-      <button type="button" class="btn gauge-btn balance-btn">Hold me! <kbd>Space</kbd></button>`;
-    const ui = frame({ title, text: text ?? 'Keep the needle in the green!', seconds, body, how: HOW_TO.balance });
-    const zoneEl = layer.querySelector('.balance-zone');
-    const needleEl = layer.querySelector('.balance-needle');
-    const fillEl = layer.querySelector('.balance-fill span');
-    const btn = layer.querySelector('.balance-btn');
-    let holding = false;
-    let pos = 20; // % from the bottom
-    let vel = 0;
-    let fill = 0;
-    let t = 0;
-    let last = performance.now();
-    let won = false;
-    const zoneSize = 26;
-    ui.setTick((now) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
-      t += dt;
-      vel += (holding ? 140 : -110) * dt; // push up while you hold, fall when you let go
-      vel *= Math.exp(-2.2 * dt);
-      pos += vel * dt;
-      if (pos < 0) (pos = 0), (vel = 0);
-      if (pos > 100) (pos = 100), (vel = 0);
-      // the green zone drifts slowly up and down
-      const centre = 50 + Math.sin(t * 0.9) * 22 + Math.sin(t * 2.1) * 6;
-      zoneEl.style.bottom = `${centre - zoneSize / 2}%`;
-      zoneEl.style.height = `${zoneSize}%`;
-      needleEl.style.bottom = `${pos}%`;
-      const inside = Math.abs(pos - centre) <= zoneSize / 2;
-      fill = Math.max(0, Math.min(1, fill + (inside ? dt / needSecs : -dt / (needSecs * 3))));
-      fillEl.style.width = `${fill * 100}%`;
-      zoneEl.classList.toggle('is-in', inside);
-      if (!won) ui.status(inside ? 'In the green! Keep it there…' : pos > centre ? 'Too high! Let go a little.' : 'Too low! Hold Space.', inside);
-      if (fill >= 1 && !won) {
-        won = true;
-        ui.status('Steady! You did it!', true);
-        setTimeout(() => close(true), 300);
-      }
-    });
-    const down = (e) => {
-      e?.preventDefault?.();
-      holding = true;
-    };
-    const up = () => (holding = false);
-    btn.addEventListener('pointerdown', down);
-    btn.addEventListener('pointerup', up);
-    btn.addEventListener('pointerleave', up);
-    onKey = (e) => {
-      if (e.code === 'Space' || e.code === 'KeyE' || e.code === 'Enter') {
-        e.preventDefault();
-        e.stopPropagation();
-        holding = true;
-      }
-    };
-    const onKeyUp = (e) => {
-      if (e.code === 'Space' || e.code === 'KeyE' || e.code === 'Enter') holding = false;
-    };
-    window.addEventListener('keyup', onKeyUp, true);
-    onClose = () => window.removeEventListener('keyup', onKeyUp, true);
-  }
-
   return {
     get isOpen() {
       return open;
@@ -603,9 +419,6 @@ export function createPuzzle(layer, sound) {
         if (kind === 'sequence') sequence({ title, text, seconds, size });
         else if (kind === 'timing') timing({ title, text, seconds, size });
         else if (kind === 'flow') flow({ title, text, seconds, size });
-        else if (kind === 'memory') memory({ title, text, seconds, size });
-        else if (kind === 'pipes') pipes({ title, text, seconds, size });
-        else if (kind === 'balance') balance({ title, text, seconds, size });
         else wires({ title, text, seconds, size });
         window.addEventListener('keydown', onKey, true);
         sound?.play('alarm');

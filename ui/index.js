@@ -142,7 +142,6 @@ export function createUI(container) {
     },
     hide() {
       visor.hidden = true;
-      sound.urgency(0); // back to normal speed once the stage is over
       clearTimeout(promptTimer);
       promptNow = null;
       prompt.hidden = true;
@@ -165,7 +164,6 @@ export function createUI(container) {
       }
     },
     reset({ low = 30 } = {}) {
-      sound.urgency(0);
       clockBox.hidden = true;
       clockText = '';
       clockGoalText = '';
@@ -182,8 +180,6 @@ export function createUI(container) {
     },
     oxygen(v) {
       setBar(oxygenBar, v);
-      // low oxygen: the music speeds up, faster the lower it gets
-      sound.urgency(v < lowAt ? 0.4 + 0.6 * Math.min(1, (lowAt - v) / Math.max(1, lowAt * 0.7)) : 0);
       oxygenBar.classList.toggle('is-low', v < lowAt);
       if (v < lowAt && lastOxygen >= lowAt) sound.play('warn');
       lastOxygen = v;

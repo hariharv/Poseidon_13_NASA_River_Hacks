@@ -4,7 +4,7 @@
 
 import { createGame } from './game.js';
 import { STAGES, loadStage } from './stages.js';
-import { lessonFor, shuffleQuiz } from './lessons.js';
+import { lessonFor, shuffleQuiz, WEB_SEARCH } from './lessons.js';
 
 export async function playStage(id, { mode, ui, root, save, data, web, demo = false }) {
   const meta = STAGES.find((s) => s.id === id);
@@ -146,14 +146,23 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
     function startFacts(game) {
       clearInterval(factTimer);
       if (demo || !lesson) return;
+      // real-world facts found with SerpApi (saved ahead of time), mixed in with the saved astronaut facts
+      const webFacts = web?.facts?.(WEB_SEARCH[id]) ?? [];
+      let webIndex = 0;
+      let turn = 0;
       let quietFor = 0;
       factTimer = setInterval(() => {
         if (!game.running) return clearInterval(factTimer);
         quietFor = ui.quiet ? quietFor + 1 : 0;
         if (quietFor >= 35) {
           quietFor = -10;
-          const f = lesson.facts[factIndex++ % lesson.facts.length];
-          ui.buoy(`*Astronaut fact:* ${f.text}`);
+          if (webFacts.length && turn++ % 2 === 1) {
+            const w = webFacts[webIndex++ % webFacts.length];
+            ui.buoy(`*Found with SerpApi (${w.source}):* ${w.text}`);
+          } else {
+            const f = lesson.facts[factIndex++ % lesson.facts.length];
+            ui.buoy(`*Astronaut fact:* ${f.text}`);
+          }
         }
       }, 1000);
     }

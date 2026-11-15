@@ -110,7 +110,7 @@ export const RULES = {
         stowRadius: 1.0,
         // Part 2: start each experiment at the science bench (a timed puzzle), then keep it powered
         puzzleSeconds: 16,
-        puzzleSizes: { plants: 4, crystals: 4, blobs: 4 }, // pipes grid, code length, seconds held steady
+        puzzleSizes: { plants: 3, crystals: 4, blobs: 3 },
         experimentPerSec: 0.55, // Progress per second for each experiment that has a plug
         daySeconds: 45, // sunlit side of Earth: the solar panels make lots of energy
         nightSeconds: 30, // Earth's shadow: only the batteries
@@ -136,7 +136,7 @@ export const RULES = {
         floatSpeed: 3,
         debris: 0,
         puzzleSeconds: 18,
-        puzzleSizes: { plants: 3, crystals: 3, blobs: 3 },
+        puzzleSizes: { plants: 3, crystals: 3, blobs: 2 },
         experimentPerSec: 5,
         daySeconds: 12,
         nightSeconds: 12,

@@ -3,7 +3,6 @@
 //   const hum = sound.loop('hum')   looping beds; hum.set(0..1) changes loudness, hum.stop() ends it
 //   sound.muted / sound.toggle()    remembered between visits
 //   sound.music('calm' | 'tense' | 'title' | null)   the soundtrack (its own on/off: musicMuted / toggleMusic())
-//   sound.urgency(0..1)             speeds the soundtrack up (the HUD sets it when oxygen gets low)
 // Browsers only allow audio after a click or key press, so the audio context starts on the first one.
 
 const KEY = 'olympus.muted';
@@ -48,7 +47,6 @@ export function createSound(storage = safeStorage()) {
   let mood = null;
   let musicTimer = null;
   let nextBar = 0;
-  let hurry = 0; // 0 = normal speed, 1 = about 45% faster (oxygen very low)
   let bar = 0;
   const loops = new Set();
   const listeners = new Set();
@@ -389,7 +387,7 @@ export function createSound(storage = safeStorage()) {
 
   function scheduleBar(t0) {
     const m = MOODS[mood];
-    const beat = 60 / (m.bpm * (1 + 0.45 * hurry));
+    const beat = 60 / m.bpm;
     const sec = bar % 16; // where we are in the 16-bar section
     const chord = m.chords[bar % m.chords.length];
     if (!motif || sec === 0) motif = makeMotif(m);
@@ -449,9 +447,6 @@ export function createSound(storage = safeStorage()) {
         musicTimer = null;
       }
       if (ctx) nextBar = Math.max(nextBar, ctx.currentTime + 0.05);
-    },
-    urgency(v) {
-      hurry = Math.max(0, Math.min(1, Number(v) || 0));
     },
     get musicMuted() {
       return musicMuted;

@@ -97,5 +97,115 @@
     "url": "https://www.nasa.gov/centers-and-facilities/glenn/nasas-fission-surface-power-project-energizes-lunar-exploration/",
     "image": null,
     "sample": true
+  },
+  {
+    "queryId": "nbl",
+    "foundOn": "2026-11-15",
+    "title": "Spacewalk Training - NASA",
+    "source": "NASA",
+    "url": "https://www.nasa.gov/stem-content/spacewalk-training/",
+    "image": null,
+    "text": "The Neutral Buoyancy Laboratory provides an atmosphere resembling zero gravity (weightlessness) for astronauts to train for spacewalks.",
+    "via": "SerpApi"
+  },
+  {
+    "queryId": "nbl",
+    "foundOn": "2026-11-15",
+    "title": "Offshore Oil Workers Learn Survival Skills in Astronaut Training Pool",
+    "source": "NASA",
+    "url": "https://spinoff.nasa.gov/Spinoff2018/ps_6.html",
+    "image": null,
+    "text": "At Johnson Space Center's Neutral Buoyancy Lab, astronauts practice spacewalks underwater to simulate weightlessness.",
+    "via": "SerpApi"
+  },
+  {
+    "queryId": "zerog",
+    "foundOn": "2026-11-15",
+    "title": "Parabolic Flight - NASA",
+    "source": "NASA",
+    "url": "https://www.nasa.gov/mission/parabolic-flight/",
+    "image": null,
+    "text": "Parabolic flights simulate space travel by providing short-term weightlessness and partial gravity.",
+    "via": "SerpApi"
+  },
+  {
+    "queryId": "zerog",
+    "foundOn": "2026-11-15",
+    "title": "NASA Interns Conduct Aerospace Research in Microgravity",
+    "source": "NASA",
+    "url": "https://science.nasa.gov/science-research/planetary-science/nasa-interns-conduct-aerospace-research-in-microgravity/",
+    "image": null,
+    "text": "As part of the SEES Microgravity Research initiative, four interns were selected to fly with their experiments in microgravity aboard the ZERO-G parabolic aircraft.",
+    "via": "SerpApi"
+  },
+  {
+    "queryId": "lab",
+    "foundOn": "2026-11-15",
+    "title": "About Canadarm2 - Canadian Space Agency",
+    "source": "Canadian Space Agency",
+    "url": "https://www.asc-csa.gc.ca/eng/iss/canadarm2/about.asp",
+    "image": null,
+    "text": "Canadarm2 is part of Canada's contribution to the International Space Station (ISS).",
+    "via": "SerpApi"
+  },
+  {
+    "queryId": "lab",
+    "foundOn": "2026-11-15",
+    "title": "The history of Canadarm2 - Canadian Space Agency",
+    "source": "Canadian Space Agency",
+    "url": "https://www.asc-csa.gc.ca/eng/iss/canadarm2/history-of-canadarm2.asp",
+    "image": null,
+    "text": "Canadarm2 made its debut on board the International Space Station (ISS) in 2001.",
+    "via": "SerpApi"
+  },
+  {
+    "queryId": "ship",
+    "foundOn": "2026-11-15",
+    "title": "Preparing for Artemis II: Training for a Mission Around the Moon",
+    "source": "NASA",
+    "url": "https://www.nasa.gov/centers-and-facilities/johnson/preparing-for-artemis-ii-training-for-a-mission-around-the-moon/",
+    "image": null,
+    "text": "Astronauts trained in medical operations, exercise systems, spacesuits, and daily life aboard Orion.",
+    "via": "SerpApi"
+  },
+  {
+    "queryId": "moon",
+    "foundOn": "2026-11-15",
+    "title": "Artemis III: NASA's First Human Mission to Lunar South Pole",
+    "source": "NASA",
+    "url": "https://www.nasa.gov/missions/artemis/artemis-iii/",
+    "image": null,
+    "text": "The information and materials collected by Artemis III astronauts will increase our understanding of the mysterious South Pole region, the Moon, and our solar system.",
+    "via": "SerpApi"
+  },
+  {
+    "queryId": "moon",
+    "foundOn": "2026-11-15",
+    "title": "NASA Completes Astronaut-Deployed Science Instrument for Lunar Surface",
+    "source": "NASA",
+    "url": "https://science.nasa.gov/missions/artemis/nasa-completes-astronaut-deployed-science-instrument-for-lunar-surface/",
+    "image": null,
+    "text": "NASA has declared \"wrenches down\" on the first completed payload designed for Artemis astronauts to deploy on the Moon's surface.",
+    "via": "SerpApi"
+  },
+  {
+    "queryId": "moon",
+    "foundOn": "2026-11-15",
+    "title": "NASA SVS | Artemis Science: Exploring the Moon's South Pole",
+    "source": "NASA",
+    "url": "https://svs.gsfc.nasa.gov/14886",
+    "image": null,
+    "text": "By sending astronauts to collect samples from the Moon's South Pole, NASA's Artemis missions may uncover clues to the formation of the solar system.",
+    "via": "SerpApi"
+  },
+  {
+    "queryId": "moon",
+    "foundOn": "2026-11-15",
+    "title": "NASA Explorers: The South Pole | NASA+",
+    "source": "NASA",
+    "url": "https://plus.nasa.gov/video/nasa-explorers-the-south-pole/",
+    "image": null,
+    "text": "When Artemis astronauts land on the Moon, they'll travel to sites never before visited by humans.",
+    "via": "SerpApi"
   }
 ]

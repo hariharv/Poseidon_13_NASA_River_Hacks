@@ -6,9 +6,9 @@ export const DEBRIS = 'Space junk hit the robot arm because it was not stowed in
 
 // The three experiments in the science boxes. Each has its own colour, slot and start-up puzzle.
 export const EXPERIMENTS = [
-  { id: 'plants', label: 'PLANTS', name: 'space plants', colour: '#5bd98a', colourName: 'green', puzzle: 'pipes', puzzleTitle: 'Connect the water pipes' },
+  { id: 'plants', label: 'PLANTS', name: 'space plants', colour: '#5bd98a', colourName: 'green', puzzle: 'wires', puzzleTitle: 'Hook up the water pump' },
   { id: 'crystals', label: 'CRYSTALS', name: 'crystals', colour: '#46b4ff', colourName: 'blue', puzzle: 'sequence', puzzleTitle: 'Type in the start code' },
-  { id: 'blobs', label: 'WATER BLOBS', name: 'water blobs', colour: '#a98bff', colourName: 'purple', puzzle: 'balance', puzzleTitle: 'Keep the mixer speed steady' },
+  { id: 'blobs', label: 'WATER BLOBS', name: 'water blobs', colour: '#a98bff', colourName: 'purple', puzzle: 'timing', puzzleTitle: 'Stop the mixer in the green' },
 ];
 
 // The power panel. Each machine takes 1 energy plug.
