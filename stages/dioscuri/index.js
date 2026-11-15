@@ -34,7 +34,7 @@ const CONTROLS = [
   { label: 'Float around the lab', value: 'W and S (or ↑ ↓), Space = up, Shift = down' },
   { label: 'Turn left and right', value: 'A and D (or ← →, or the mouse)' },
   { label: 'Use what you look at', value: 'Press E (or click)' },
-  { label: 'At the arm controls', value: 'W A S D, Space, Shift steer the arm · Q gets up' },
+  { label: 'At the arm controls', value: 'W A S D, Space, Shift steer the arm · Q gets you out of the chair' },
 ];
 
 export default {
@@ -459,7 +459,7 @@ function run(game, { demo }) {
       ],
       tips: [
         '*Float:* W A S D to push the way you look, Space up, Shift down.',
-        '*Arm controls* (at the window): look at the desk and press E. Steer with W A S D, Space and Shift. Press E to grab or drop. Press Q to get up.',
+        '*Arm controls* (at the window): look at the desk and press E. Steer with W A S D, Space and Shift. Press E to grab or drop. Press Q to get out of the chair.',
         'The *power panel* is on the left wall and the *science bench* is on the right wall. Look at one and press E.',
         'Space junk alert? Park the arm’s hand inside the yellow *STOW ring* before the countdown ends.',
       ],
@@ -525,7 +525,10 @@ function run(game, { demo }) {
         controls.sit();
         world.inside.setSeated(true);
         game.sound.play('whoosh');
-        once('first-sit', 'You\'re at the *arm controls*! Steer with *W A S D*, Space and Shift. Grab a box by its *gold handle* with E. Press *Q* to get up.');
+        if (once('first-sit', 'You\'re at the *arm controls*! Steer with *W A S D*, Space and Shift. Grab a box by its *gold handle* with E.')) {
+          // the way out of the chair gets its own line, so nobody misses it
+          later(6500, () => game.ui.buoy('To get out of the chair, *press Q*. That\'s how you stand up and float back into the lab.'));
+        } else game.ui.buoy('Sitting at the arm controls. *Press Q* to get out of the chair.');
       } else if (aimed.kind === 'socket') toggle(aimed.item);
       else if (aimed.kind === 'station') {
         const e = exps.find((x) => x.station === aimed.item);
@@ -637,7 +640,7 @@ function run(game, { demo }) {
         const e = exps.find((x) => x.station === aimed.item);
         prompt = e.placed && !e.started ? `Press [E] to start the ${e.exp.label} experiment` : `${e.exp.label}: ${e.station.state === 'waiting' ? 'waiting for its box' : e.station.state}`;
       }
-    } else if (controls.mode === 'desk') prompt = armPrompt ?? (easy ? 'Steer: W A S D, Space, Shift · [Q] get up' : null);
+    } else if (controls.mode === 'desk') prompt = armPrompt ?? (easy ? 'Steer: W A S D, Space, Shift · [Q] get out of the chair' : null);
     game.ui.target(Boolean(aimed) || Boolean(armPrompt?.startsWith('Press')));
     setPrompt(prompt);
     game.ui.touchButton('leave', controls.mode === 'desk' && !controls.moving); // touch: Get up only at the arm desk

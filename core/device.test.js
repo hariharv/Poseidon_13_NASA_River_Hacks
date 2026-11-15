@@ -16,6 +16,11 @@ describe('detectDevice: computer or touch screen', () => {
 });
 
 describe('touchWords: keyboard words become touch words', () => {
+  it('Stage 3: Q is how you get out of the chair (GET UP on touch)', () => {
+    expect(touchWords('Sitting at the arm controls. *Press Q* to get out of the chair.')).toBe('Sitting at the arm controls. *Tap GET UP* to get out of the chair.');
+    expect(touchWords('To get out of the chair, *press Q*.')).toBe('To get out of the chair, *tap GET UP*.');
+    expect(touchWords('Steer: W A S D, Space, Shift · [Q] get out of the chair')).toBe('Steer: the stick, UP, DOWN · [GET UP] out of the chair');
+  });
   it('swaps keys for the on-screen buttons', () => {
     expect(touchWords('Press [E] to grab the wrench')).toBe('Press [USE] to grab the wrench');
     expect(touchWords('Look at it and press E.')).toBe('Look at it and tap USE.');

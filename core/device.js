@@ -59,7 +59,8 @@ const swapsFor = ({ use, up, down, leave }) => [
   [/\bmove the mouse\b/g, 'drag the screen'],
   [/\*press E\*/g, `*tap ${use}*`], // a bold "*press E*" stays bold
   [/\*Press E\*/g, `*Tap ${use}*`],
-  [/\*press Q\*/gi, `*tap ${leave}*`],
+  [/\*press Q\*/g, `*tap ${leave}*`],
+  [/\*Press Q\*/g, `*Tap ${leave}*`],
   [/\bPress E \(or click\)/g, `Tap ${use}`],
   [/\bE \(or click\)/g, use],
   [/\bpress \*?E\b\*?/g, `tap ${use}`], // (also eats the closing * of a bold key)
@@ -69,6 +70,8 @@ const swapsFor = ({ use, up, down, leave }) => [
   [/\bpress \*?Q\b\*?/g, `tap ${leave}`],
   [/\bPress \*?Q\b\*?/g, `Tap ${leave}`],
   [/\[Q\] get up/g, `[${leave}]`], // not "[GET UP] get up"
+  [/\[Q\] get out of the chair/g, `[${leave}] out of the chair`],
+  [/\bQ gets you out of the chair\b/g, `${leave} gets you out of the chair`],
   [/\[Q\]/g, `[${leave}]`],
   [/\bQ gets up\b/g, `${leave} to stand up`],
   [/\bhold \*?Space\*?\b/g, `hold ${up}`],
