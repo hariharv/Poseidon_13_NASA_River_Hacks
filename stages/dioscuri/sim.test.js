@@ -25,7 +25,7 @@ describe('Dioscuri: science is why we go to space, but it costs energy', () => {
     expect(EXPERIMENTS).toHaveLength(3);
     for (const e of EXPERIMENTS) {
       expect(MACHINES.some((m) => m.id === e.id)).toBe(true);
-      expect(['wires', 'sequence', 'timing']).toContain(e.puzzle);
+      expect(['wires', 'sequence', 'timing', 'flow', 'memory', 'pipes', 'balance']).toContain(e.puzzle); // every puzzle kind ui/puzzle.js knows
     }
     expect(new Set(EXPERIMENTS.map((e) => e.puzzle)).size).toBe(3); // three different puzzles
   });

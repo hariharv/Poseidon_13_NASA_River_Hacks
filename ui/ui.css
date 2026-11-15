@@ -940,6 +940,8 @@
 .puzzle {
   position: relative;
   width: min(460px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
   padding: 22px 22px 16px;
   border-radius: 24px;
   background: rgba(13, 11, 38, 0.95);
@@ -1038,6 +1040,178 @@
 }
 .wire-end.is-wrong {
   animation: shake 300ms ease;
+}
+
+/* "How to play" box at the top of every puzzle */
+.puzzle-how {
+  margin: 0 0 12px;
+  padding: 8px 12px 8px;
+  border-radius: 12px;
+  background: rgba(255, 193, 69, 0.1);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 193, 69, 0.35);
+  text-align: left;
+  font-size: 0.88em;
+  line-height: 1.35;
+}
+.puzzle-how-title {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--visor-gold);
+}
+.puzzle-how ol {
+  margin: 0;
+  padding-left: 1.3em;
+}
+.puzzle-how strong {
+  color: var(--visor-gold);
+}
+
+/* memory: match the pairs */
+.memory {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  gap: 10px;
+  width: min(100%, 340px);
+  margin: 0 auto;
+}
+.mem-card {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  background: var(--twill-2, #2a2766);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4), inset 0 0 0 2px rgba(255, 243, 214, 0.2);
+  color: var(--cream);
+  font-size: 1.8em;
+  transition: transform 160ms ease, background 160ms ease;
+}
+.mem-face {
+  display: none;
+  color: var(--night);
+}
+.mem-card.is-up {
+  background: var(--c);
+  transform: scale(1.04);
+}
+.mem-card.is-up .mem-back {
+  display: none;
+}
+.mem-card.is-up .mem-face {
+  display: inline;
+}
+.mem-card.is-matched {
+  box-shadow: 0 0 0 3px var(--cream), 0 0 16px var(--c);
+  cursor: default;
+}
+
+/* pipes: turn the pieces until the bulb lights */
+.pipes-wrap {
+  position: relative;
+  width: min(100%, 300px);
+  margin: 0 auto;
+  padding: 0 34px;
+}
+.pipes {
+  display: grid;
+  grid-template-columns: repeat(var(--n), 1fr);
+  gap: 3px;
+  aspect-ratio: 1;
+}
+.pipe-cell {
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 243, 214, 0.15);
+}
+.pipe-cell svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  stroke: #6c7681;
+  fill: #6c7681;
+  transition: transform 120ms ease;
+}
+.pipe-cell.is-lit svg {
+  stroke: var(--visor-gold);
+  fill: var(--visor-gold);
+  filter: drop-shadow(0 0 4px rgba(255, 193, 69, 0.7));
+}
+.pipe-cell:active svg {
+  transform: rotate(20deg);
+}
+.pipes-end {
+  position: absolute;
+  top: calc((var(--row) + 0.5) / var(--n) * (100% - 0px));
+  transform: translateY(-50%);
+  font-size: 1.5em;
+}
+.pipes-end.is-power {
+  left: 0;
+}
+.pipes-end.is-bulb {
+  right: 0;
+  filter: grayscale(1) brightness(0.6);
+}
+.pipes-end.is-bulb.is-on {
+  filter: drop-shadow(0 0 10px #ffe27a);
+}
+
+/* balance: hold it steady */
+.balance {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 16px;
+  align-items: center;
+  width: min(100%, 300px);
+  margin: 0 auto 10px;
+}
+.balance-meter {
+  position: relative;
+  height: 180px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.balance-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: rgba(91, 217, 138, 0.35);
+  box-shadow: inset 0 0 0 2px var(--progress);
+}
+.balance-zone.is-in {
+  background: rgba(91, 217, 138, 0.6);
+}
+.balance-needle {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 6px;
+  margin-bottom: -3px;
+  border-radius: 3px;
+  background: var(--cream);
+  box-shadow: 0 0 8px rgba(255, 243, 214, 0.8);
+}
+.balance-fill {
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.balance-fill span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--progress);
+}
+.balance-btn {
+  touch-action: none;
+  user-select: none;
 }
 
 /* flow: drag power lines between matching dots */

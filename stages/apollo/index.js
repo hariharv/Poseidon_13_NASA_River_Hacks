@@ -313,11 +313,25 @@ function run(game, { demo }) {
       game.ui.buoy('You already called today. Mission Control is busy! Try again *tomorrow*.');
       return;
     }
-    lastCallDay = day;
-    radio = { phase: 'up', k: 0 };
-    game.sound.play('beep');
-    world.radio.set({ mode: 'up', k: 0, text: 'Sending to Earth...', ready: false });
-    if (calls === 0) game.ui.buoy("Watch the screen: your message travels at the speed of light, but the Moon is *384,400 km* away. That's about *1.3 seconds* each way!");
+    if (game.ui.puzzleOpen) return;
+    // first tune the radio: match the signal pairs
+    player.setEnabled(false);
+    game.ui
+      .puzzle({ kind: 'memory', title: 'Tune the radio to Earth', text: 'Match the *signal pairs* to find Mission Control.', seconds: r.puzzleSeconds + 10, size: 3 })
+      .then((ok) => {
+        if (!game.running || disposed) return;
+        player.setEnabled(true);
+        player.requestLock();
+        if (!ok) {
+          game.ui.buoy('Only static! Press E on the radio to try tuning again.', { interrupt: true });
+          return;
+        }
+        lastCallDay = day;
+        radio = { phase: 'up', k: 0 };
+        game.sound.play('beep');
+        world.radio.set({ mode: 'up', k: 0, text: 'Sending to Earth...', ready: false });
+        if (calls === 0) game.ui.buoy("Watch the screen: your message travels at the speed of light, but the Moon is *384,400 km* away. That's about *1.3 seconds* each way!");
+      });
   }
   function radioStep(dt) {
     if (!radio) return;
