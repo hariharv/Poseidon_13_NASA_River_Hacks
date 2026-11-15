@@ -29,6 +29,14 @@ export function device() {
 
 export const isTouch = () => device() === 'touch';
 
+// Switch the layout and words to 'touch' or 'desktop' while the page is open (the presentation
+// tour shows the phone version for a moment, then switches back).
+export function forceDevice(kind) {
+  current = kind === 'touch' ? 'touch' : 'desktop';
+  if (typeof document !== 'undefined') document.documentElement.dataset.device = current;
+  return current;
+}
+
 // The browser said no to locking the mouse. Should the game give up on mouse-look and switch to
 // click-and-drag? On a touch screen, yes. On a computer, a lock can be refused for ordinary reasons
 // (asked for after the 3-2-1 countdown, the window wasn't focused, just after Esc), so the game

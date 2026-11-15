@@ -16,6 +16,8 @@
 //
 // Every puzzle shows a short "How to play" box. Works with the mouse, and with keys:
 // 1-4 pick, Space / E for the timing needle and the balance.
+//
+// `autoplay: true` makes the puzzle solve itself on screen, move by move (the presentation tour uses it).
 
 import { makeFlow, same, touching, stepToward } from './flow.js';
 import { isTouch } from '../core/device.js';
@@ -60,6 +62,12 @@ export function createPuzzle(layer, sound) {
   }
 
   let raf = 0;
+  let auto = false; // this puzzle plays itself (the presentation tour)
+  // a step of the self-playing solve, only while this same puzzle is still open
+  const later = (ms, fn) => {
+    const mine = finish;
+    setTimeout(() => open && finish === mine && fn(), ms);
+  };
   let onKey = () => {};
   let onClose = null; // extra clean-up for a puzzle (like a keyup listener)
 
@@ -169,7 +177,13 @@ export function createPuzzle(layer, sound) {
         const lefts = layer.querySelectorAll('.wire-end[data-side="l"]');
         pick(lefts[k - 1]);
       }
-    };
+    };    if (auto) {
+      const lefts = [...layer.querySelectorAll('.wire-end[data-side="l"]')];
+      lefts.forEach((l, i) => {
+        later(700 + i * 900, () => pick(l));
+        later(1100 + i * 900, () => pick(layer.querySelector(`.wire-end[data-side="r"][data-id="${l.dataset.id}"]`)));
+      });
+    }
   }
 
   // ---------- sequence ----------
@@ -196,6 +210,7 @@ export function createPuzzle(layer, sound) {
         showingOrder = false;
         input = 0;
         ui.status('Your turn!', true);
+        if (auto) order.forEach((id, i) => later(450 + i * 420, () => press(padEls.find((p) => p.dataset.id === id))));
       }, 500 + order.length * 620);
     };
     const press = (btn) => {
@@ -355,6 +370,16 @@ export function createPuzzle(layer, sound) {
     grid.addEventListener('pointercancel', end);
     onKey = () => {};
     draw();
+    if (auto) {
+      // draw each line along the board's real answer, a square at a time
+      let at = 700;
+      board.answer.forEach((cells) => {
+        later(at, () => begin(cells[0]));
+        cells.slice(1).forEach((cell, j) => later(at + 85 * (j + 1), () => (extend(cell), draw())));
+        at += 85 * cells.length + 220;
+        later(at - 200, () => (active = -1));
+      });
+    }
   }
 
   // ---------- timing ----------
@@ -392,6 +417,7 @@ export function createPuzzle(layer, sound) {
       if (pos < 0) (pos = 0), (dir = 1);
       needle.style.left = `${pos}%`;
       cooldown -= dt;
+      if (auto && cooldown <= 0 && Math.abs(pos - centre) <= width / 5) stop();
     });
     const stop = () => {
       if (cooldown > 0) return;
@@ -468,6 +494,24 @@ export function createPuzzle(layer, sound) {
     };
     layer.querySelector('.memory').addEventListener('click', (e) => flip(e.target.closest('.mem-card')));
     onKey = () => {};
+    if (auto) {
+      // one wrong guess first (like a real player), then every pair
+      const cardEls = [...layer.querySelectorAll('.mem-card')];
+      const wrong = cardEls.findIndex((_, i) => i > 0 && deck[i].id !== deck[0].id);
+      const plan = [[0, wrong]];
+      const used = new Set();
+      deck.forEach((c, i) => {
+        if (used.has(i)) return;
+        const j = deck.findIndex((d, k) => k > i && d.id === c.id);
+        used.add(i).add(j);
+        plan.push([i, j]);
+      });
+      plan.forEach(([a, b], step) => {
+        const at = step === 0 ? 700 : 1900 + (step - 1) * 800; // after the wrong guess flips back
+        later(at, () => flip(cardEls[a]));
+        later(at + 320, () => flip(cardEls[b]));
+      });
+    }
   }
 
   // ---------- pipes (turn the pieces) ----------
@@ -517,6 +561,17 @@ export function createPuzzle(layer, sound) {
     });
     onKey = () => {};
     draw();
+    if (auto) {
+      // turn each piece to its answer, left to right, a click at a time
+      const clicks = [];
+      for (let c = 0; c < n; c++)
+        for (let r = 0; r < n; r++) {
+          let turns = 0;
+          while (turns < 4 && rotate(board.grid[r][c], turns) !== board.answer[r][c]) turns++;
+          for (let i = 0; i < turns % 4; i++) clicks.push(els[r * n + c]);
+        }
+      clicks.forEach((el, i) => later(600 + i * 160, () => !won && el.click()));
+    }
   }
 
   // ---------- balance (hold it steady) ----------
@@ -555,6 +610,7 @@ export function createPuzzle(layer, sound) {
       if (pos > 100) (pos = 100), (vel = 0);
       // the green zone drifts slowly up and down
       const centre = 50 + Math.sin(t * 0.9) * 22 + Math.sin(t * 2.1) * 6;
+      if (auto) holding = pos < centre - 2;
       zoneEl.style.bottom = `${centre - zoneSize / 2}%`;
       zoneEl.style.height = `${zoneSize}%`;
       needleEl.style.bottom = `${pos}%`;
@@ -595,9 +651,10 @@ export function createPuzzle(layer, sound) {
     get isOpen() {
       return open;
     },
-    open({ kind = 'wires', title = 'Quick repair!', text, seconds = 15, size } = {}) {
+    open({ kind = 'wires', title = 'Quick repair!', text, seconds = 15, size, autoplay = false } = {}) {
       if (open) return Promise.resolve(false);
       open = true;
+      auto = autoplay;
       if (document.pointerLockElement) document.exitPointerLock();
       return new Promise((resolve) => {
         finish = resolve;

@@ -2,6 +2,7 @@
 //   /                         title cutscenes -> homepage (team + make your astronaut) -> loading screen -> pick a mode -> training
 //   /?stage=hermes            one stage alone (for stage builders)
 //   /?stage=hermes&mode=demo  that stage's judge version
+//   /?tour                    the presentation tour: the whole game playing by itself, about 3 minutes
 
 import '../ui/tokens.css';
 import { createUI } from '../ui/index.js';
@@ -28,7 +29,10 @@ const web = createWeb(ui);
 const ctx = { ui, root: stageHost, save, data, web };
 if (import.meta.env?.DEV) window.__ui = ui; // dev only: poke the UI (e.g. the music) from the console
 
-if (stageParam) {
+if (params.has('tour')) {
+  // the presentation tour: every part of the game, playing by itself
+  import('../intro/tour.js').then(({ runTour }) => runTour({ app, stageHost, ui, data, web }));
+} else if (stageParam) {
   runSingleStage(stageParam, modeParam);
 } else {
   showTitle();

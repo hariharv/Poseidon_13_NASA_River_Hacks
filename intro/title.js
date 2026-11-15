@@ -153,14 +153,14 @@ const SCENES = [
       return {
         world,
         shot(camera, k, t, dt) {
-          // sweep round the base, low over the ground, ending with Earth behind it
+          // sweep round the base, low over the ground, staying outside the ring of solar panel masts
           const e = easeOut(k);
-          const a = 0.95 - e * 0.5;
-          const r = 22 - e * 5;
+          const a = 0.95 - e * 0.33;
+          const r = 24 - e;
           const x = -3 + Math.cos(a) * r;
           const z = Math.sin(a) * r;
-          camera.position.set(x, mod.groundAt(x, z) + 1.4 + e * 0.8, z);
-          camera.lookAt(-3, 1.6, 0);
+          camera.position.set(x, mod.groundAt(x, z) + 1.8 + e * 0.5, z);
+          camera.lookAt(-3, 1.4, 0);
           camera.rotation.z += (1 - e) * 0.08;
           world.update(t, dt, camera);
         },
