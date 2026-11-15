@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import './odysseus.css';
-import { buildWorld, disposeTree, SPAWN, MASKS } from './world.js';
+import { buildWorld, disposeTree, SPAWN, MASKS, separate } from './world.js';
 import { createPlayer } from './player.js';
 import { createTools } from './tools.js';
 import { createBlobs } from './blobs.js';
@@ -459,6 +459,7 @@ function run(game, { demo }) {
     }
 
     tools.update(dt, t, { g, camera });
+    separate([...tools.loose, ...blobs.loose]); // floating things bump off each other, never through
 
     // the end of the flight: finish this hill, pull out, then fly level
     if (endFlightAt != null && flightT >= endFlightAt) {

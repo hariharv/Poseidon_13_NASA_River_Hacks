@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { dotTexture } from '../hermes/textures.js';
-import { keepInside } from './world.js';
+import { keepInside, pushOutOfBox, SOLIDS } from './world.js';
 
 const KINDS = ['wrench', 'screwdriver', 'tape', 'flashlight', 'clipboard', 'duck', 'pliers', 'socket'];
 export const TOOL_NAMES = {
@@ -40,6 +40,7 @@ export function createTools(scene, { count, origin, speed, hints }) {
       spin: new THREE.Vector3(),
       state: 'boxed', // boxed -> loose -> caught
       fly: 0,
+      r: TOOL_RADIUS * 0.75, // for bumping into other floating things
     };
   });
 
@@ -126,6 +127,7 @@ function bounce(tool, g) {
   const floor = FLOOR_REST;
   const wasFalling = v.y < 0 && p.y < floor;
   keepInside(p, v, TOOL_RADIUS, 0.55, floor);
+  for (const box of SOLIDS) pushOutOfBox(p, v, box, TOOL_RADIUS * 0.8, 0.45);
   if (wasFalling && g > 0) v.y *= 0.27; // the floor mat is soft: barely a bounce when the plane is heavy
   if (g > 0 && p.y <= floor + 0.001) {
     v.x *= 0.9;

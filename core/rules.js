@@ -26,7 +26,7 @@ export const RULES = {
         refillPerSec: 12, // oxygen gained at the air station
         refillRadius: 2.6, // metres from the air station to refill
         fixRadius: 3.6, // metres from a panel to work on it
-        swimSpeed: 4.5, // metres per second
+        swimSpeed: 5.2, // metres per second (a bit quicker between panels)
         lowOxygen: 35, // Buoy warns
         veryLowOxygen: 18, // Buoy warns louder
         stars: { safeAbove: 20, speedySeconds: 150 },
@@ -48,7 +48,7 @@ export const RULES = {
       base: {
         startOxygen: 90, // each stage starts with a little less air than the one before
         // Part 1: catch the floating tools
-        tools: 6,
+        tools: 5,
         heavySeconds: 5, // pull-up / pull-out: you feel about twice as heavy
         firstClimbSeconds: 2, // the very first climb is short, so you float almost straight away
         floatSeconds: 22, // weightless time per hill (NASA: about 22-25 s)
@@ -73,7 +73,7 @@ export const RULES = {
         plugsFlicker: 1, // plugs while the generator flickers
         flickerAt: 80, // Progress when the flicker starts (null = no flicker)
         flickerSeconds: 12,
-        uploadPerSec: 0.9, // Progress per second for each camera plug
+        uploadPerSec: 1.3, // Progress per second for each camera plug
         lowOxygen: 35,
         veryLowOxygen: 18,
         stars: { safeAbove: 30, speedySeconds: 210 },
@@ -111,9 +111,9 @@ export const RULES = {
         // Part 2: start each experiment at the science bench (a timed puzzle), then keep it powered
         puzzleSeconds: 16,
         puzzleSizes: { plants: 4, crystals: 4, blobs: 4 }, // pipes grid, code length, seconds held steady
-        experimentPerSec: 0.55, // Progress per second for each experiment that has a plug
-        daySeconds: 45, // sunlit side of Earth: the solar panels make lots of energy
-        nightSeconds: 30, // Earth's shadow: only the batteries
+        experimentPerSec: 0.8, // Progress per second for each experiment that has a plug
+        daySeconds: 40, // sunlit side of Earth: the solar panels make lots of energy
+        nightSeconds: 26, // Earth's shadow: only the batteries (still too short to finish an experiment)
         dayPlugs: 4,
         nightPlugs: 2,
         startPlugged: ['air', 'arm', 'lights'],
@@ -147,7 +147,7 @@ export const RULES = {
       base: {
         startOxygen: 80, // each stage starts with a little less air than the one before
         // Flying: keep the target in the ring to line up the course-correction burns
-        flyPerSec: 1.0, // Progress per second while the target is inside the ring (and the engine fires)
+        flyPerSec: 1.35, // Progress per second while the target is inside the ring (and the engine fires)
         burnBoost: 1.3, // the engine only fires while you hold Space, so each second of burn counts for more
         burnShake: 0.16, // firing the engine shakes the ship off target a little
         faultPuzzleSeconds: 14, // time to type the JET RESET code
@@ -205,7 +205,7 @@ export const RULES = {
         startOxygen: 80,
         // Time: 14 Moon-days. The Sun is up for the first 7, then the long, dark lunar night.
         days: 14,
-        dayLength: 15, // seconds per Moon-day in the game
+        dayLength: 12, // seconds per Moon-day in the game
         nightFrom: 8, // days 8 to 14 are night
         dayPlugs: 4, // solar panels in sunlight
         nightPlugs: 2, // only the batteries in the dark

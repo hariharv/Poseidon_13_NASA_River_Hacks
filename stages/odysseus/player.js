@@ -5,7 +5,7 @@
 // Uses pointer lock when it can, and falls back to click-and-drag to look.
 
 import * as THREE from 'three';
-import { BOUNDS, halfWidthAt } from './world.js';
+import { BOUNDS, halfWidthAt, SOLIDS } from './world.js';
 
 const LYING_EYE = 0.45;
 const STANDING_EYE = 1.6;
@@ -176,6 +176,28 @@ export function createPlayer({ camera, dom, spawn, rules, onPointerChange, onPoi
       const sx = Math.sign(pos.x);
       pos.x = sx * side;
       vel.x = mode === 'float' ? -sx * Math.abs(vel.x) * 0.4 : 0;
+    }
+    // solid things (toolbox, fridge, speaker, air machine): your body bumps into them
+    const feet = pos.y - (mode === 'float' ? 0.45 : mode === 'heavy' ? 0.35 : STANDING_EYE - 0.1);
+    for (const b of SOLIDS) {
+      if (feet > b.max.y || pos.y + 0.15 < b.min.y) continue;
+      const cx = Math.max(b.min.x, Math.min(pos.x, b.max.x));
+      const cz = Math.max(b.min.z, Math.min(pos.z, b.max.z));
+      const dx = pos.x - cx;
+      const dz = pos.z - cz;
+      const d = Math.hypot(dx, dz);
+      if (d >= 0.3) continue;
+      if (d < 1e-6) {
+        pos.z = b.max.z + 0.3; // right inside it: step out the back
+        continue;
+      }
+      pos.x = cx + (dx / d) * 0.3;
+      pos.z = cz + (dz / d) * 0.3;
+      const vn = (vel.x * dx + vel.z * dz) / d;
+      if (vn < 0) {
+        vel.x -= (vn * dx) / d;
+        vel.z -= (vn * dz) / d;
+      }
     }
     // landed: settle at standing or lying eye height
     if (mode !== 'float' && pos.y <= floorEye + 0.001) {

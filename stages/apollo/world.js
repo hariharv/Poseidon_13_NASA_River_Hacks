@@ -48,6 +48,10 @@ function distToBase(x, z) {
   const dz = Math.max(BASE_FOOT.minZ - z, 0, z - BASE_FOOT.maxZ);
   return Math.hypot(dx, dz);
 }
+// Solid things outside (rocks, solar panel poles, the rover, the flag, the sign, ice chunks) as circles
+// on the ground: { x, z, r }. You walk round them instead of through them.
+export const OBSTACLES = [];
+
 export function inBaseFootprint(x, z, pad = 0.4) {
   return x > BASE_FOOT.minX - pad && x < BASE_FOOT.maxX + pad && z > BASE_FOOT.minZ - pad && z < BASE_FOOT.maxZ + pad;
 }
@@ -91,6 +95,7 @@ export function buildWorld({ suit = 'orange', trays = 3, iceChunks = 6, hints = 
   animators.push((t) => earth.update(t));
 
   // ---------- the Moon's ground ----------
+  OBSTACLES.length = 0;
   const ground = buildGround(scene);
   const crater = buildIce(scene, iceChunks, hints);
   animators.push((t) => crater.update(t));
@@ -292,6 +297,7 @@ function buildGround(scene) {
     b.position.set(x, groundAt(x, z) + s * 0.4, z);
     b.rotation.set(rand() * 3, rand() * 3, rand() * 3);
     scene.add(b);
+    OBSTACLES.push({ x, z, r: s * 0.95 });
   }
   return mesh;
 }
@@ -312,7 +318,9 @@ function buildIce(scene, count, hints) {
     const glow = new THREE.PointLight('#5fd0ff', hints === 'more' ? 3 : 2, 4, 1.6);
     glow.position.copy(m.position).add(new THREE.Vector3(0, 0.6, 0));
     scene.add(glow);
-    chunks.push({ mesh: m, glow, position: m.position.clone(), mined: false });
+    const solid = { x, z, r: 0.55 };
+    OBSTACLES.push(solid);
+    chunks.push({ mesh: m, glow, position: m.position.clone(), mined: false, solid });
   }
   // a sign on the rim so you can find it
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1), new THREE.MeshBasicMaterial({ map: labelTexture({ text: 'ICE CRATER', sub: 'always in shadow', bg: '#12305a', w: 360, h: 110 }), side: THREE.DoubleSide }));
@@ -323,11 +331,13 @@ function buildIce(scene, count, hints) {
   scene.add(sign);
   const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.4, 8), new THREE.MeshStandardMaterial({ color: '#9aa3ad' }));
   post.position.set(sx, groundAt(sx, sz) + 0.7, sz);
+  OBSTACLES.push({ x: sx, z: sz, r: 0.2 });
   scene.add(post);
   return {
     chunks,
     mine(chunk) {
       chunk.mined = true;
+      chunk.solid.r = 0;
       chunk.mesh.visible = false;
       chunk.glow.visible = false;
     },
@@ -345,6 +355,7 @@ function buildSolar(scene) {
   const mat = new THREE.MeshStandardMaterial({ map: cells, roughness: 0.35, metalness: 0.4, side: THREE.DoubleSide });
   const metal = new THREE.MeshStandardMaterial({ color: '#b9c2cb', roughness: 0.4, metalness: 0.6 });
   const towers = [[12, 9], [16, 7], [-12, 9]].map(([x, z]) => {
+    OBSTACLES.push({ x, z, r: 0.4 });
     const g = new THREE.Group();
     g.position.set(x, groundAt(x, z), z);
     scene.add(g);
@@ -402,6 +413,8 @@ function buildExtras(scene) {
   const dark = new THREE.MeshStandardMaterial({ color: '#2b2f38', roughness: 0.7 });
   const rover = new THREE.Group();
   rover.position.set(-9, groundAt(-9, 7), 7);
+  // the rover is long: three circles along its body (it is turned by 0.6 rad)
+  for (const k of [-0.9, 0, 0.9]) OBSTACLES.push({ x: -9 + Math.cos(0.6) * k, z: 7 - Math.sin(0.6) * k, r: 1.0 });
   rover.rotation.y = 0.6;
   scene.add(rover);
   const body = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.5, 1.6), white);
@@ -421,6 +434,7 @@ function buildExtras(scene) {
   const fz = 3.5;
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.6, 8), new THREE.MeshStandardMaterial({ color: '#d7dde3', metalness: 0.6, roughness: 0.3 }));
   pole.position.set(fx, groundAt(fx, fz) + 1.3, fz);
+  OBSTACLES.push({ x: fx, z: fz, r: 0.2 });
   scene.add(pole);
   const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.95), new THREE.MeshStandardMaterial({ map: labelTexture({ text: 'OLYMPUS', sub: 'Academy · Moon Base', bg: '#1b1846', fg: '#ffc145', w: 300, h: 190 }), side: THREE.DoubleSide }));
   flag.position.set(fx + 0.78, groundAt(fx, fz) + 2.1, fz);

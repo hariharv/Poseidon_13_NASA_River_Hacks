@@ -311,6 +311,23 @@ function run(game, { demo }) {
     if (demo && p.airOn && running.length) game.demo.check('teaches-one-thing');
   }
 
+  // How low the arm's tip may go here without anything passing through a science box:
+  // a box you carry rides over the other boxes, and the empty hand stops on a box's lid.
+  function lowestTipOver(at) {
+    let low = -Infinity;
+    for (const e of exps) {
+      if (e === carrying) continue;
+      const p = e.box.group.position;
+      const top = p.y + BOX_HALF.y;
+      if (carrying) {
+        if (Math.abs(at.x - p.x) < BOX_HALF.x * 2 + 0.06 && Math.abs(at.z - p.z) < BOX_HALF.z * 2 + 0.06) low = Math.max(low, top + 0.05 + BOX_HALF.y * 2 + 0.22);
+      } else if (Math.abs(at.x - p.x) < BOX_HALF.x + 0.05 && Math.abs(at.z - p.z) < BOX_HALF.z + 0.05) {
+        low = Math.max(low, top + 0.12);
+      }
+    }
+    return low;
+  }
+
   // ---------- the science bench: start an experiment with a quick puzzle ----------
   function startExperiment(e) {
     controls.setEnabled(false);
@@ -536,7 +553,7 @@ function run(game, { demo }) {
       if (input.lengthSq() > 0) {
         if (p.armOn && elapsed > stunnedUntil) {
           tip.addScaledVector(input, r.armSpeed * dt * (carrying ? 0.85 : 1));
-          const minY = DECK_Y + (carrying ? BOX_HALF.y * 2 + 0.55 : 0.32);
+          const minY = Math.max(DECK_Y + (carrying ? BOX_HALF.y * 2 + 0.55 : 0.32), lowestTipOver(tip));
           const local = clampTarget({ x: tip.x - ARM_BASE.x, y: tip.y - ARM_BASE.y, z: tip.z - ARM_BASE.z }, L1, L2 - 0.2, minY - ARM_BASE.y, ARM_WORK_AREA);
           tip.set(local.x + ARM_BASE.x, local.y + ARM_BASE.y, local.z + ARM_BASE.z);
         } else if (t - noPowerSaidAt > 6) {

@@ -3,7 +3,7 @@
 // Uses pointer lock when it can, and falls back to click-and-drag to look.
 
 import * as THREE from 'three';
-import { ROOM, groundAt, inBaseFootprint } from './world.js';
+import { ROOM, groundAt, inBaseFootprint, OBSTACLES } from './world.js';
 
 const EYE = 1.6;
 const WALK = { minX: -4.4, maxX: 5.5, minZ: -1.5, maxZ: 1.5 }; // inside: stay off the furniture
@@ -155,6 +155,22 @@ export function createPlayer({ camera, dom, spawn, rules, onPointerChange, onPoi
         ].sort((a, b) => a[0] - b[0])[0];
         pos[push[1]] = push[2];
         vel[push[1]] = 0;
+      }
+      // walk round rocks, poles, the rover and the ice instead of through them
+      for (const o of OBSTACLES) {
+        const min = o.r + 0.35;
+        if (o.r <= 0) continue;
+        const ox = pos.x - o.x;
+        const oz = pos.z - o.z;
+        const od = Math.hypot(ox, oz);
+        if (od >= min || od < 1e-6) continue;
+        pos.x = o.x + (ox / od) * min;
+        pos.z = o.z + (oz / od) * min;
+        const vn = (vel.x * ox + vel.z * oz) / od;
+        if (vn < 0) {
+          vel.x -= (vn * ox) / od;
+          vel.z -= (vn * oz) / od;
+        }
       }
       const d = Math.hypot(pos.x, pos.z);
       if (d > OUTSIDE_RADIUS) {
