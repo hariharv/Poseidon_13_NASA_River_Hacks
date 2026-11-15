@@ -531,7 +531,7 @@ export function createUI(container) {
     powerBoard.innerHTML = `
       <p class="pb-head"><span>Power panel</span><span class="pb-plugs" aria-label="${used} of ${spec.plugs} plugs used">${plugsHtml}</span></p>
       <ol class="pb-list">${rows}</ol>
-      <p class="pb-status">${escapeHtml(status)}</p>`;
+      <p class="pb-status">${escapeHtml(words(status))}</p>`;
   }
 
   function setRealNumbers(onClick) {
