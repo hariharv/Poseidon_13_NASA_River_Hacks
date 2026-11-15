@@ -18,6 +18,7 @@
 // 1-4 pick, Space / E for the timing needle and the balance.
 
 import { makeFlow, same, touching, stepToward } from './flow.js';
+import { isTouch } from '../core/device.js';
 import { makePipes, rotate, flowFrom, N as PN, E as PE, S as PS, W as PW } from './pipes.js';
 
 // "How to play" for each kind: short steps a 7-year-old can follow.
@@ -561,7 +562,7 @@ export function createPuzzle(layer, sound) {
       fill = Math.max(0, Math.min(1, fill + (inside ? dt / needSecs : -dt / (needSecs * 3))));
       fillEl.style.width = `${fill * 100}%`;
       zoneEl.classList.toggle('is-in', inside);
-      if (!won) ui.status(inside ? 'In the green! Keep it there…' : pos > centre ? 'Too high! Let go a little.' : 'Too low! Hold Space.', inside);
+      if (!won) ui.status(inside ? 'In the green! Keep it there…' : pos > centre ? 'Too high! Let go a little.' : (isTouch() ? 'Too low! Hold the button.' : 'Too low! Hold Space.'), inside);
       if (fill >= 1 && !won) {
         won = true;
         ui.status('Steady! You did it!', true);
@@ -622,7 +623,18 @@ function shuffle(list) {
   }
   return list;
 }
+// On a touch screen the puzzle's own buttons are right there, so the words say "tap", not keys.
+const TOUCH_PUZZLE = [
+  [/Press Space \(or the Stop button\)/g, 'Tap the Stop button'],
+  [/Hold Space \(or press and hold the button\)/g, 'Press and hold the button'],
+  [/ \(click them, or keys 1-4\)/g, ' (tap them)'],
+  [/ \(or press its number\)/g, ''],
+  [/\bClick\b/g, 'Tap'],
+  [/\bclick\b/g, 'tap'],
+  [/\bHold Space\b/g, 'Hold the button'],
+];
 function rich(t) {
+  if (isTouch()) t = TOUCH_PUZZLE.reduce((s, [re, to]) => s.replace(re, to), String(t));
   return escapeHtml(t).replace(/\*(.+?)\*/g, '<strong>$1</strong>');
 }
 function escapeHtml(s) {

@@ -1536,3 +1536,185 @@
     opacity: 0.9;
   }
 }
+
+/* ================= Phones and iPads (html[data-device='touch']) =================
+   A move stick bottom left, big buttons bottom right, drag anywhere else to look.
+   The HUD buttons move to the top, and Zeus Jr. sits between the stick and the buttons. */
+.touch-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.touch-layer[hidden] {
+  display: none;
+}
+.tc-look {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  touch-action: none;
+}
+.tc-stick-zone {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 40vw;
+  height: 58vh;
+  pointer-events: auto;
+  touch-action: none;
+}
+.tc-stick {
+  position: absolute;
+  left: max(4vw, 18px);
+  bottom: max(5vh, 18px);
+  width: clamp(112px, 24vmin, 170px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(13, 11, 38, 0.45);
+  box-shadow: inset 0 0 0 3px rgba(255, 243, 214, 0.35);
+  display: grid;
+  place-items: center;
+}
+.tc-knob {
+  width: 44%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(255, 243, 214, 0.85);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  transition: transform 40ms linear;
+}
+.tc-buttons {
+  position: absolute;
+  right: max(4vw, 14px);
+  bottom: max(5vh, 18px);
+  display: grid;
+  grid-template-areas: 'leave up' 'down use';
+  grid-template-columns: auto auto;
+  gap: 12px;
+  align-items: end;
+  justify-items: end;
+  pointer-events: auto;
+}
+.tc-btn {
+  width: clamp(64px, 14vmin, 84px);
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: clamp(13px, 2.6vmin, 17px);
+  letter-spacing: 0.03em;
+  color: var(--cream);
+  background: rgba(13, 11, 38, 0.6);
+  box-shadow: inset 0 0 0 2.5px rgba(255, 243, 214, 0.4), 0 4px 0 rgba(0, 0, 0, 0.35);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.tc-btn[hidden] {
+  display: none;
+}
+.tc-btn.is-down {
+  transform: scale(0.94);
+  background: rgba(255, 193, 69, 0.45);
+}
+.tc-use {
+  grid-area: use;
+  width: clamp(78px, 17vmin, 104px);
+  background: var(--suit-orange, #ff5b1f);
+  box-shadow: 0 5px 0 var(--suit-orange-dark, #b53a0c);
+}
+.tc-up {
+  grid-area: up;
+}
+.tc-down {
+  grid-area: down;
+}
+.tc-leave {
+  grid-area: leave;
+  font-size: clamp(11px, 2.2vmin, 14px);
+}
+.touch-layer.is-keyboard .tc-stick-zone,
+.touch-layer.is-keyboard .tc-buttons {
+  display: none;
+}
+
+/* the HUD on a touch screen */
+html[data-device='touch'] .hud-corner {
+  top: max(3vh, 12px);
+  bottom: auto;
+  right: max(3vw, 12px);
+}
+html[data-device='touch'] .hud-extras {
+  top: calc(max(3vh, 12px) + 52px);
+  right: max(3vw, 12px);
+}
+html[data-device='touch'] .hud-btn-text {
+  display: none;
+}
+html[data-device='touch'] .hud-btn {
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
+}
+html[data-device='touch'] .hud {
+  top: max(3vh, 12px);
+  left: max(3vw, 12px);
+}
+html[data-device='touch'] .buoy-say {
+  left: 50%;
+  bottom: max(2vh, 8px);
+  transform: translateX(-50%);
+  max-width: min(46vw, 470px);
+}
+html[data-device='touch'] .buoy-say.is-hidden {
+  transform: translate(-50%, 14px);
+}
+html[data-device='touch'] .buoy-say svg {
+  width: 46px;
+  height: auto;
+}
+html[data-device='touch'] .hud-task {
+  top: calc(max(3vh, 12px) + 104px);
+  bottom: auto;
+  right: max(3vw, 12px);
+  max-width: 34vw;
+}
+html[data-device='touch'] .btn {
+  min-height: 48px;
+}
+html[data-device='touch'] .puzzle kbd,
+html[data-device='touch'] .card kbd {
+  display: none;
+}
+/* short screens (phones on their side): everything a little smaller */
+@media (max-height: 500px) {
+  html[data-device='touch'] {
+    --ui-scale: 0.82;
+  }
+}
+
+/* phones held upright: ask to turn sideways */
+.rotate-hint {
+  display: none;
+}
+@media (orientation: portrait) and (max-width: 600px) {
+  html[data-device='touch'] .rotate-hint {
+    position: absolute;
+    inset: 0;
+    z-index: 9;
+    display: grid;
+    place-content: center;
+    gap: 14px;
+    padding: 24px;
+    text-align: center;
+    background: rgba(8, 7, 26, 0.92);
+    font-family: var(--font-display);
+    font-size: 1.4em;
+    color: var(--cream);
+    pointer-events: auto;
+  }
+  html[data-device='touch'] .rotate-icon {
+    font-size: 2.4em;
+  }
+}

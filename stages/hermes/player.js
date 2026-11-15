@@ -2,6 +2,7 @@
 // Uses pointer lock when it can, and falls back to click-and-drag to look.
 
 import * as THREE from 'three';
+import { isTouch } from '../../core/device.js';
 import { POOL } from './world.js';
 
 const RADIUS = 0.55;
@@ -68,6 +69,11 @@ export function createPlayer({ camera, dom, colliders, spawn, swimSpeed, onPoint
 
   function requestLock() {
     if (dragMode) return;
+    // phones and iPads have no mouse to lock: drag on the screen to look instead
+    if (isTouch() || !dom.requestPointerLock) {
+      onLockError();
+      return;
+    }
     try {
       const p = dom.requestPointerLock?.();
       p?.catch?.(onLockError);

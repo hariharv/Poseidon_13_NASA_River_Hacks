@@ -1,6 +1,7 @@
 // The loading screen. The thread stitching along the path to the Moon IS the
 // loading bar: it follows the real loading steps the engine passes in.
 
+import { isTouch } from '../core/device.js';
 import { allFacts } from '../core/lessons.js';
 import './loading.css';
 import { buoySvg } from '../ui/buoy-svg.js';
@@ -67,7 +68,7 @@ export function showLoadingScreen({ root, stages, tasks, player, progress }) {
           <button class="btn mode-btn" type="button" data-mode="easy">Start training<small>Ages 7-12 · Zeus Jr. helps you all the way</small></button>
         </div>
         <button class="demo-link" type="button" data-mode="demo">Judge Demo · the whole game in 2-3 minutes</button>
-        ${matchMedia('(pointer: coarse)').matches ? '<p class="loading-touch-note">Best on a computer with a keyboard and mouse.</p>' : ''}
+        ${isTouch() ? '<p class="loading-touch-note">Touch controls are on: the stick moves you, drag the screen to look, and the big buttons do the rest. Phones: turn sideways!</p>' : ''}
       </div>
     </footer>`;
   root.append(screen);

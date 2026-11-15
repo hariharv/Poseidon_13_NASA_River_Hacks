@@ -113,6 +113,7 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
       ui.hud.oxygen(game.oxygen.value);
       ui.hud.progress(game.progress.value);
       ui.hud.show();
+      ui.touch?.show(id); // phones and iPads: the move stick and buttons
       ui.setMenu?.(() => openMenu(game));
       ui.sound?.music?.('calm');
       startFacts(game);
@@ -178,6 +179,7 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
       ui.setMenu?.(null);
       ui.task?.(null);
       ui.power?.(null);
+      ui.touch?.hide();
       ui.hud.hide();
     }
 

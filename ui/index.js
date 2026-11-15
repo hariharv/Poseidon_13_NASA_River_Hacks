@@ -6,6 +6,8 @@ import { buoySvg } from './buoy-svg.js';
 import { createSound } from './sound.js';
 import { createPuzzle } from './puzzle.js';
 import { CHECKLIST } from '../core/checklist.js';
+import { device, isTouch, touchWords } from '../core/device.js';
+import { createTouch } from './touch.js';
 
 const ICONS = {
   oxygen:
@@ -35,6 +37,7 @@ export function createUI(container) {
       <div class="power-board" hidden aria-live="polite"></div>
       <div class="hud-task" hidden><span class="hud-task-label">Task</span><span class="hud-task-text"></span></div>
       <div class="crosshair"></div>
+      <div class="rotate-hint" aria-live="polite"><span class="rotate-icon" aria-hidden="true">📱↻</span><span>Turn your phone sideways to play</span></div>
       <div class="hud-prompt" hidden></div>
       <div class="hud-corner">
         <button class="hud-btn hud-help" type="button" hidden title="What do I do now? (H)"><span aria-hidden="true">?</span><span class="hud-btn-text">Help</span></button>
@@ -68,6 +71,8 @@ export function createUI(container) {
 
   const $ = (sel) => layer.querySelector(sel);
   const visor = $('.visor');
+  device(); // sets <html data-device="touch|desktop"> so the CSS can change the layout
+  const touch = createTouch(visor);
   const oxygenBar = $('.hud-oxygen');
   const progressBar = $('.hud-progress');
   const plugs = $('.hud-plugs');
@@ -240,7 +245,7 @@ export function createUI(container) {
       prompt.hidden = true;
       return;
     }
-    prompt.innerHTML = escapeHtml(text).replace(/\[(\w+)\]/g, '<kbd>$1</kbd>');
+    prompt.innerHTML = escapeHtml(words(text)).replace(/\[([A-Za-z][\w ]*)\]/g, '<kbd>$1</kbd>');
     prompt.hidden = false;
   }
 
@@ -286,7 +291,7 @@ export function createUI(container) {
   function say(text, { resting = false } = {}) {
     clearTimeout(restTimer);
     showing = resting ? null : text;
-    buoyText.innerHTML = escapeHtml(text).replace(/\*(.+?)\*/g, '<strong>$1</strong>');
+    buoyText.innerHTML = rich(text);
     buoyBox.classList.remove('is-hidden');
     buoyBox.classList.toggle('is-resting', resting);
     // a soft fade on the new words only (the bubble itself stays put, so nothing blinks)
@@ -622,6 +627,7 @@ export function createUI(container) {
     pause,
     setRealNumbers,
     power: setPower,
+    touch,
     sound,
     task: setTask,
     cheer,
@@ -665,7 +671,7 @@ function factMarkup(f) {
   const source = f.url
     ? `<a href="${escapeAttr(f.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(f.source ?? f.url)}</a>`
     : escapeHtml(f.source ?? '');
-  return `<li>${escapeHtml(f.label)}<span class="fact-value">${escapeHtml(f.value)}</span>${source ? `<span class="fact-source">${source}</span>` : ''}</li>`;
+  return `<li>${escapeHtml(words(f.label))}<span class="fact-value">${escapeHtml(words(f.value))}</span>${source ? `<span class="fact-source">${source}</span>` : ''}</li>`;
 }
 
 function linkMarkup(l) {
@@ -673,7 +679,12 @@ function linkMarkup(l) {
 }
 
 function rich(t) {
-  return escapeHtml(t).replace(/\*(.+?)\*/g, '<strong>$1</strong>');
+  return escapeHtml(words(t)).replace(/\*(.+?)\*/g, '<strong>$1</strong>');
+}
+
+// On a phone or iPad, keyboard words ("press E", "W A S D") become the on-screen buttons' words.
+function words(t) {
+  return isTouch() ? touchWords(String(t ?? '')) : t;
 }
 
 function el(tag, className) {
