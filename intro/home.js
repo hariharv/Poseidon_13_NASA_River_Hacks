@@ -15,8 +15,46 @@ const CHEERS = {
   visor: (o) => `A *${o.label.toLowerCase()} visor* keeps the bright Sun out of your eyes.`,
   boots: (o) => `*${o.label}* boots and gloves: ${o.note.toLowerCase()}.`,
   backpack: (o) =>
-    o.id === 'spacecat' ? 'A *space-cat backpack*! Real backpacks hold air and water. This one also purrs.' : `The *${o.label.toLowerCase()}* pack. Real ones hold air and water!`,
+    ({
+      classic: 'The *classic pack*, just like real spacewalkers wear. It holds your air and cool water.',
+      jetpack: 'A *jet pack*! Real astronauts have little jets to fly back if they float away.',
+      spacecat: 'A *space-cat backpack*! It holds your air and water. This one also purrs.',
+    })[o.id],
 };
+
+// What each backpack does (real ones first), shown under the backpack choices.
+const PACK_INFO = {
+  classic: {
+    title: 'Classic life-support pack',
+    text: "This is the backpack real spacewalkers wear. NASA calls it the *Primary Life Support Subsystem*. It holds the *oxygen* you breathe, cleans out the air you breathe out, powers the suit, and pumps cool water around your body.",
+  },
+  jetpack: {
+    title: 'Jet pack',
+    text: "Real astronauts carry a small jet pack called *SAFER* on their life-support pack. If they ever float away from the space station, its little *thruster jets* fly them back. Yours still holds your air, plus twin thrusters.",
+  },
+  spacecat: {
+    title: 'Space cat',
+    text: "Just for fun! It works like the classic pack (air, power and cool water), but with *ears, whiskers and a tail*. No real astronaut has one... yet.",
+  },
+};
+const PACK_ROWS = [
+  { label: 'Air to breathe', has: ['classic', 'jetpack', 'spacecat'] },
+  { label: 'Cool water for your suit', has: ['classic', 'jetpack', 'spacecat'] },
+  { label: 'Little jets to fly back', has: ['jetpack'] },
+  { label: 'Cat ears and tail', has: ['spacecat'] },
+];
+
+// "What do real astronauts wear?" Facts from NASA's spacesuit pages.
+const SUIT_SRC = 'https://www.nasa.gov/learning-resources/for-kids-and-students/what-is-a-spacesuit-grades-5-8/';
+const EMU_SRC = 'https://www.nasa.gov/wp-content/uploads/2015/07/2019_07_ea_emu.pdf';
+const REAL_SUIT = [
+  { part: 'Helmet and visor', text: 'The visor protects astronauts’ eyes from the very bright sunlight in space, like a pair of sunglasses.', src: SUIT_SRC },
+  { part: 'Cooling underwear', text: 'Under the suit they wear a stretchy suit full of tiny tubes. Water flows through the tubes to keep them cool.', src: SUIT_SRC },
+  { part: 'Life-support backpack', text: 'Holds the oxygen they breathe, removes the carbon dioxide they breathe out, and makes electricity for the suit.', src: SUIT_SRC },
+  { part: 'SAFER jet pack', text: 'Small thruster jets on the backpack. If an astronaut floated away from the station, they could fly back.', src: SUIT_SRC },
+  { part: 'Gloves and boots', text: 'The arms connect to the gloves, and the whole suit is sealed so the air stays inside.', src: SUIT_SRC },
+  { part: 'How heavy is it?', text: 'The spacewalk suit with its backpack weighs about 145 kg (319 lb) on Earth. In space, it floats!', src: EMU_SRC },
+];
 
 export function showHome({ root, player, progress }) {
   const draft = { ...structuredClone(player), boots: player.boots ?? 'classic' };
@@ -46,7 +84,7 @@ export function showHome({ root, player, progress }) {
       <form class="maker" novalidate>
         <div class="maker-head">
           <h2>Make your astronaut</h2>
-          <button class="maker-random" type="button">🎲 Surprise me</button>
+          <button class="maker-random" type="button">Surprise me</button>
         </div>
 
         <label class="maker-row">
@@ -58,6 +96,18 @@ export function showHome({ root, player, progress }) {
         ${group('visor', 'Helmet visor', VISORS.map((o) => swatch('visor', o, 'visor')).join(''))}
         ${group('boots', 'Boots & gloves', BOOTS.map((o) => chip('boots', o)).join(''))}
         ${group('backpack', 'Backpack', BACKPACKS.map((o) => chip('backpack', o)).join(''))}
+        <div class="pack-info" aria-live="polite"></div>
+        <details class="pack-compare">
+          <summary>Compare the backpacks</summary>
+          <table>
+            <thead><tr><th></th>${BACKPACKS.map((b) => `<th>${b.label}</th>`).join('')}</tr></thead>
+            <tbody>
+              ${PACK_ROWS.map((row) => `<tr><th>${row.label}</th>${BACKPACKS.map((b) => `<td>${row.has.includes(b.id) ? '<span class="yes" aria-label="yes">✓</span>' : '<span class="no" aria-label="no">–</span>'}</td>`).join('')}</tr>`).join('')}
+            </tbody>
+          </table>
+          <p>In this game every backpack gives you the <strong>same air</strong>, so pick the one you like best!</p>
+        </details>
+        <button class="real-suits-btn" type="button">What do real astronauts wear?</button>
       </form>
     </div>
 
@@ -80,6 +130,17 @@ export function showHome({ root, player, progress }) {
       : "Hi, I'm *Zeus Jr.*, your helper robot! Welcome to Olympus Academy. First, let's make *your* astronaut.",
   );
 
+  // ---------- what each backpack does ----------
+  const packInfo = $('.pack-info');
+  function showPackInfo() {
+    const info = PACK_INFO[draft.backpack] ?? PACK_INFO.classic;
+    packInfo.innerHTML = `<strong class="pack-info-title">${escapeHtml(info.title)}</strong><span>${rich(info.text)}</span>`;
+  }
+  showPackInfo();
+
+  // ---------- what real astronauts wear ----------
+  $('.real-suits-btn').addEventListener('click', () => openRealSuits());
+
   // ---------- 3D turntable ----------
   const stage = createStage($('.home-canvas'), draft);
 
@@ -101,6 +162,7 @@ export function showHome({ root, player, progress }) {
     say(CHEERS[pick](list.find((o) => o.id === value)));
     stage?.face(pick === 'backpack' ? 'back' : 'front');
     refresh();
+    if (pick === 'backpack') showPackInfo();
   });
   nameInput.addEventListener('input', () => {
     draft.name = nameInput.value;
@@ -119,6 +181,7 @@ export function showHome({ root, player, progress }) {
     say('Ta-da! A brand new look. Keep it, or change anything you like.');
     stage?.face('spin');
     refresh();
+    showPackInfo();
   });
 
   return new Promise((resolve) => {
@@ -144,6 +207,29 @@ export function showHome({ root, player, progress }) {
       resolve({ ...draft, name: cleanName(typed) });
     });
   });
+}
+
+// ---------- "What do real astronauts wear?" ----------
+function openRealSuits() {
+  const back = document.createElement('div');
+  back.className = 'suits-layer';
+  back.innerHTML = `
+    <div class="suits" role="dialog" aria-modal="true" aria-labelledby="suits-title">
+      <p class="suits-eyebrow">Real spacesuits</p>
+      <h2 id="suits-title">What do real astronauts wear?</h2>
+      <p class="suits-intro">For a spacewalk, astronauts put on a suit that is like a tiny spaceship. It gives them air, keeps them the right temperature, and protects them.</p>
+      <ul class="suits-list">
+        ${REAL_SUIT.map((p) => `<li><strong>${escapeHtml(p.part)}</strong><span>${escapeHtml(p.text)}</span></li>`).join('')}
+      </ul>
+      <p class="suits-source">Where's this from? <a href="${SUIT_SRC}" target="_blank" rel="noopener noreferrer">NASA: What is a spacesuit?</a> · <a href="${EMU_SRC}" target="_blank" rel="noopener noreferrer">NASA spacesuit fact sheet</a></p>
+      <button class="btn suits-close" type="button">Back to my astronaut</button>
+    </div>`;
+  document.body.append(back);
+  const close = () => back.remove();
+  back.querySelector('.suits-close').addEventListener('click', close);
+  back.addEventListener('click', (e) => e.target === back && close());
+  back.addEventListener('keydown', (e) => e.key === 'Escape' && close());
+  back.querySelector('.suits-close').focus();
 }
 
 // ---------- the 3D stand ----------
