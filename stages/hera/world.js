@@ -314,7 +314,6 @@ export function buildWorld({ suit = 'orange', bags = 3, renderer, hints = 'more'
   // yellow-black edge stripes around the bay
   const stripeTex = track(stripeTexture());
   stripeTex.wrapS = THREE.RepeatWrapping;
-  const stripeMat = track(new THREE.MeshStandardMaterial({ map: stripeTex, roughness: 0.6 }));
   for (const [w, x, z, rot] of [
     [bayW, (BAY.x0 + BAY.x1) / 2, BAY.z0 - 0.03, 0],
     [bayW, (BAY.x0 + BAY.x1) / 2, BAY.z1 + 0.03, 0],

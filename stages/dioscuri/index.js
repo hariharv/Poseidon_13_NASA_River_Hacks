@@ -54,7 +54,7 @@ function run(game, { demo }) {
   const r = game.rules;
   const easy = true; // one mode now: Zeus Jr. always gives the extra hints
   const world = buildWorld({ hints: easy ? 'more' : 'fewer', suit: game.player.suit, boxes: r.boxes });
-  const { boxes: boxShare, perExperiment } = shares(r);
+  const { perExperiment } = shares(r);
 
   // ---------- renderer ----------
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });

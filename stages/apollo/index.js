@@ -10,7 +10,7 @@ import './apollo.css';
 import { buildWorld, disposeTree, INSIDE_START, OUTSIDE_START, AIRLOCK_IN, AIRLOCK_OUT, SHELTER_EYE, CRATER, groundAt } from './world.js';
 import { createPlayer } from './player.js';
 import { createArms } from '../hermes/arms.js';
-import { MACHINES, STORM_OUT, dayClock, plugsFor, powerState, canPlug, oxygenStep, waterStep, growStep, progressFor, stormLight, flareStrength, starsFor } from './sim.js';
+import { MACHINES, STORM_OUT, dayClock, powerState, canPlug, oxygenStep, waterStep, growStep, progressFor, stormLight, flareStrength, starsFor } from './sim.js';
 import { rulesFor } from '../../core/rules.js';
 import { plugPrompt } from '../../core/plugs.js';
 

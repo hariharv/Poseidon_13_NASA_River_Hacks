@@ -102,7 +102,7 @@ export function createAstronaut(player) {
     body.add(head);
     add(new THREE.CylinderGeometry(0.2, 0.24, 0.08, 24), trim, 0, -0.24, 0, head);
     add(new THREE.SphereGeometry(0.29, 32, 24), white, 0, 0, 0, head);
-    const visor = add(
+    add(
       new THREE.SphereGeometry(0.295, 32, 24, Math.PI * 0.14, Math.PI * 0.72, Math.PI * 0.26, Math.PI * 0.4),
       new THREE.MeshStandardMaterial({ color: find(VISORS, p.visor).hex, metalness: 1, roughness: 0.12 }),
       0,

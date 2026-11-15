@@ -87,7 +87,6 @@ function run(game, { demo }) {
   const blobs = createBlobs(world.scene, { count: r.blobs });
   let lastCatchAt = -99;
   let combo = 0;
-  let powerWasOk = false;
 
   // ---------- the flight sign at the top of the visor ----------
   const banner = document.createElement('div');
@@ -126,8 +125,7 @@ function run(game, { demo }) {
   let endFlightAt = null;
   let levelT = 0;
   // sounds: the plane's engines, a chime for each tool you catch, clunks for plugs
-  const engine = game.sound.loop('engine', 0.5);
-  let caughtBefore = 0;
+  game.sound.loop('engine', 0.5); // the plane's engines hum all flight (the game stops every loop when the stage ends)
   let minOxygen = game.oxygen.value;
   let promptText = null;
   let reachUntil = 0;
