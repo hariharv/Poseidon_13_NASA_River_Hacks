@@ -46,7 +46,7 @@ async function showTitle() {
   ui.sound.music('title'); // starts on the first click (browsers only allow sound after one)
   // Title screen first: cutscenes from the game until the player presses Start.
   const { showTitle: showCutscenes } = await import('../intro/title.js');
-  await showCutscenes({ root: app });
+  await showCutscenes({ root: app, sound: ui.sound });
   const { showHome } = await import('../intro/home.js');
   // the homepage saves player.json the moment you change your name (or anything else)
   const player = await showHome({ root: app, player: save.loadPlayer(), progress: save.loadProgress(), onChange: (p) => save.savePlayer(p) });

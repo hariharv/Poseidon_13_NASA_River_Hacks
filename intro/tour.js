@@ -147,7 +147,7 @@ export async function runTour({ app, stageHost, ui, data, web }) {
   if (fromIndex <= 0) {
     chrome.chapter(0);
     const { showTitle } = await import('./title.js');
-    const titleDone = showTitle({ root: app });
+    const titleDone = showTitle({ root: app, sound: ui.sound });
     await wait(18600); // the whole opening cutscene: all five stages, then Start
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter' }));
     await titleDone;

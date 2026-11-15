@@ -22,7 +22,7 @@ export function showCeremony({ root, ui, player, stages, progress }) {
   screen.className = 'ceremony';
   screen.setAttribute('aria-label', 'Graduation ceremony');
   screen.innerHTML = `
-    <div class="cer-bar is-top"><p class="cer-eyebrow">Olympus Academy · Graduation Day</p></div>
+    <div class="cer-bar is-top"><p class="cer-eyebrow">Olympus Academy · Graduation Day</p><button type="button" class="cer-sound" hidden>🔊 Sound on</button></div>
     <div class="cer-rank" aria-live="polite">
       <p class="cer-stage"></p>
       <h2 class="cer-title"></h2>
@@ -47,6 +47,17 @@ export function showCeremony({ root, ui, player, stages, progress }) {
   const medals = [...screen.querySelectorAll('.cer-medals li')];
   const rankBox = $('.cer-rank');
   const fade = $('.cer-fade');
+  const sfx = (name) => ui?.sound?.play?.(name);
+  // Sound only plays after a click or key press (it already has, after playing the stages)
+  const soundBtn = $('.cer-sound');
+  ui?.sound?.unlock?.();
+  const checkSound = () => (soundBtn.hidden = !ui?.sound || ui.sound.ready);
+  setTimeout(checkSound, 200);
+  const soundTimer = setInterval(checkSound, 1000);
+  soundBtn.addEventListener('click', () => {
+    ui.sound.unlock?.();
+    setTimeout(() => ui.sound.ready && (soundBtn.hidden = true), 120);
+  });
 
   let renderer = null;
   try {
@@ -106,7 +117,8 @@ export function showCeremony({ root, ui, player, stages, progress }) {
     void rankBox.offsetWidth;
     rankBox.classList.add('is-on');
     medals[i]?.classList.add('is-won');
-    ui?.sound?.play('star');
+    sfx('fanfare'); // a brass call for each rank
+    setTimeout(() => !over && sfx('medal'), 420); // and the medal lighting up
   }
 
   async function run() {
@@ -127,6 +139,7 @@ export function showCeremony({ root, ui, player, stages, progress }) {
       await wait((STAGE_SECONDS - FADE_SECONDS) * 1000);
       if (over) return;
       if (i < list.length - 1) {
+        sfx('swish');
         fade.classList.add('is-on');
         await wait(FADE_SECONDS * 1000);
       }
@@ -150,7 +163,9 @@ export function showCeremony({ root, ui, player, stages, progress }) {
     rankBox.classList.remove('is-on');
     screen.classList.add('is-finale');
     $('.cer-finale').hidden = false;
-    ui?.celebrate?.();
+    sfx('boom');
+    sfx('fanfareBig');
+    ui?.celebrate?.(); // confetti, clapping and a cheer
     await wait(3600);
     if (over) return;
     ui?.celebrate?.();
@@ -158,6 +173,7 @@ export function showCeremony({ root, ui, player, stages, progress }) {
     if (over) return;
     $('.cer-skip').hidden = true;
     const done = $('.cer-done');
+    sfx('chime');
     done.hidden = false;
     done.focus({ preventScroll: true });
   }
@@ -169,6 +185,7 @@ export function showCeremony({ root, ui, player, stages, progress }) {
       screen.classList.add('is-leaving');
       setTimeout(() => {
         cancelAnimationFrame(raf);
+        clearInterval(soundTimer);
         window.removeEventListener('resize', onResize);
         current?.world.dispose?.();
         built.forEach((p) => p?.then((b) => b !== current && b.world.dispose?.()).catch(() => {}));

@@ -3,7 +3,7 @@
 // big action word ("DIVE!", "FLOAT!"...), then a coloured wipe cuts to the next, round and round,
 // until you press a key, click or tap Start.
 //
-//   await showTitle({ root })   resolves when the player starts
+//   await showTitle({ root, sound })   resolves when the player starts (sound = ui.sound, for the effects)
 //
 // The worlds are the ones the stages use (stages/<id>/world.js), so the cutscenes always match
 // the game. If 3D isn't available, the title screen just shows the Start button.
@@ -27,6 +27,7 @@ export const SCENES = [
   {
     id: 'hermes',
     word: 'Dive!',
+    sfx: 'bubbles', // a sound for this scene
     colour: '#46b4ff',
     eyebrow: 'Stage 1 · Hermes',
     line: "Train for spacewalks in NASA's giant pool",
@@ -55,6 +56,7 @@ export const SCENES = [
   {
     id: 'odysseus',
     word: 'Float!',
+    sfx: 'whoosh', // a sound for this scene
     colour: '#ffc145',
     lines: true,
     eyebrow: 'Stage 2 · Odysseus',
@@ -84,6 +86,7 @@ export const SCENES = [
   {
     id: 'dioscuri',
     word: 'Grab!',
+    sfx: 'servo', // a sound for this scene
     colour: '#5bd98a',
     eyebrow: 'Stage 3 · Dioscuri',
     line: "Run the space station's robot arm and its science lab",
@@ -113,6 +116,7 @@ export const SCENES = [
   {
     id: 'hera',
     word: 'Dodge!',
+    sfx: 'rumble', // a sound for this scene
     colour: '#ff4d5e',
     lines: true,
     shake: 0.025,
@@ -143,6 +147,7 @@ export const SCENES = [
   {
     id: 'apollo',
     word: 'Explore!',
+    sfx: 'chime', // a sound for this scene
     colour: '#ff5b1f',
     eyebrow: 'Stage 5 · Apollo',
     line: 'Command a base on the Moon for 14 Moon-days',
@@ -169,7 +174,8 @@ export const SCENES = [
   },
 ];
 
-export function showTitle({ root }) {
+export function showTitle({ root, sound = null }) {
+  const sfx = (name) => sound?.play?.(name);
   const touch = isTouch();
   const screen = document.createElement('section');
   screen.className = 'title-screen';
@@ -180,6 +186,7 @@ export function showTitle({ root }) {
     <div class="title-bar is-top">
       <img class="title-logo" src="${spaceAppsLogo}" alt="NASA Space Apps Challenge" />
       <p class="title-team">Team <strong>Poseidon 13</strong> presents</p>
+      <button type="button" class="title-sound" hidden>🔊 Sound on</button>
     </div>
     <h1 class="title-name"><span>Path to</span><span>Olympus</span></h1>
     <p class="title-word" aria-hidden="true"></p>
@@ -206,6 +213,25 @@ export function showTitle({ root }) {
   const flash = $('.title-flash');
   const captionBox = $('.title-caption');
 
+  // Browsers only play sound after a click or key press. This button turns it on without starting the game.
+  const soundBtn = $('.title-sound');
+  sound?.unlock?.(); // some browsers allow sound straight away
+  const checkSound = () => (soundBtn.hidden = !sound || sound.ready);
+  setTimeout(checkSound, 200);
+  const soundTimer = setInterval(checkSound, 1000);
+  soundBtn.addEventListener('pointerup', (e) => e.stopPropagation());
+  soundBtn.addEventListener('keydown', (e) => e.stopPropagation());
+  soundBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sound?.unlock?.();
+    setTimeout(() => {
+      if (sound?.ready) {
+        soundBtn.hidden = true;
+        sfx('chime');
+      }
+    }, 120);
+  });
+  setTimeout(() => sfx('boom'), 520); // the title slams in
   let renderer = null;
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -262,6 +288,8 @@ export function showTitle({ root }) {
     dots.forEach((d, i) => d.classList.toggle('is-on', i === index));
     replay(captionBox, 'is-new');
     replay(word, 'is-new');
+    setTimeout(() => !done && sfx('stamp'), 300); // the action word lands
+    setTimeout(() => !done && sfx(sc.sfx), 900);
   }
 
   async function play(index) {
@@ -314,6 +342,7 @@ export function showTitle({ root }) {
       wipe.style.setProperty('--wipe-colour', SCENES[(current.index + 1) % SCENES.length].colour);
       replay(wipe, 'is-on');
       word.classList.add('is-out');
+      sfx('swish');
     }
     if (into > SCENE_SECONDS && !current.switching) {
       current.switching = true;
@@ -332,11 +361,13 @@ export function showTitle({ root }) {
       if (done) return;
       if (e?.type === 'keydown' && (e.repeat || ['Tab', 'Shift', 'Control', 'Alt', 'Meta'].includes(e.key))) return;
       done = true;
+      sfx('swish');
       window.removeEventListener('keydown', start);
       screen.removeEventListener('pointerup', start);
       screen.classList.add('is-leaving');
       setTimeout(() => {
         cancelAnimationFrame(raf);
+        clearInterval(soundTimer);
         window.removeEventListener('resize', onResize);
         current?.world.dispose?.();
         next?.world.dispose?.();

@@ -99,7 +99,7 @@ export function createSound(storage = safeStorage()) {
   }
 
   // ---------- building blocks ----------
-  function tone({ type = 'sine', from, to = from, at = 0, dur = 0.15, vol = 0.3, attack = 0.005 }) {
+  function tone({ type = 'sine', from, to = from, at = 0, dur = 0.15, vol = 0.3, attack = 0.005, lp = 0 }) {
     const t0 = ctx.currentTime + at;
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
@@ -109,7 +109,13 @@ export function createSound(storage = safeStorage()) {
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.exponentialRampToValueAtTime(vol, t0 + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    osc.connect(g).connect(master);
+    if (lp) {
+      // a low-pass filter softens buzzy waves (the brass in the fanfares)
+      const f = ctx.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.value = lp;
+      osc.connect(f).connect(g).connect(master);
+    } else osc.connect(g).connect(master);
     osc.start(t0);
     osc.stop(t0 + dur + 0.02);
   }
@@ -190,6 +196,70 @@ export function createSound(storage = safeStorage()) {
     },
     thruster: () => noise({ dur: 0.22, vol: 0.16, type: 'bandpass', freq: 700, q: 1.4 }),
     star: () => tone({ type: 'sine', from: 1175, to: 1568, dur: 0.18, vol: 0.12 }),
+    // ---------- the cutscenes (title trailer and graduation ceremony) ----------
+    boom: () => {
+      // a big cinematic hit: the title slams in, the finale begins
+      tone({ type: 'sine', from: 110, to: 38, dur: 1.4, vol: 0.36 });
+      tone({ type: 'triangle', from: 55, to: 40, dur: 1.2, vol: 0.14 });
+      noise({ dur: 0.9, vol: 0.18, type: 'lowpass', freq: 1400, toFreq: 120, q: 0.5 });
+    },
+    swish: () => {
+      // a fast whoosh for a cut between scenes
+      noise({ dur: 0.5, vol: 0.16, freq: 260, toFreq: 3200, q: 0.9 });
+      noise({ at: 0.18, dur: 0.35, vol: 0.06, type: 'highpass', freq: 3000, toFreq: 6000, q: 0.4 });
+    },
+    stamp: () => {
+      // a big word lands on screen
+      tone({ type: 'sine', from: 190, to: 70, dur: 0.22, vol: 0.28 });
+      noise({ dur: 0.08, vol: 0.12, freq: 1800, q: 1.2 });
+      tone({ type: 'square', from: 880, to: 660, at: 0.02, dur: 0.07, vol: 0.04 });
+    },
+    bubbles: () => {
+      for (let i = 0; i < 5; i++) {
+        const f = 300 + Math.random() * 350;
+        tone({ type: 'sine', from: f, to: f * 2.6, at: i * 0.09 + Math.random() * 0.05, dur: 0.1, vol: 0.09 });
+      }
+    },
+    servo: () => {
+      // the robot arm moving: whirr up, whirr down
+      tone({ type: 'sawtooth', from: 150, to: 320, dur: 0.45, vol: 0.07, lp: 900, attack: 0.05 });
+      tone({ type: 'sawtooth', from: 320, to: 190, at: 0.45, dur: 0.4, vol: 0.06, lp: 900, attack: 0.03 });
+    },
+    rumble: () => {
+      // an engine burn
+      noise({ dur: 1.3, vol: 0.2, type: 'lowpass', freq: 380, toFreq: 160, q: 0.7 });
+      tone({ type: 'sawtooth', from: 48, to: 62, dur: 1.2, vol: 0.06, lp: 200, attack: 0.15 });
+    },
+    chime: () => {
+      // sparkly bells
+      [1568, 2093, 2637].forEach((f, i) => tone({ type: 'sine', from: f, at: i * 0.11, dur: 0.7, vol: 0.07 }));
+    },
+    medal: () => {
+      tone({ type: 'sine', from: 1568, dur: 0.6, vol: 0.1 });
+      tone({ type: 'sine', from: 2093, at: 0.09, dur: 0.7, vol: 0.09 });
+      tone({ type: 'sine', from: 3136, at: 0.18, dur: 0.5, vol: 0.03 });
+    },
+    fanfare: () => {
+      // a short brass call for each rank: G, C, E, then a held G
+      [392, 523, 659].forEach((f, i) => {
+        tone({ type: 'sawtooth', from: f, at: i * 0.12, dur: 0.16, vol: 0.07, lp: 2200, attack: 0.02 });
+        tone({ type: 'triangle', from: f, at: i * 0.12, dur: 0.16, vol: 0.07 });
+      });
+      tone({ type: 'sawtooth', from: 784, at: 0.36, dur: 0.75, vol: 0.08, lp: 2400, attack: 0.03 });
+      tone({ type: 'triangle', from: 784, at: 0.36, dur: 0.75, vol: 0.08 });
+      tone({ type: 'triangle', from: 392, at: 0.36, dur: 0.75, vol: 0.06 });
+    },
+    fanfareBig: () => {
+      // the graduation: a rising call, then a big held chord and a drum roll hit
+      [523, 659, 784].forEach((f, i) => tone({ type: 'sawtooth', from: f, at: i * 0.13, dur: 0.18, vol: 0.07, lp: 2400, attack: 0.02 }));
+      [523, 659, 784, 1047].forEach((f) => {
+        tone({ type: 'sawtooth', from: f, at: 0.42, dur: 1.8, vol: 0.055, lp: 2600, attack: 0.04 });
+        tone({ type: 'triangle', from: f, at: 0.42, dur: 1.8, vol: 0.06 });
+      });
+      tone({ type: 'triangle', from: 262, at: 0.42, dur: 1.8, vol: 0.08 });
+      for (let i = 0; i < 10; i++) noise({ at: i * 0.035, dur: 0.06, vol: 0.05 + i * 0.008, type: 'lowpass', freq: 700, q: 0.6 });
+      tone({ type: 'sine', from: 120, to: 50, at: 0.4, dur: 0.9, vol: 0.25 });
+    },
     water: () => {
       // a little bloop + splash (water blobs, bubbles)
       tone({ type: 'sine', from: 320, to: 900, dur: 0.12, vol: 0.14 });
@@ -455,6 +525,15 @@ export function createSound(storage = safeStorage()) {
     },
     get musicMuted() {
       return musicMuted;
+    },
+    // true once the browser lets the game play sound (after a click or key press)
+    get ready() {
+      return Boolean(ctx && ctx.state === 'running');
+    },
+    // try to start audio now (works only inside a click or key press)
+    unlock() {
+      const c = ensure();
+      if (c?.state === 'suspended') c.resume();
     },
     toggleMusic() {
       musicMuted = !musicMuted;
