@@ -226,9 +226,9 @@ export function buildWorld({ suit = 'orange', bags = 3, renderer, hints = 'more'
     boot.position.set(-0.3 + dx, 0.32, -0.25);
     scene.add(thigh, shin, boot);
   }
-  // the hand controller (joystick) by your right hand
+  // the hand controllers, out in front where you can see them, with your sleeves and gloves on them
   const rhc = new THREE.Group();
-  rhc.position.set(0.02, 0.86, 0.12);
+  rhc.position.set(-0.04, 1.04, -0.4); // in view, clear of Zeus Jr. and the Task chip
   scene.add(rhc);
   const rhcBase = new THREE.Mesh(track(new THREE.CylinderGeometry(0.055, 0.07, 0.05, 16)), panelMat);
   rhc.add(rhcBase);
@@ -242,6 +242,43 @@ export function buildWorld({ suit = 'orange', bags = 3, renderer, hints = 'more'
   glove.scale.set(1, 0.8, 1.15);
   glove.position.set(0.015, 0.09, 0.01);
   stick.add(glove);
+  // left hand: the throttle handle for the main engine
+  const thc = new THREE.Group();
+  thc.position.set(-0.56, 1.04, -0.4);
+  scene.add(thc);
+  thc.add(new THREE.Mesh(track(new THREE.CylinderGeometry(0.055, 0.07, 0.05, 16)), panelMat));
+  const throttle = new THREE.Group();
+  throttle.position.y = 0.025;
+  thc.add(throttle);
+  const tGrip = new THREE.Mesh(track(new THREE.BoxGeometry(0.12, 0.05, 0.05)), track(new THREE.MeshStandardMaterial({ color: '#ff5b1f', roughness: 0.5 })));
+  tGrip.position.y = 0.08;
+  throttle.add(tGrip);
+  const tStem = new THREE.Mesh(track(new THREE.CylinderGeometry(0.015, 0.015, 0.07, 8)), panelMat);
+  tStem.position.y = 0.035;
+  throttle.add(tStem);
+  const glove2 = new THREE.Mesh(track(new THREE.SphereGeometry(0.05, 16, 12)), bootMat);
+  glove2.scale.set(1.15, 0.8, 1);
+  glove2.position.set(0, 0.1, 0.01);
+  throttle.add(glove2);
+  // my sleeves, from my shoulders down to my gloves (only while I'm in my seat)
+  const sleeves = new THREE.Group();
+  scene.add(sleeves);
+  for (const [shoulder, hand] of [
+    [new THREE.Vector3(-0.08, 0.95, 0.38), new THREE.Vector3(-0.025, 1.13, -0.39)],
+    [new THREE.Vector3(-0.52, 0.95, 0.38), new THREE.Vector3(-0.56, 1.14, -0.39)],
+  ]) {
+    const along = new THREE.Vector3().subVectors(hand, shoulder);
+    const sleeve = new THREE.Mesh(track(new THREE.CylinderGeometry(0.06, 0.085, along.length(), 14)), suitMat);
+    sleeve.position.copy(shoulder).addScaledVector(along, 0.5);
+    sleeve.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), along.normalize());
+    sleeves.add(sleeve);
+    const cuff = new THREE.Mesh(track(new THREE.TorusGeometry(0.06, 0.014, 8, 20)), panelMat);
+    cuff.position.copy(hand).addScaledVector(along, -0.06);
+    cuff.quaternion.copy(sleeve.quaternion);
+    cuff.rotateX(Math.PI / 2);
+    sleeves.add(cuff);
+  }
+  let throttleTarget = 0;
 
   // ---------- the storm shelter bay (floor, right side) ----------
   const BAY = { x0: 0.45, x1: 1.55, z0: -0.72, z1: 0.82, depth: 0.46 };
@@ -562,6 +599,15 @@ export function buildWorld({ suit = 'orange', bags = 3, renderer, hints = 'more'
       const r = Math.tan(rad) * 1.55;
       reticleRing.scale.setScalar(r / ringRadius);
     },
+    // hide my arms while I'm in the shelter (they stay with the seat)
+    setSeated(on) {
+      sleeves.visible = on;
+      glove.visible = on;
+      glove2.visible = on;
+    },
+    setThrottle(on) {
+      throttleTarget = on ? 1 : 0;
+    },
     setStick(x, y) {
       stickTilt.set(x, y);
     },
@@ -642,6 +688,7 @@ export function buildWorld({ suit = 'orange', bags = 3, renderer, hints = 'more'
       // jet reset LED
       jetLedMat.emissiveIntensity = jetBlink ? (Math.sin(t * 9) > 0 ? 2.5 : 0.2) : 0;
       lever.rotation.x = jetBlink ? 0.6 : -0.6;
+      throttle.rotation.x += (-throttleTarget * 0.45 - throttle.rotation.x) * Math.min(1, dt * 10);
       // joystick follows your keys (eased, so it never snaps)
       stick.rotation.z += (-stickTilt.x * 0.35 - stick.rotation.z) * Math.min(1, dt * 10);
       stick.rotation.x += (-stickTilt.y * 0.35 - stick.rotation.x) * Math.min(1, dt * 10);

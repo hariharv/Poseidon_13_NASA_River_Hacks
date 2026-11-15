@@ -181,7 +181,11 @@ export const RULES = {
       base: {
         startOxygen: 80, // each stage starts with a little less air than the one before
         // Flying: keep the target in the ring to line up the course-correction burns
-        flyPerSec: 1.0, // Progress per second while the target is inside the ring
+        flyPerSec: 1.0, // Progress per second while the target is inside the ring (and the engine fires)
+        burnBoost: 1.3, // the engine only fires while you hold Space, so each second of burn counts for more
+        burnShake: 0.16, // firing the engine shakes the ship off target a little
+        faultPuzzleSeconds: 14, // time to type the JET RESET code
+        faultCode: 4, // lights in the code
         aimRing: 0.07, // radians: how close counts as "in the ring"
         turnRate: 0.55, // radians per second the ship turns while you hold a key
         drift: 0.05, // how hard the ship wanders off course on its own
@@ -214,6 +218,9 @@ export const RULES = {
         breathePerSec: 0.26,
         faults: [20, 55, 80],
         faultSpin: 0.3,
+        burnShake: 0.22,
+        faultPuzzleSeconds: 10,
+        faultCode: 5,
         stars: { safeAbove: 45, speedySeconds: 260 },
       },
       demo: {

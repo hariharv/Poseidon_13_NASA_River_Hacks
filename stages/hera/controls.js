@@ -111,6 +111,10 @@ export function createControls({ camera, dom, eye, onPointerChange, onPointerErr
       const cp = Math.cos(pitch);
       forward.set(-Math.sin(yaw) * cp, Math.sin(pitch), -Math.cos(yaw) * cp);
     },
+    // holding Space fires the main engine
+    burnHeld() {
+      return enabled && !glide && keys.has('Space');
+    },
     // which way to turn the ship: x = yaw (+ = turn right), y = pitch (+ = nose up)
     turnInput() {
       move.set(0, 0, 0);

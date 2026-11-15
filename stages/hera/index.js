@@ -33,6 +33,7 @@ const REAL_NUMBERS = [
 
 const CONTROLS = [
   { label: 'Turn the ship', value: 'W A S D (or the arrow keys)' },
+  { label: 'Fire the engine', value: 'Hold Space while the diamond is in the ring' },
   { label: 'Look around', value: 'Move the mouse' },
   { label: 'Use things (shelter, bags, switches)', value: 'Look at it, press E (or click)' },
 ];
@@ -162,7 +163,7 @@ function run(game, { demo }) {
     eye: SEAT_EYE,
     onPointerChange(locked) {
       if (locked) setPaused(false);
-      else if (stage === 'fly' && game.running && !controls.dragMode) setPaused(true);
+      else if (stage === 'fly' && game.running && !controls.dragMode && !game.ui.puzzleOpen) setPaused(true);
     },
     onPointerError(dragMode) {
       if (dragMode && paused) setPaused(false);
@@ -215,7 +216,7 @@ function run(game, { demo }) {
         ? ['Fly the capsule toward the Moon. A *real solar storm* from NASA records will hit: build the shelter and hide, or keep flying?']
         : [
             "Before every flight, real astronauts practise in a *spaceship simulator*. The Artemis II crew trained in one like this in Houston. Today you're the *pilot*, flying to the Moon.",
-            'Keep the *green diamond* inside the *ring* on your window to line up your engine burns. And watch your *storm light*: the Sun can surprise you.',
+            'Steer the *green diamond* into the *ring* on your window, then *hold Space* to fire the engine. And watch your *storm light*: the Sun can surprise you.',
           ],
       facts: CONTROLS,
       choices: [{ id: 'go', label: 'Strap in' }],
@@ -228,8 +229,8 @@ function run(game, { demo }) {
     game.demo.check('two-bars');
     game.ui.buoy(
       demo
-        ? 'Turn the ship with *W A S D* until the *green diamond* sits in the ring on your window.'
-        : "You're the *pilot* now! Turn the ship with *W A S D* until the *green diamond* sits inside the ring on your window.",
+        ? 'Turn the ship with *W A S D* until the *green diamond* sits in the ring, then *hold Space* to fire the engine.'
+        : "You're the *pilot* now! Turn the ship with *W A S D* until the *green diamond* sits inside the ring, then *hold Space* to fire the engine.",
     );
     if (easy) later(9000, () => progressNow() < 4 && game.ui.buoy('Small taps work best. The ship keeps turning after you let go, just like in real space!'));
   })();
@@ -318,6 +319,7 @@ function run(game, { demo }) {
     if (key === 'shelter') {
       where = 'moving';
       game.sound.play('whoosh');
+      world.setSeated(false);
       controls.moveTo(SHELTER_EYE, { ...SHELTER_LOOK, seconds: 1.3 }, () => {
         where = 'shelter';
         if (record && lastPhase !== 'calm' && lastPhase !== 'clear') game.demo.check('real-world-link');
@@ -331,6 +333,7 @@ function run(game, { demo }) {
       game.sound.play('whoosh');
       controls.moveTo(SEAT_EYE, { yaw: 0, pitch: seatPitch, seconds: 1.2, limit: [-1.45, 1.45] }, () => {
         where = 'seat';
+        world.setSeated(true);
         if (lastPhase === 'storm') game.ui.buoy("You left the shelter in the middle of the storm! That's brave, but it costs oxygen.");
       });
     } else if (key === 'hose') {
@@ -339,7 +342,17 @@ function run(game, { demo }) {
       game.sound.play('hiss');
       game.ui.buoy('Air hose plugged in. *Fresh air* in the shelter!');
     } else if (key === 'jet') {
-      fixFault();
+      if (game.ui.puzzleOpen) return;
+      controls.setEnabled(false);
+      game.ui
+        .puzzle({ kind: 'sequence', title: 'Reset the stuck thruster', text: 'Type the *JET RESET* code. The ship keeps spinning until you do!', seconds: r.faultPuzzleSeconds, size: r.faultCode })
+        .then((ok) => {
+          if (!game.running) return;
+          controls.setEnabled(true);
+          controls.requestLock();
+          if (ok) fixFault();
+          else game.ui.buoy('Out of time! Look at the blinking *JET RESET* switch and press E to try again.', { interrupt: true });
+        });
     } else if (key.startsWith('bag')) {
       const bag = world.bags[Number(key.slice(3))];
       const slot = world.slots.find((s) => !s.filled);
@@ -355,6 +368,39 @@ function run(game, { demo }) {
         );
       }
     }
+  }
+
+  // ---------- the Task chip and Help ----------
+  let taskKey = '';
+  function updateTask() {
+    const storming = lastPhase === 'warning' || lastPhase === 'storm';
+    let now;
+    if (faultOn) now = 'Thruster stuck! Press E on the blinking JET RESET switch (left)';
+    else if (storming && where === 'seat') now = 'Solar flare! Go to the storm shelter: yellow handle, down to your right';
+    else if (where === 'shelter' && bagsPlaced < r.bags) now = `Stack the food and water bags on the glowing wall (${bagsPlaced} of ${r.bags})`;
+    else if (where === 'shelter' && !hose) now = 'Plug in the air hose (the blue coil)';
+    else if (where === 'shelter' && storming) now = 'Stay in the shelter until the storm passes';
+    else if (where === 'shelter') now = 'All clear! Back to your seat: press E on the seat handle';
+    else now = 'Steer the diamond into the ring (W A S D), then hold Space to fire the engine';
+    if (now === taskKey) return;
+    taskKey = now;
+    const flared = flashAt != null;
+    game.ui.task({
+      now,
+      steps: [
+        { text: 'Steer the green diamond into the ring and hold Space to fire the engine', done: progressNow() >= 100, now: where === 'seat' && !faultOn && !storming },
+        { text: 'If a thruster gets stuck: press E on the blinking JET RESET switch and type the code', done: false, now: faultOn },
+        { text: 'When the solar flare flashes: go to the shelter (yellow handle, down right)', done: flared && where !== 'seat', now: storming && where === 'seat' },
+        { text: `Stack ${r.bags} food and water bags on the glowing thin wall`, done: bagsPlaced >= r.bags, now: where === 'shelter' && bagsPlaced < r.bags },
+        { text: 'Plug in the air hose (blue coil)', done: hose, now: where === 'shelter' && bagsPlaced >= r.bags && !hose },
+        { text: 'Wait for "All clear", then go back to your seat and finish the flight', done: false, now: where === 'shelter' && !storming && flared },
+      ],
+      tips: [
+        'The *ring* is on your window. The *yellow arrow* points to the diamond if you lose it.',
+        'Small taps on *W A S D* work best: the ship keeps turning after you let go.',
+        'In the storm, the *shelter* makes the radiation reach you about 4 times slower. Hiding pauses the flight, but keeps you safe.',
+      ],
+    });
   }
 
   // ---------- each frame of play ----------
@@ -374,7 +420,14 @@ function run(game, { demo }) {
     const pushing = input.lengthSq() > 0;
     if (pushing && !lastInput) game.sound.play('thruster');
     lastInput = pushing ? 1 : 0;
-    rumble.set(pushing ? 0.8 : 0);
+    const burning = where === 'seat' && controls.burnHeld();
+    world.setThrottle(burning);
+    rumble.set(burning ? 1 : pushing ? 0.5 : 0);
+    if (burning) {
+      // the main engine shakes the ship: keep correcting to stay in the ring
+      spin.x += (Math.random() - 0.5) * r.burnShake * 6 * dt;
+      spin.y += (Math.random() - 0.5) * r.burnShake * 6 * dt;
+    }
     spin.x += input.x * r.turnRate * 2.6 * dt;
     spin.y += input.y * r.turnRate * 2.6 * dt;
     // little wobbles (the trainers add these), stronger in Hard
@@ -396,9 +449,11 @@ function run(game, { demo }) {
 
     // Progress: only from the pilot's seat
     if (where === 'seat') {
-      const gain = flightStep(error, dt, r);
+      const gain = burning ? flightStep(error, dt, r) * r.burnBoost : 0;
       if (gain > 0) game.progress.change(gain);
-      if (gain > 0 && error <= r.aimRing) once('ontarget', "That's it! *On target.* Keep it in the ring and the Progress bar fills.");
+      if (!burning && error <= r.aimRing) once('ontarget', "*On target!* Now *hold Space* to fire the engine. Keep the diamond in the ring while it shakes!");
+      if (gain > 0 && error <= r.aimRing) once('burning', "That's it! The engine is firing and the *Progress bar* fills. Real pilots call this a *burn*.");
+      if (burning && error > r.aimRing * 2) once('offburn', 'Off target! The engine only helps when the *diamond is in the ring*.');
       if (error > 0.5) once('lost', 'Lost the diamond? Follow the *yellow arrow* on your window.');
     }
 
@@ -439,11 +494,14 @@ function run(game, { demo }) {
     const keys = usableNow();
     world.setGlow(keys, t);
     const aimed = world.aimed(camera, keys);
-    if (aimed !== promptKey) {
-      promptKey = aimed;
-      game.ui.prompt(aimed ? `[E] ${world.usable[aimed].label.replace(/\*/g, '')}` : null);
+    const burnHint = !aimed && where === 'seat' && !faultOn ? (error <= r.aimRing ? (burning ? 'Engine firing! Keep the diamond in the ring' : 'Hold [Space] to fire the engine') : 'Steer the diamond into the ring: W A S D') : null;
+    const promptNow = aimed ? `aim:${aimed}` : burnHint;
+    if (promptNow !== promptKey) {
+      promptKey = promptNow;
+      game.ui.prompt(aimed ? `[E] ${world.usable[aimed].label.replace(/\*/g, '')}` : burnHint);
       game.ui.target(Boolean(aimed));
     }
+    updateTask();
     if (controls.takeAction() && aimed) use(aimed);
     // dev-only readout + look hook, for testing in the browser console
     if (import.meta.env?.DEV) {
