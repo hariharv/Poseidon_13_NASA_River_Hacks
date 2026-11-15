@@ -110,6 +110,9 @@ function run(game, { demo }) {
   let sunsets = 0;
   let minOxygen = game.oxygen.value;
   let carrying = null; // the box hanging from the arm
+  const stickTilt = { a: 0, b: 0, c: 0 }; // eased joystick tilt, so the gloves never jump
+  const servo = game.sound.loop('servo', 0); // the arm's motors while you steer
+  game.sound.loop('hum', 0.5); // the station's hum
   let stunnedUntil = 0;
   let alert = null; // { until } while space junk is coming
   let alertsLeft = r.debris;
@@ -281,12 +284,14 @@ function run(game, { demo }) {
     const id = socket.machine.id;
     if (plugged.has(id)) {
       plugged.delete(id);
+      game.sound.play('clunk');
       game.ui.buoy(`Unplugged the ${socket.machine.label.toLowerCase()}.`);
     } else if (power().overloaded || !canPlug(plugged, plugs)) {
       game.ui.buoy('No plugs left! *Unplug something* first.', { interrupt: true });
       return;
     } else {
       plugged.add(id);
+      game.sound.play('clunk');
     }
     game.sound.play('clunk');
     const p = showPower();
@@ -516,7 +521,13 @@ function run(game, { demo }) {
 
     // ---------- the robot arm ----------
     const input = controls.armInput();
-    world.inside.tilt({ x: input.z * 0.35, z: -input.x * 0.35 }, { x: -input.y * 0.35, z: 0 });
+    servo.set(input.lengthSq() > 0 ? 1 : 0);
+    // ease the joysticks toward the keys, so the gloves never jump out of the sleeves
+    const k = Math.min(1, dt * 10);
+    stickTilt.a += (input.z * 0.35 - stickTilt.a) * k;
+    stickTilt.b += (-input.x * 0.35 - stickTilt.b) * k;
+    stickTilt.c += (-input.y * 0.35 - stickTilt.c) * k;
+    world.inside.tilt({ x: stickTilt.a, z: stickTilt.b }, { x: stickTilt.c, z: 0 });
     let armPrompt = null;
     if (controls.mode === 'desk' && !controls.moving) {
       if (input.lengthSq() > 0) {
@@ -670,6 +681,7 @@ function run(game, { demo }) {
   }
 
   // ---------- main loop ----------
+  let disposed = false; // Sim over can tear the stage down in the middle of a frame
   let last = performance.now();
   let raf = requestAnimationFrame(function frame(now) {
     raf = requestAnimationFrame(frame);
@@ -684,6 +696,7 @@ function run(game, { demo }) {
     world.inside.animate(t);
     const floating = controls.mode === 'float' && !controls.moving;
     arms.update(camera, dt, t, { swimming: live && floating && controls.pushing, working: false });
+    if (disposed) return;
     renderer.clear();
     renderer.render(world.scene, camera);
     if (floating) {
@@ -694,6 +707,7 @@ function run(game, { demo }) {
 
   // ---------- cleanup (the engine calls this on finish, Sim over and Try again) ----------
   return () => {
+    disposed = true;
     cancelAnimationFrame(raf);
     timers.forEach(clearTimeout);
     window.removeEventListener('resize', onResize);
@@ -707,6 +721,7 @@ function run(game, { demo }) {
     world.dispose();
     disposeTree(arms.scene);
     renderer.dispose();
+    renderer.forceContextLoss(); // otherwise every Try again leaves a WebGL context behind
     renderer.domElement.remove();
   };
 }

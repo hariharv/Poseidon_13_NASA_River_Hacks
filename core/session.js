@@ -4,11 +4,15 @@
 
 import { createGame } from './game.js';
 import { STAGES, loadStage } from './stages.js';
+import { lessonFor, shuffleQuiz } from './lessons.js';
 
 export async function playStage(id, { mode, ui, root, save, data, web, demo = false }) {
   const meta = STAGES.find((s) => s.id === id);
   const index = STAGES.indexOf(meta);
   const stage = await loadStage(id);
+  const lesson = lessonFor(id);
+  let factIndex = Math.floor(Math.random() * 100);
+  let factTimer = null;
 
   return new Promise((resolve) => {
     let menuOpen = false;
@@ -66,6 +70,7 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
             text: [
               "Nobody got hurt. It's only training, and failing is part of training.",
               `The moment that made the difference: *${moment.text}*`,
+              ...(lesson ? [`What real astronauts do: ${lesson.tip}`] : []),
               'You keep all your badges.',
             ],
             choices: [
@@ -82,15 +87,18 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
             save.recordStage(id, result.stars ?? 1);
             if (result.badge) save.addBadge(result.badge);
           }
+          const didYouKnow = lesson?.facts[factIndex++ % lesson.facts.length];
           await ui.card({
             tone: 'win',
             eyebrow: `Stage ${index + 1} of ${STAGES.length} complete`,
             title: `${stage.name} done!`,
             stars: result.stars ?? 1,
-            text: `Your rank: *${stage.rank}*`,
+            text: [`Your rank: *${stage.rank}*`, ...(lesson ? [`Real astronaut skill you practised: *${lesson.skill}*`] : [])],
+            facts: didYouKnow ? [{ label: 'Did you know?', value: didYouKnow.text, source: didYouKnow.source, url: didYouKnow.url }] : undefined,
             choices: [{ id: 'next', label: 'Keep going' }],
           });
           await ui.whenIdle(); // e.g. the Real World Window the stage opened
+          if (!demo && lesson) await debrief(lesson);
           resolve(result);
         },
       });
@@ -100,6 +108,8 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
       ui.hud.progress(game.progress.value);
       ui.hud.show();
       ui.setMenu?.(() => openMenu(game));
+      ui.sound?.music?.('calm');
+      startFacts(game);
       ui.setRealNumbers(
         mode === 'hard' && stage.realNumbers?.length
           ? () => ui.card({ eyebrow: 'Hard mode', title: 'Real numbers', facts: stage.realNumbers, choices: [{ id: 'ok', label: 'Back to training' }] })
@@ -126,7 +136,24 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
         });
     }
 
+    // Zeus Jr. shares a real astronaut fact when nothing else is going on (not in the short Judge Demo).
+    function startFacts(game) {
+      clearInterval(factTimer);
+      if (demo || !lesson) return;
+      let quietFor = 0;
+      factTimer = setInterval(() => {
+        if (!game.running) return clearInterval(factTimer);
+        quietFor = ui.quiet ? quietFor + 1 : 0;
+        if (quietFor >= 35) {
+          quietFor = -10;
+          const f = lesson.facts[factIndex++ % lesson.facts.length];
+          ui.buoy(`*Astronaut fact:* ${f.text}`);
+        }
+      }, 1000);
+    }
+
     function teardown(game) {
+      clearInterval(factTimer);
       game.end();
       ui.prompt(null);
       ui.clearBuoy();
@@ -140,6 +167,27 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
 
     attempt();
   });
+
+  // One question after the stage. A right answer earns a sticker; a wrong one just shows the answer.
+  async function debrief(lesson) {
+    const quiz = shuffleQuiz(lesson.quiz);
+    const pick = await ui.card({
+      eyebrow: `Mission debrief · ${stage.name}`,
+      title: quiz.question,
+      choices: quiz.options.map((o, i) => ({ id: String(i), label: o.text })),
+      equal: true, // no answer looks like the "right" button
+    });
+    const right = quiz.options[Number(pick)]?.correct;
+    const answer = quiz.options.find((o) => o.correct).text;
+    if (right) save.addSticker?.(`debrief-${id}`);
+    await ui.card({
+      tone: right ? 'win' : undefined,
+      eyebrow: 'Mission debrief',
+      title: right ? 'Correct!' : 'Not quite',
+      text: [...(right ? [] : [`The answer: *${answer}*.`]), quiz.explain, ...(right ? ['You earned a *debrief sticker*!'] : [])],
+      choices: [{ id: 'ok', label: 'Keep going' }],
+    });
+  }
 }
 
 export { STAGES };

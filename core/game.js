@@ -95,6 +95,7 @@ export function createGame({
         }
         stormColour = colour;
         ui.hud.storm(colour);
+        if (running) ui.sound?.music?.(colour === 'red' ? 'tense' : 'calm');
         return colour;
       },
     },

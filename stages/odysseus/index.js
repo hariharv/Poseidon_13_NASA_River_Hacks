@@ -123,6 +123,9 @@ function run(game, { demo }) {
   let lastFlightPhase = null;
   let endFlightAt = null;
   let levelT = 0;
+  // sounds: the plane's engines, a chime for each tool you catch, clunks for plugs
+  const engine = game.sound.loop('engine', 0.5);
+  let caughtBefore = 0;
   let minOxygen = game.oxygen.value;
   let promptText = null;
   let reachUntil = 0;
@@ -537,12 +540,14 @@ function run(game, { demo }) {
     const id = socket.machine.id;
     if (plugged.has(id)) {
       plugged.delete(id);
+      game.sound.play('clunk');
       game.ui.buoy(`Unplugged the ${socket.machine.label.toLowerCase()}.`);
     } else if (power().overloaded || !canPlug(plugged, plugs)) {
       game.ui.buoy(`No plugs left! *Unplug something* first.`, { interrupt: true });
       return;
     } else {
       plugged.add(id);
+      game.sound.play('clunk');
     }
     reachUntil = t + 0.35;
     const p = showPower();
@@ -681,6 +686,7 @@ function run(game, { demo }) {
   }
 
   // ---------- main loop ----------
+  let disposed = false; // Sim over can tear the stage down in the middle of a frame
   let last = performance.now();
   let raf = requestAnimationFrame(function frame(now) {
     raf = requestAnimationFrame(frame);
@@ -696,6 +702,7 @@ function run(game, { demo }) {
     world.update(t, paused ? 0 : dt, camera);
     arms.update(camera, dt, t, { swimming: live && player.mode !== 'heavy' && player.moving, working: t < reachUntil });
 
+    if (disposed) return;
     renderer.clear();
     renderer.render(world.scene, camera);
     renderer.clearDepth();
@@ -704,6 +711,7 @@ function run(game, { demo }) {
 
   // ---------- cleanup (the engine calls this on finish, Sim over and Try again) ----------
   return () => {
+    disposed = true;
     cancelAnimationFrame(raf);
     timers.forEach(clearTimeout);
     window.removeEventListener('resize', onResize);
@@ -717,6 +725,7 @@ function run(game, { demo }) {
     world.dispose();
     disposeTree(arms.scene);
     renderer.dispose();
+    renderer.forceContextLoss(); // otherwise every Try again leaves a WebGL context behind
     renderer.domElement.remove();
   };
 }

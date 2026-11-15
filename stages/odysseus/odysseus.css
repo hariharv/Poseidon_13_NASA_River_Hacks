@@ -2,6 +2,7 @@
    Built on the shared tokens so it matches the HUD. */
 
 .odx-flight {
+  max-width: calc(100vw - 32px);
   position: fixed;
   left: 50%;
   top: calc(max(4.5vh, 28px) + 104px);
@@ -40,7 +41,7 @@
 }
 .odx-words {
   display: flex;
-  white-space: nowrap;
+  flex-wrap: wrap; /* long signs wrap instead of running off small screens */
   align-items: baseline;
   gap: 10px;
 }

@@ -76,7 +76,7 @@ export function createTools(scene, { count, origin, speed, hints }) {
           tool.fly = Math.min(1, tool.fly + dt * 4);
           toHand.set(0.3, -0.35, -0.5).applyQuaternion(camera.quaternion).add(camera.position);
           tool.pos.lerp(toHand, tool.fly);
-          tool.mesh.scale.setScalar(1 - tool.fly * 0.9);
+          tool.mesh.scale.setScalar(1.35 * (1 - tool.fly * 0.9)); // shrink from its normal size, no pop
           tool.mesh.visible = tool.fly < 1;
         }
         tool.mesh.position.copy(tool.pos);

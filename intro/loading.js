@@ -1,6 +1,7 @@
 // The loading screen. The thread stitching along the path to the Moon IS the
 // loading bar: it follows the real loading steps the engine passes in.
 
+import { allFacts } from '../core/lessons.js';
 import './loading.css';
 import { buoySvg } from '../ui/buoy-svg.js';
 
@@ -22,8 +23,8 @@ const FACTS = [
     source: 'NASA Neutral Buoyancy Lab fact sheet',
   },
   {
-    text: 'Astronauts practise about *10 hours* in the pool for every *1 hour* of a real spacewalk.',
-    source: 'NASA space training fact sheet',
+    text: 'Astronauts practise about *7 hours* in the pool for every *1 hour* of a real spacewalk.',
+    source: 'NASA "Diving Down Deep"',
   },
   {
     text: 'The pool is *40 feet* deep. That is about as tall as a four-storey building!',
@@ -34,6 +35,9 @@ const FACTS = [
     source: 'NASA Neutral Buoyancy Lab fact sheet',
   },
 ];
+
+// ...plus a real astronaut fact from every stage (core/lessons.js), in a mixed-up order
+const ALL_FACTS = [...FACTS, ...allFacts().sort(() => Math.random() - 0.5)];
 
 const MIN_SHOW_MS = 2200; // long enough to see the stitching, short enough not to bore anyone
 
@@ -96,7 +100,7 @@ export function showLoadingScreen({ root, stages, tasks, player, progress }) {
   let factIndex = 0;
   const say = (html) => (bubble.innerHTML = html);
   const showFact = () => {
-    const f = FACTS[factIndex++ % FACTS.length];
+    const f = ALL_FACTS[factIndex++ % ALL_FACTS.length];
     say(`${rich(f.text)}<span class="fact-source">Source: ${f.source}</span>`);
   };
   say(returning ? `Welcome back, ${escapeHtml(player.name)}! Let me get your suit ready.` : "Hi! I'm <strong>Zeus Jr.</strong>, your helper robot. Your training base is loading…");

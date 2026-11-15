@@ -37,7 +37,8 @@ export function createUI(container) {
       <div class="hud-prompt" hidden></div>
       <div class="hud-corner">
         <button class="hud-btn hud-help" type="button" hidden title="What do I do now? (H)"><span aria-hidden="true">?</span><span class="hud-btn-text">Help</span></button>
-        <button class="hud-btn hud-sound" type="button" aria-pressed="true" title="Sound on or off (M)"><span aria-hidden="true">♪</span><span class="hud-btn-text">Sound on</span></button>
+        <button class="hud-btn hud-music" type="button" aria-pressed="true" title="Music on or off (N)"><span aria-hidden="true">♫</span><span class="hud-btn-text">Music on</span></button>
+        <button class="hud-btn hud-sound" type="button" aria-pressed="true" title="Sound effects on or off (M)"><span aria-hidden="true">♪</span><span class="hud-btn-text">Sound on</span></button>
         <button class="hud-btn hud-menu" type="button" title="Menu"><span aria-hidden="true">☰</span><span class="hud-btn-text">Menu</span></button>
       </div>
     </div>
@@ -78,6 +79,7 @@ export function createUI(container) {
   const checklistBox = $('.checklist');
   const cardLayer = $('.card-layer');
   const soundBtn = $('.hud-sound');
+  const musicBtn = $('.hud-music');
   const menuBtn = $('.hud-menu');
   const helpBtn = $('.hud-help');
   const taskBox = $('.hud-task');
@@ -102,11 +104,19 @@ export function createUI(container) {
     soundBtn.setAttribute('aria-pressed', String(!muted));
     soundBtn.querySelector('.hud-btn-text').textContent = muted ? 'Sound off' : 'Sound on';
     soundBtn.classList.toggle('is-off', muted);
+    const m = sound.musicMuted;
+    musicBtn.setAttribute('aria-pressed', String(!m));
+    musicBtn.querySelector('.hud-btn-text').textContent = m ? 'Music off' : 'Music on';
+    musicBtn.classList.toggle('is-off', m);
   }
   showSoundState(sound.muted);
   sound.onChange(showSoundState);
   soundBtn.addEventListener('click', () => {
     sound.toggle();
+    sound.play('click');
+  });
+  musicBtn.addEventListener('click', () => {
+    sound.toggleMusic();
     sound.play('click');
   });
   const openMenu = (e) => {
@@ -117,8 +127,9 @@ export function createUI(container) {
   menuBtn.addEventListener('click', openMenu);
   $('.pause-menu').addEventListener('click', openMenu);
   window.addEventListener('keydown', (e) => {
-    if (e.code !== 'KeyM' || e.repeat || e.target.closest?.('input, textarea')) return;
-    sound.toggle();
+    if (e.repeat || e.target.closest?.('input, textarea')) return;
+    if (e.code === 'KeyM') sound.toggle();
+    if (e.code === 'KeyN') sound.toggleMusic();
   });
 
   // ---------- HUD ----------
@@ -356,7 +367,7 @@ export function createUI(container) {
     return result;
   }
 
-  function showCard({ eyebrow, title, text, choices, stars, facts, links, steps, note, tone } = {}) {
+  function showCard({ eyebrow, title, text, choices, stars, facts, links, steps, note, tone, equal = false } = {}) {
     return new Promise((resolve) => {
       const list = choices?.length ? choices : [{ id: 'ok', label: 'OK' }];
       const box = el('div', 'card');
@@ -374,11 +385,12 @@ export function createUI(container) {
         ${note ? `<p class="card-note">${escapeHtml(note)}</p>` : ''}
         <div class="card-choices"></div>`;
       const row = box.querySelector('.card-choices');
+      row.classList.toggle('is-stacked', equal);
       // A key held down from the game (Space to swim, E to fix) must not click
       // the first button the moment the card appears, so buttons wake up after a beat.
       const readyAt = performance.now() + 450;
       list.forEach((choice, i) => {
-        const b = el('button', i === 0 ? 'btn' : 'btn btn-quiet');
+        const b = el('button', i === 0 && !equal ? 'btn' : 'btn btn-quiet');
         b.type = 'button';
         b.textContent = choice.label;
         b.addEventListener('click', () => {
@@ -533,6 +545,10 @@ export function createUI(container) {
     card,
     get cardOpen() {
       return openCards > 0;
+    },
+    // nothing on screen is talking or waiting: a good moment for a fun fact
+    get quiet() {
+      return openCards === 0 && pauseLayer.hidden && !showing && lines.length === 0;
     },
     whenIdle: () => queue,
     checklist,

@@ -433,6 +433,14 @@
   gap: 12px;
   margin-top: 10px;
 }
+/* quiz answers: one per line, all the same style */
+.card-choices.is-stacked {
+  flex-direction: column;
+}
+.card-choices.is-stacked .btn {
+  width: 100%;
+  text-align: left;
+}
 
 /* ---------- Judge checklist (demo mode) ---------- */
 .checklist {

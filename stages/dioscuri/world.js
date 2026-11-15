@@ -388,9 +388,15 @@ function buildTipMarker(scene, hints) {
   const lineMat = new THREE.LineDashedMaterial({ color: '#7fe0ff', dashSize: 0.18, gapSize: 0.14, transparent: true, opacity: hints === 'more' ? 0.7 : 0.4 });
   const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, -1, 0)]);
   const line = new THREE.Line(lineGeo, lineMat);
+  line.frustumCulled = false; // its bounds change every frame, so never cull it
+  // always drawn on top, so the ring still shows when it's under the pallet or the platform
+  ring.renderOrder = 8;
+  mat.depthTest = false;
+  ring.visible = line.visible = false; // until the arm's hand has a position
   scene.add(line);
   return {
     update(tip, groundY) {
+      ring.visible = line.visible = true;
       ring.position.set(tip.x, groundY + 0.02, tip.z);
       lineGeo.setFromPoints([tip.clone(), new THREE.Vector3(tip.x, groundY + 0.02, tip.z)]);
       line.computeLineDistances();

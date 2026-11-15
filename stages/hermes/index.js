@@ -103,6 +103,9 @@ function run(game, { demo }) {
   let patchesFound = 0;
   let fixHeld = false;
   let wasLow = false;
+  // sounds: the pool's water all around you, and the drill while you work
+  const drill = game.sound.loop('drill', 0);
+  game.sound.loop('water', 1);
   const timers = new Set();
   const said = new Set();
   const once = (key, text) => {
@@ -402,6 +405,7 @@ function run(game, { demo }) {
     else if (target && pressed && !fixing && !game.ui.puzzleOpen) startFix(target);
     const working = Boolean(fixing); // the wire puzzle is open: hard work, fast breathing
     workingNow = working;
+    drill.set(working ? 1 : 0);
     // in the bubble you don't use air; once it's full it just stays full (no flicker)
     const refilling = inZone && game.oxygen.value < 99.95;
     world.air.state.active = inZone;
@@ -476,10 +480,11 @@ function run(game, { demo }) {
   }
 
   // ---------- main loop ----------
+  let disposed = false; // Sim over can tear the stage down in the middle of a frame
   let last = performance.now();
   let raf = requestAnimationFrame(function frame(now) {
     raf = requestAnimationFrame(frame);
-    const dt = Math.min(0.05, (now - last) / 1000);
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
     last = now;
     if (!paused) t += dt;
     // a card on screen (like Real numbers) pauses the dive
@@ -508,6 +513,7 @@ function run(game, { demo }) {
     bubbles.update(paused ? 0 : dt, t);
     arms.update(camera, dt, t, { swimming: live && player.swimming, working: live && workingNow });
 
+    if (disposed) return;
     renderer.clear();
     renderer.render(world.scene, camera);
     renderer.clearDepth();
@@ -516,6 +522,7 @@ function run(game, { demo }) {
 
   // ---------- cleanup (the engine calls this on finish, Sim over and Try again) ----------
   return () => {
+    disposed = true;
     cancelAnimationFrame(raf);
     timers.forEach(clearTimeout);
     window.removeEventListener('resize', onResize);
@@ -528,6 +535,7 @@ function run(game, { demo }) {
     world.dispose();
     disposeTree(arms.scene);
     renderer.dispose();
+    renderer.forceContextLoss(); // otherwise every Try again leaves a WebGL context behind
     renderer.domElement.remove();
   };
 }

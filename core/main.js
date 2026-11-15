@@ -25,6 +25,7 @@ const ui = createUI(app);
 const data = createData();
 const web = createWeb(ui);
 const ctx = { ui, root: stageHost, save, data, web };
+if (import.meta.env?.DEV) window.__ui = ui; // dev only: poke the UI (e.g. the music) from the console
 
 if (stageParam) {
   runSingleStage(stageParam, modeParam);
@@ -34,6 +35,7 @@ if (stageParam) {
 
 async function showTitle() {
   // Homepage first: Team Poseidon 13 and "Make your astronaut". Then the menu (loading screen).
+  ui.sound.music('title'); // starts on the first click (browsers only allow sound after one)
   const { showHome } = await import('../intro/home.js');
   // the homepage saves player.json the moment you change your name (or anything else)
   const player = await showHome({ root: app, player: save.loadPlayer(), progress: save.loadProgress(), onChange: (p) => save.savePlayer(p) });
