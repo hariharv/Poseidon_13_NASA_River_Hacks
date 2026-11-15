@@ -165,7 +165,14 @@ export function createTouch(host) {
       set('.tc-up', l.up);
       set('.tc-down', l.down);
       set('.tc-leave', l.leave);
+      if (l.leave) layer.querySelector('.tc-leave').hidden = true; // only while it can be used (setButton)
       layer.hidden = false;
+    },
+    // Show or hide one button while playing, e.g. 'leave' (Get up) only at the arm desk.
+    setButton(name, on) {
+      const b = layer.querySelector(`.tc-${name}`);
+      if (!b || !b.textContent || b.hidden === !on) return;
+      b.hidden = !on;
     },
     hide() {
       releaseAll();

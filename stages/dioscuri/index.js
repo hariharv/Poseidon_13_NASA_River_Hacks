@@ -640,6 +640,7 @@ function run(game, { demo }) {
     } else if (controls.mode === 'desk') prompt = armPrompt ?? (easy ? 'Steer: W A S D, Space, Shift · [Q] get up' : null);
     game.ui.target(Boolean(aimed) || Boolean(armPrompt?.startsWith('Press')));
     setPrompt(prompt);
+    game.ui.touchButton('leave', controls.mode === 'desk' && !controls.moving); // touch: Get up only at the arm desk
     // the power board: while you're at the panel, or whenever too many machines are ON
     const nearPanel = controls.mode === 'float' && camera.position.distanceTo(world.panel.sockets[0].position) < 3.2;
     game.ui.power(

@@ -108,6 +108,7 @@ export function createGame({
       pause: (on, onResume) => ui.pause?.(on, onResume),
       task: (spec) => ui.task?.(spec),
       power: (spec) => ui.power?.(spec),
+      touchButton: (name, on) => ui.touch?.setButton?.(name, on),
       cheer: (options) => ui.cheer?.(options),
       countdown: () => (ui.countdown ? ui.countdown() : Promise.resolve()),
       clock: (seconds, goal) => ui.hud.clock?.(seconds, goal),
