@@ -397,8 +397,30 @@
   font-size: 0.82em;
   color: var(--cream-dim);
 }
+/* Links look like links: bright, bold, with a "opens a new tab" arrow and a big click area */
 .card-facts a {
-  color: var(--cream-dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 0;
+  color: #9fd6ff;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+  cursor: pointer;
+}
+.card-facts a::after {
+  content: '↗';
+  font-size: 0.95em;
+  text-decoration: none;
+}
+.card-facts a:hover,
+.card-facts a:focus-visible {
+  color: #d4ecff;
+}
+.card-facts .fact-source {
+  font-size: 0.9em;
 }
 .card-note {
   margin: 0 0 14px;
@@ -973,4 +995,10 @@
     bottom: calc(max(5vh, 24px) + 130px);
     max-width: calc(100vw - 32px);
   }
+}
+
+/* A card or puzzle on screen already pauses play: don't show the pause box through it */
+.ui-layer:has(.card-layer:not([hidden])) .pause-layer,
+.ui-layer:has(.puzzle-layer:not([hidden])) .pause-layer {
+  display: none;
 }

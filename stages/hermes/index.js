@@ -11,8 +11,8 @@ import { createBubbles } from './bubbles.js';
 import { oxygenStep, starsFor } from './sim.js';
 import { rulesFor } from '../../core/rules.js';
 
-const NBL_FACTS = 'https://www.nasa.gov/centers/johnson/pdf/167748main_FS_NBL508c.pdf';
-const TRAINING_FACTS = 'https://www.nasa.gov/centers/johnson/pdf/160410main_space_training_fact_sheet.pdf';
+const NBL_FACTS = 'https://www.nasa.gov/wp-content/uploads/2017/06/167748main_fs_nbl508c.pdf';
+const TRAINING_FACTS = 'https://www.nasa.gov/wp-content/uploads/2015/10/160410main_space_training_fact_sheet.pdf';
 
 const hard = rulesFor('hermes', 'hard');
 const REAL_NUMBERS = [
