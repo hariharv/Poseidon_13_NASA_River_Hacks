@@ -1,4 +1,4 @@
-// The six stages, in order. A stage becomes playable the moment its folder has
+// The five stages, in order. A stage becomes playable the moment its folder has
 // an index.js, so stage builders never need to edit /core to register it.
 
 const modules = import.meta.glob('../stages/*/index.js');
@@ -8,7 +8,6 @@ const PLAN = [
   { id: 'odysseus', name: 'Odysseus', rank: 'Astronaut', place: 'Zero-G plane' },
   { id: 'dioscuri', name: 'Dioscuri', rank: 'Science Expert', place: 'Space lab' },
   { id: 'hera', name: 'Hera', rank: 'Pilot', place: 'Ship simulator' },
-  { id: 'artemis', name: 'Artemis', rank: 'Commander', place: 'Mars-style home' },
   { id: 'apollo', name: 'Apollo', rank: 'Commander on the Moon', place: 'Moon base' },
 ];
 

@@ -23,6 +23,11 @@ const SRC = {
   simulator: { source: 'NASA: Artemis II training', url: 'https://www.nasa.gov/centers-and-facilities/johnson/preparing-for-artemis-ii-training-for-a-mission-around-the-moon/' },
   lightFlash: { source: 'NASA: Apollo light flash investigations', url: 'https://ntrs.nasa.gov/citations/19760005597' },
   limit: { source: 'NASA radiation protection brief', url: 'https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf' },
+  moon: { source: 'NASA Moon facts', url: 'https://science.nasa.gov/moon/facts/' },
+  lunarNight: { source: 'NASA Fission Surface Power', url: 'https://www.nasa.gov/centers-and-facilities/glenn/nasas-fission-surface-power-project-energizes-lunar-exploration/' },
+  southPole: { source: "NASA: the Moon's south pole", url: 'https://www.nasa.gov/humans-in-space/moons-south-pole-is-full-of-mystery-science-intrigue/' },
+  oxygen: { source: 'NASA Marshall: life support', url: 'https://www.nasa.gov/centers-and-facilities/marshall/the-bare-necessities-surviving-the-rigors-of-space-travel/' },
+  marsDelay: { source: 'NASA Space Communications', url: 'https://www.nasa.gov/centers-and-facilities/goddard/space-communications-7-things-you-need-to-know/' },
 };
 
 const fact = (text, src) => ({ text, ...SRC[src] });
@@ -107,6 +112,28 @@ export const LESSONS = {
         { text: 'Nothing: flares cannot hurt you' },
       ],
       explain: 'The flash of light comes first. The dangerous particles arrive minutes to hours later, so the flash is the crew\'s warning to build their shelter.',
+    },
+  },
+  apollo: {
+    skill: 'Running a Moon base: sharing power, making air and water, growing food and staying safe',
+    tip: 'Real Moon crews plan for the long lunar night: only the machines that keep them alive get the batteries.',
+    facts: [
+      fact('Gravity on the Moon is one-sixth of Earth\'s, so you can hop really high.', 'moon'),
+      fact('A lunar night lasts about 14 and a half Earth days, with no sunlight for solar panels.', 'lunarNight'),
+      fact('At night the Moon gets down to about -173 °C (-280 °F).', 'moon'),
+      fact('Some craters near the Moon\'s poles have not seen sunlight in billions of years.', 'southPole'),
+      fact('NASA has found ice in the always-dark craters at the Moon\'s poles.', 'moon'),
+      fact('The space station makes oxygen by running electricity through water.', 'oxygen'),
+      fact('A radio message from Mars takes 4 to 24 minutes to reach Earth.', 'marsDelay'),
+    ],
+    quiz: {
+      question: 'The Sun sets and you only have 2 battery plugs. What do you plug in?',
+      options: [
+        { text: 'The air machine and the heater', correct: true },
+        { text: 'The big lights and the radio' },
+        { text: 'The grow lights and the big lights' },
+      ],
+      explain: 'Air and warmth keep the crew alive. Everything else can wait for the Sun to come back and power the solar panels again.',
     },
   },
 };

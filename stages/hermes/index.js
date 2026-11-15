@@ -170,7 +170,7 @@ function run(game, { demo }) {
   // ---------- briefing ----------
   (async () => {
     await game.ui.card({
-      eyebrow: demo ? 'Judge Demo · Stage 1 · Hermes' : 'Stage 1 of 6 · Hermes',
+      eyebrow: demo ? 'Judge Demo · Stage 1 · Hermes' : 'Stage 1 of 5 · Hermes',
       title: 'The giant training pool',
       text: demo
         ? ['A copy of NASA\'s spacewalk training pool. *Fix 1 broken panel.* Your oxygen starts at 60.']

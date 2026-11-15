@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { LESSONS, lessonFor, allFacts, shuffleQuiz } from './lessons.js';
 
-const BUILT = ['hermes', 'odysseus', 'dioscuri', 'hera'];
+const BUILT = ['hermes', 'odysseus', 'dioscuri', 'hera', 'apollo'];
 
 describe('LESSONS: what each stage teaches about being an astronaut', () => {
   it('every built stage has a lesson', () => {

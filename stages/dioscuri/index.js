@@ -194,7 +194,7 @@ function run(game, { demo }) {
   showPower();
   (async () => {
     await game.ui.card({
-      eyebrow: demo ? 'Judge Demo · Stage 3 · Dioscuri' : 'Stage 3 of 6 · Dioscuri',
+      eyebrow: demo ? 'Judge Demo · Stage 3 · Dioscuri' : 'Stage 3 of 5 · Dioscuri',
       title: 'The robot-arm lab',
       text: demo
         ? ['Float to the *arm controls*, move the science box to its slot, then start the experiment at the *science bench* and keep it powered.']

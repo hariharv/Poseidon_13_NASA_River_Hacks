@@ -210,7 +210,7 @@ function run(game, { demo }) {
   drawScreens(0);
   (async () => {
     await game.ui.card({
-      eyebrow: demo ? 'Judge Demo · Stage 4 · Hera' : 'Stage 4 of 6 · Hera',
+      eyebrow: demo ? 'Judge Demo · Stage 4 · Hera' : 'Stage 4 of 5 · Hera',
       title: 'The ship simulator',
       text: demo
         ? ['Fly the capsule toward the Moon. A *real solar storm* from NASA records will hit: build the shelter and hide, or keep flying?']

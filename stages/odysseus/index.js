@@ -199,7 +199,7 @@ function run(game, { demo }) {
   // ---------- briefing ----------
   (async () => {
     await game.ui.card({
-      eyebrow: demo ? 'Judge Demo · Stage 2 · Odysseus' : 'Stage 2 of 6 · Odysseus',
+      eyebrow: demo ? 'Judge Demo · Stage 2 · Odysseus' : 'Stage 2 of 5 · Odysseus',
       title: 'The zero-G plane',
       text: demo
         ? ['A plane flies big hills so everyone floats. *Catch 3 floating tools*, then fix the power without losing your air.']

@@ -242,6 +242,71 @@ export const RULES = {
         stars: { speedySeconds: 75 },
       },
     },
+    apollo: {
+      base: {
+        startOxygen: 80,
+        // Time: 14 Moon-days. The Sun is up for the first 7, then the long, dark lunar night.
+        days: 14,
+        dayLength: 15, // seconds per Moon-day in the game
+        nightFrom: 8, // days 8 to 14 are night
+        dayPlugs: 4, // solar panels in sunlight
+        nightPlugs: 2, // only the batteries in the dark
+        startPlugged: ['air', 'grow', 'lights'],
+        // Air: the air machine splits water into oxygen, but only with a plug AND water in the tank
+        breathePerSec: 0.5,
+        airMachinePerSec: 0.95,
+        staleAirPerSec: 0.9, // extra loss when nothing is making fresh air
+        coldPerSec: 0.9, // extra loss at night with no heater (you shiver and breathe harder)
+        plantAirPerSec: 0.07, // each growing plant tray adds a little oxygen
+        suitPerSec: 0.7, // outside on a moonwalk your suit air runs down faster
+        waterStart: 4,
+        waterMax: 8,
+        waterPerDay: 1, // the air machine uses this much water each Moon-day
+        icePerChunk: 2, // water from each chunk of ice you dig up
+        iceChunks: 6,
+        // Food: plants grow under the grow lights (and need the heater at night)
+        trays: 3,
+        growDays: 2.5, // Moon-days for a plant to be ready
+        firstTray: 0.8, // one tray starts nearly ready, so you can harvest straight away
+        // A real solar storm (NASA DONKI), sometime in the middle of the mission
+        storm: { fromDay: 5, toDay: 10, warnSeconds: 9, stormSeconds: 16, insidePerSec: 0.7, outsidePerSec: 3.5, shelterPerSec: 0.05, maxRedOutside: 7 },
+        // Progress: surviving the days, plus the mission jobs
+        shares: { days: 50, harvest: 20, radio: 15, ice: 15 },
+        goals: { harvest: 3, radio: 3, ice: 3 },
+        radioDelay: 1.3, // seconds for a radio message to cross from the Moon to Earth (each way)
+        puzzleSeconds: 14,
+        walkSpeed: 3.2,
+        jumpSpeed: 2.8, // a little hop goes a long way in Moon gravity
+        gravity: 1.62, // m/s², one-sixth of Earth's
+        lowOxygen: 35,
+        veryLowOxygen: 18,
+        stars: { safeAbove: 30, progressFor: 80 },
+      },
+      easy: {},
+      hard: {
+        startOxygen: 75,
+        dayLength: 14,
+        waterStart: 3,
+        breathePerSec: 0.62,
+        coldPerSec: 1.1,
+        suitPerSec: 0.95,
+        storm: { warnSeconds: 6, outsidePerSec: 4.5, insidePerSec: 0.9, maxRedOutside: 5 },
+        goals: { harvest: 4, radio: 4, ice: 4 },
+        puzzleSeconds: 10,
+      },
+      demo: {
+        startOxygen: 75,
+        days: 5,
+        dayLength: 9,
+        nightFrom: 4,
+        waterStart: 2,
+        growDays: 0.8,
+        firstTray: 0.9,
+        storm: { fromDay: 2, toDay: 2, warnSeconds: 5, stormSeconds: 8 },
+        goals: { harvest: 1, radio: 1, ice: 1 },
+        puzzleSeconds: 16,
+      },
+    },
   },
 };
 

@@ -1,0 +1,136 @@
+/* Apollo: the day sign at the top of the visor (Day 3 of 14 · sunlight · water), and the airlock fade.
+   Same family as the Hera and Odysseus signs. */
+
+.apo-sign {
+  position: fixed;
+  left: 50%;
+  top: calc(max(4.5vh, 28px) + 104px);
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: auto minmax(0, auto);
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  max-width: min(440px, calc(100vw - 32px));
+  padding: 8px 18px 10px 10px;
+  border-radius: 22px;
+  background: rgba(13, 11, 38, 0.66);
+  backdrop-filter: blur(4px);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 243, 214, 0.16);
+  color: var(--cream);
+  pointer-events: none;
+  font-size: calc(16px * var(--ui-scale));
+  transition: box-shadow 300ms ease;
+}
+.apo-sign[hidden] {
+  display: none;
+}
+.apo-icon {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 2.6em;
+  height: 2.6em;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 1em;
+  background: var(--twill-2);
+}
+.apo-words {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 10px;
+}
+.apo-phase {
+  font-family: var(--font-display);
+  font-size: 1.4em;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.apo-sub {
+  font-size: 0.95em;
+  color: var(--cream-dim);
+}
+/* how far through the 14 Moon-days you are */
+.apo-days {
+  position: relative;
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.apo-days-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: inherit;
+  background: var(--cream);
+  transition: width 200ms linear;
+}
+
+.apo-sign[data-kind='day'] .apo-icon {
+  background: var(--visor-gold);
+  color: var(--night);
+}
+.apo-sign[data-kind='night'] {
+  box-shadow: inset 0 0 0 1.5px rgba(120, 150, 255, 0.45), 0 0 18px rgba(80, 110, 255, 0.25);
+}
+.apo-sign[data-kind='night'] .apo-icon {
+  background: #2b3a8f;
+  color: #dfe6ff;
+}
+.apo-sign[data-kind='night'] .apo-days-fill {
+  background: #8fa4ff;
+}
+
+.apo-sign[data-kind='warning'] {
+  box-shadow: inset 0 0 0 2px var(--visor-gold), 0 0 22px rgba(255, 193, 69, 0.4);
+}
+.apo-sign[data-kind='warning'] .apo-phase {
+  color: var(--visor-gold);
+}
+.apo-sign[data-kind='warning'] .apo-icon {
+  background: var(--visor-gold);
+  color: var(--night);
+  animation: apo-pulse 1s ease-in-out infinite;
+}
+.apo-sign[data-kind='storm'] {
+  box-shadow: inset 0 0 0 2px var(--alarm), 0 0 26px rgba(255, 77, 94, 0.55);
+}
+.apo-sign[data-kind='storm'] .apo-phase {
+  color: #ff9aa5;
+}
+.apo-sign[data-kind='storm'] .apo-icon {
+  background: var(--alarm);
+  animation: apo-pulse 0.6s ease-in-out infinite;
+}
+
+/* going through the airlock */
+.apo-fade {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 600ms ease;
+}
+.apo-fade.is-on {
+  opacity: 1;
+}
+
+@keyframes apo-pulse {
+  50% {
+    transform: scale(1.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .apo-sign .apo-icon {
+    animation: none !important;
+  }
+  .apo-fade {
+    transition-duration: 1ms;
+  }
+}

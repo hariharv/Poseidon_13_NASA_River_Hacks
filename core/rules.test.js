@@ -34,6 +34,6 @@ describe('rulesFor', () => {
   });
 
   it('returns an empty object for a stage with no numbers yet', () => {
-    expect(rulesFor('apollo', 'easy')).toEqual({});
+    expect(rulesFor('zeus', 'easy')).toEqual({});
   });
 });

@@ -70,5 +70,32 @@
     "url": "https://science.nasa.gov/missions/artemis/artemis-2/to-protect-artemis-ii-astronauts-nasa-experts-keep-eyes-on-sun/",
     "image": null,
     "sample": true
+  },
+  {
+    "queryId": "moon",
+    "foundOn": "2026-11-14",
+    "title": "Moon's South Pole is full of mystery, science, intrigue",
+    "source": "nasa.gov",
+    "url": "https://www.nasa.gov/humans-in-space/moons-south-pole-is-full-of-mystery-science-intrigue/",
+    "image": null,
+    "sample": true
+  },
+  {
+    "queryId": "moon",
+    "foundOn": "2026-11-14",
+    "title": "Earth's Moon: facts",
+    "source": "science.nasa.gov",
+    "url": "https://science.nasa.gov/moon/facts/",
+    "image": null,
+    "sample": true
+  },
+  {
+    "queryId": "moon",
+    "foundOn": "2026-11-14",
+    "title": "NASA's Fission Surface Power project energizes lunar exploration",
+    "source": "nasa.gov",
+    "url": "https://www.nasa.gov/centers-and-facilities/glenn/nasas-fission-surface-power-project-energizes-lunar-exploration/",
+    "image": null,
+    "sample": true
   }
 ]

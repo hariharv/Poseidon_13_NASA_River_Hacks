@@ -26,6 +26,11 @@ const PLACES = {
     title: 'The real spaceship simulator',
     text: "The Artemis II astronauts practised in NASA's *Orion simulator* in Houston before flying around the Moon. Their real capsule has a radiation alarm called *HERA*, and the crew practised building a storm shelter out of supply bags, like you did.",
   },
+  moon: {
+    eyebrow: 'Real world window',
+    title: "The real Moon's south pole",
+    text: "NASA's *Artemis* missions plan to send astronauts to the Moon's *south pole*, where dark craters hold *ice*. Living there means getting through the long, freezing *lunar night*, just like you did.",
+  },
 };
 
 export function createData() {

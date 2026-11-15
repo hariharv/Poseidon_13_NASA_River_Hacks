@@ -12,7 +12,6 @@ const ICONS = {
   dioscuri:
     '<path d="M-18 18 L-6 -2 L12 -12"/><circle class="solid" cx="-6" cy="-2" r="5"/><path d="M12 -12 l9 -3 M12 -12 l3 9"/><path d="M-24 18 h14"/>',
   hera: '<path d="M-12 12 L-6 -16 L6 -16 L12 12 Z"/><path d="M-16 18 h32"/><circle cx="0" cy="-2" r="4"/>',
-  artemis: '<path d="M-21 14 A21 21 0 0 1 21 14 Z"/><path d="M-6 14 v-9 h12 v9"/><path d="M-26 14 h52"/>',
   apollo:
     '<path d="M-6 18 V-18"/><path class="solid" d="M-6 -18 h20 l-5 6 l5 6 h-20 Z"/><path d="M-22 18 q16 -8 40 0"/>',
 };
