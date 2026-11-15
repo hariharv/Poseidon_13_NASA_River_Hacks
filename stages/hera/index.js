@@ -1,15 +1,16 @@
 // Stage 4: Hera · Pilot
 // Where: a spaceship simulator, like the Orion simulator the Artemis II crew trained in.
-// Job: fly the capsule toward the Moon (keep the target in the ring). A real solar flare from
-//      NASA's DONKI records goes off: the flash comes first, the particles follow. Build the storm
-//      shelter out of supply bags and hide, or keep flying?
-// Big idea: space storms are invisible but dangerous; hiding keeps you safe but slows the mission.
+// Job: fly the capsule toward the Moon (keep the target in the ring) through a field of space junk:
+//      steer each piece out of your path before it hits, and patch the hull if one does. A real
+//      solar flare from NASA's DONKI records goes off: the flash comes first, the particles follow.
+//      Build the storm shelter out of supply bags and hide, or keep flying?
+// Big idea: dodging and hiding keep you safe but slow the mission. Every choice costs.
 
 import * as THREE from 'three';
 import './hera.css';
 import { buildWorld, SEAT_EYE, SHELTER_EYE, SHELTER_LOOK } from './world.js';
 import { createControls } from './controls.js';
-import { flareStrength, stormClock, shelterProtection, oxygenStep, flightStep, starsFor, minutesLater, kidDuration } from './sim.js';
+import { flareStrength, stormClock, shelterProtection, oxygenStep, flightStep, starsFor, minutesLater, kidDuration, junkDistance, onCollisionCourse, junkDue, leakStep } from './sim.js';
 import { rulesFor } from '../../core/rules.js';
 
 const SRC = {
@@ -19,6 +20,7 @@ const SRC = {
   hera: 'https://science.nasa.gov/missions/artemis/artemis-2/to-protect-artemis-ii-astronauts-nasa-experts-keep-eyes-on-sun/',
   artemis1: 'https://www.osti.gov/pages/servlets/purl/2447574',
   limit: 'https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf',
+  debris: 'https://orbitaldebris.jsc.nasa.gov/faq/',
 };
 
 const hard = rulesFor('hera', 'hard');
@@ -28,12 +30,16 @@ const REAL_NUMBERS = [
   { label: "Time Orion's crew has to build the storm shelter", value: 'about 1 hour; they might stay inside up to a day', source: 'NASA Orion radiation protection plan', url: SRC.shelterPlan },
   { label: 'How much the shelter cuts the radiation', value: 'about 4 times less (Artemis I measurements)', source: 'Artemis I radiation results (OSTI)', url: SRC.artemis1 },
   { label: 'NASA limit for radiation over a whole astronaut career', value: '600 mSv', source: 'NASA-STD-3001 radiation brief', url: SRC.limit },
+  { label: 'Large pieces of space junk tracked around Earth', value: 'about 50,000', source: 'NASA Orbital Debris Program Office', url: SRC.debris },
+  { label: 'How fast space junk flies near Earth', value: '7-8 km per second (about 15,700-17,900 mph)', source: 'NASA Orbital Debris Program Office', url: SRC.debris },
+  { label: 'Times the space station has moved to dodge junk (since 1999)', value: '41', source: 'NASA Orbital Debris Program Office', url: SRC.debris },
   { label: 'In this sim: oxygen lost per second in the red storm, out of the shelter', value: `${hard.stormDosePerSec} × the flare's strength`, source: 'Game rules (Hard mode)' },
 ];
 
 const CONTROLS = [
   { label: 'Turn the ship', value: 'W A S D (or the arrow keys)' },
   { label: 'Fire the engine', value: 'Hold Space while the diamond is in the ring' },
+  { label: 'Dodge space junk', value: 'Steer until the red ring turns green' },
   { label: 'Look around', value: 'Move the mouse' },
   { label: 'Use things (shelter, bags, switches)', value: 'Look at it, press E (or click)' },
 ];
@@ -127,6 +133,17 @@ function run(game, { demo }) {
   let disposed = false;
   let redAtSeat = 0;
   let clearAt = null;
+  // space junk
+  const junk = []; // { piece, age }
+  let sinceJunk = 0;
+  let hits = 0;
+  let dodged = 0;
+  let leaking = false;
+  let junkDanger = null; // the closest piece still on a collision course
+  const attInv = new THREE.Quaternion();
+  const jLocal = new THREE.Vector3();
+  const jRight = new THREE.Vector3();
+  const jUp = new THREE.Vector3();
   const progressNow = () => game.progress.value;
   const doseHistory = new Array(60).fill(0);
   const att = new THREE.Quaternion();
@@ -213,10 +230,11 @@ function run(game, { demo }) {
       eyebrow: demo ? 'Judge Demo · Stage 4 · Hera' : 'Stage 4 of 5 · Hera',
       title: 'The ship simulator',
       text: demo
-        ? ['Fly the capsule toward the Moon. A *real solar storm* from NASA records will hit: build the shelter and hide, or keep flying?']
+        ? ['Fly the capsule toward the Moon through a field of *space junk*: dodge it! A *real solar storm* from NASA records will hit too: build the shelter and hide, or keep flying?']
         : [
             "Before every flight, real astronauts practise in a *spaceship simulator*. The Artemis II crew trained in one like this in Houston. Today you're the *pilot*, flying to the Moon.",
-            'Steer the *green diamond* into the *ring* on your window, then *hold Space* to fire the engine. And watch your *storm light*: the Sun can surprise you.',
+            'Steer the *green diamond* into the *ring* on your window, then *hold Space* to fire the engine. Your path goes through a field of *space junk*: steer each piece out of your way!',
+            'And watch your *storm light*: the Sun can surprise you.',
           ],
       facts: CONTROLS,
       choices: [{ id: 'go', label: 'Strap in' }],
@@ -311,6 +329,7 @@ function run(game, { demo }) {
     if (where === 'seat') {
       const keys = [];
       if (faultOn) keys.push('jet');
+      if (leaking) keys.push('leak');
       if (flashAt != null) keys.push('shelter');
       return keys;
     }
@@ -321,6 +340,7 @@ function run(game, { demo }) {
   }
   function use(key) {
     if (key === 'shelter') {
+      if (easy) clearJunk(); // nobody is steering, so on Easy the junk field gives you a break
       where = 'moving';
       game.sound.play('whoosh');
       world.setSeated(false);
@@ -357,6 +377,23 @@ function run(game, { demo }) {
           if (ok) fixFault();
           else game.ui.buoy('Out of time! Look at the blinking *JET RESET* switch and press E to try again.', { interrupt: true });
         });
+    } else if (key === 'leak') {
+      if (game.ui.puzzleOpen) return;
+      controls.setEnabled(false);
+      game.ui
+        .puzzle({ kind: 'flow', title: 'Fix the hull leak', text: "The junk cut the air lines! Drag a line between each pair of *matching dots*. Lines can't cross.", seconds: r.junk.fixSeconds, size: r.junk.fixGrid })
+        .then((ok) => {
+          if (!game.running) return;
+          controls.setEnabled(true);
+          controls.requestLock();
+          if (ok) {
+            leaking = false;
+            world.setLeak(false);
+            game.sound.play('clunk');
+            game.ui.cheer({ title: 'LEAK SEALED!', sub: 'no more air escaping' });
+            game.ui.buoy('Sealed! Real space stations have patch kits too, and *shields* that stop junk smaller than a marble.', { interrupt: true });
+          } else game.ui.buoy('Out of time! Air is still leaking. Look at the blinking *HULL PATCH* kit and press E.', { interrupt: true });
+        });
     } else if (key.startsWith('bag')) {
       const bag = world.bags[Number(key.slice(3))];
       const slot = world.slots.find((s) => !s.filled);
@@ -375,12 +412,83 @@ function run(game, { demo }) {
     }
   }
 
+  // ---------- space junk ----------
+  function spawnJunk() {
+    // it comes from just about where you're pointing: right at you
+    const b = world.boresight;
+    jRight.crossVectors(b, new THREE.Vector3(0, 1, 0)).normalize();
+    jUp.crossVectors(jRight, b).normalize();
+    const off = 0.015 + Math.random() * 0.045;
+    const spin = Math.random() * Math.PI * 2;
+    const u = b.clone().multiplyScalar(Math.cos(off)).addScaledVector(jRight, Math.cos(spin) * Math.sin(off)).addScaledVector(jUp, Math.sin(spin) * Math.sin(off));
+    const piece = world.spawnJunk(u.applyQuaternion(att));
+    junk.push({ piece, age: 0 });
+    sinceJunk = 0;
+    game.sound.play('warn');
+    if (!once('junk1', '*Space junk!* Old bits of rockets and satellites race around Earth. The red ring means it will hit you: *steer* until its ring turns *green*!', { interrupt: true })) {
+      if (Math.random() < 0.35) game.ui.buoy(['Junk ahead! Steer away!', 'Another piece! Turn the ship!', 'Incoming junk! Red ring = it will hit!'][Math.floor(Math.random() * 3)]);
+    }
+  }
+  function junkStep(dt) {
+    const p = progressNow();
+    sinceJunk += dt;
+    const calm = !easy || (lastPhase !== 'storm' && !faultOn);
+    if (where === 'seat' && calm && junkDue({ sinceLast: sinceJunk, progress: p, active: junk.length }, r.junk)) spawnJunk();
+    attInv.copy(att).invert();
+    junkDanger = null;
+    for (let i = junk.length - 1; i >= 0; i--) {
+      const j = junk[i];
+      j.age += dt;
+      const dist = junkDistance(j.age, r.junk);
+      jLocal.copy(j.piece.dir).applyQuaternion(attInv);
+      const danger = onCollisionCourse(jLocal.angleTo(world.boresight), r.junk);
+      if (danger && (!junkDanger || dist < junkDanger.dist)) junkDanger = { dist, local: jLocal.clone() };
+      world.setJunk(j.piece, Math.max(dist, 2.4), danger, dt);
+      if (dist <= (danger ? 0 : 3)) {
+        world.removeJunk(j.piece);
+        junk.splice(i, 1);
+        if (danger) junkHit();
+        else junkDodged();
+      }
+    }
+  }
+  function junkHit() {
+    hits++;
+    world.impact();
+    game.sound.play('thud');
+    game.sound.play('alarm');
+    game.oxygen.change(-r.junk.hitOxygen, 'junk-hit');
+    if (!leaking) {
+      leaking = true;
+      world.setLeak(true);
+      game.ui.buoy(
+        hits === 1
+          ? "*BANG!* Junk hit the ship and made a tiny hole: air is leaking out! Press E on the blinking *HULL PATCH* kit (on your right)."
+          : '*Hit again!* Another leak. Fix it at the *HULL PATCH* kit!',
+        { interrupt: true },
+      );
+    } else game.ui.buoy('*Another hit!* Seal that leak and keep dodging!', { interrupt: true });
+  }
+  function junkDodged() {
+    dodged++;
+    game.sound.play('whoosh');
+    if (dodged === 1 || dodged % 3 === 0) game.ui.cheer({ title: 'DODGED!', sub: `${dodged} piece${dodged === 1 ? '' : 's'} of junk` });
+    if (dodged === 1) game.ui.buoy('*Dodged it!* Junk like that flies about 8 kilometres every second! Now steer back onto the diamond.');
+  }
+  function clearJunk() {
+    junk.forEach((j) => world.removeJunk(j.piece));
+    junk.length = 0;
+    junkDanger = null;
+  }
+
   // ---------- the Task chip and Help ----------
   let taskKey = '';
   function updateTask() {
     const storming = lastPhase === 'warning' || lastPhase === 'storm';
     let now;
-    if (faultOn) now = 'Thruster stuck! Press E on the blinking JET RESET switch (left)';
+    if (junkDanger && where === 'seat') now = 'Space junk! Steer until its ring turns green';
+    else if (leaking && where === 'seat') now = 'Air leak! Press E on the blinking HULL PATCH kit (on your right)';
+    else if (faultOn) now = 'Thruster stuck! Press E on the blinking JET RESET switch (left)';
     else if (storming && where === 'seat') now = 'Solar flare! Go to the storm shelter: yellow handle, down to your right';
     else if (where === 'shelter' && bagsPlaced < r.bags) now = `Stack the food and water bags on the glowing wall (${bagsPlaced} of ${r.bags})`;
     else if (where === 'shelter' && !hose) now = 'Plug in the air hose (the blue coil)';
@@ -393,7 +501,9 @@ function run(game, { demo }) {
     game.ui.task({
       now,
       steps: [
-        { text: 'Steer the green diamond into the ring and hold Space to fire the engine', done: progressNow() >= 100, now: where === 'seat' && !faultOn && !storming },
+        { text: 'Steer the green diamond into the ring and hold Space to fire the engine', done: progressNow() >= 100, now: where === 'seat' && !faultOn && !storming && !junkDanger },
+        { text: 'Space junk: steer until its red ring turns green, so it misses you', done: false, now: Boolean(junkDanger) },
+        { text: 'If junk hits you: press E on the HULL PATCH kit and fix the air lines', done: false, now: leaking },
         { text: 'If a thruster gets stuck: press E on the blinking JET RESET switch and type the code', done: false, now: faultOn },
         { text: 'When the solar flare flashes: go to the shelter (yellow handle, down right)', done: flared && where !== 'seat', now: storming && where === 'seat' },
         { text: `Stack ${r.bags} food and water bags on the glowing thin wall`, done: bagsPlaced >= r.bags, now: where === 'shelter' && bagsPlaced < r.bags },
@@ -403,6 +513,7 @@ function run(game, { demo }) {
       tips: [
         'The *ring* is on your window. The *yellow arrow* points to the diamond if you lose it.',
         'Small taps on *W A S D* work best: the ship keeps turning after you let go.',
+        'A *red ring* round a piece of junk means it will hit you. Steer until the ring is *green*, then steer back to the diamond.',
         'In the storm, the *shelter* makes the radiation reach you about 4 times slower. Hiding pauses the flight, but keeps you safe.',
       ],
     });
@@ -448,6 +559,8 @@ function run(game, { demo }) {
     att.multiply(qa.setFromAxisAngle(axisX, spin.y * dt));
     att.normalize();
     world.setAttitude(att);
+    junkStep(dt);
+    if (disposed) return; // a junk hit can end the run
 
     world.targetInShip(local);
     const error = local.angleTo(world.boresight);
@@ -466,6 +579,8 @@ function run(game, { demo }) {
     // oxygen
     const o = oxygenStep({ light: clock.light, where: where === 'shelter' ? 'shelter' : 'seat', bags: bagsPlaced, hose, strength }, dt, r);
     game.oxygen.change(o.delta, o.reason);
+    if (leaking) game.oxygen.change(leakStep(true, dt, r.junk), 'hull-leak');
+    if (disposed) return;
     minOxygen = Math.min(minOxygen, game.oxygen.value);
     if (game.oxygen.value < r.lowOxygen) once('low', 'Your oxygen is getting low. Careful, Pilot!');
     if (game.oxygen.value < r.veryLowOxygen) once('verylow', '*Oxygen very low!* Get into a finished shelter with the air hose!', { interrupt: true });
@@ -485,6 +600,8 @@ function run(game, { demo }) {
     // the sign at the top
     if (clock.phase === 'warning') setBanner('warning', 'Solar flare!', `particles in ${Math.ceil(clock.secondsLeft)} s`, '!', 1 - clock.fill);
     else if (clock.phase === 'storm') setBanner('storm', 'Particle storm', where === 'shelter' ? 'you are in the shelter' : 'get to the shelter!', '☢', clock.fill);
+    else if (junkDanger && where === 'seat') setBanner('warning', 'Space junk!', 'steer it out of your ring', '⚠', 1 - junkDanger.dist / r.junk.startDistance);
+    else if (leaking) setBanner('storm', 'Air leak', 'fix it at the HULL PATCH kit', '!', 1);
     else if (clock.phase === 'clear' && clearAt != null && elapsed - clearAt < 5) setBanner('clear', 'All clear', 'the storm passed', '✓', 0);
     else banner.hidden = true;
 
@@ -500,7 +617,7 @@ function run(game, { demo }) {
     const keys = usableNow();
     world.setGlow(keys, t);
     const aimed = world.aimed(camera, keys);
-    const burnHint = !aimed && where === 'seat' && !faultOn ? (error <= r.aimRing ? (burning ? 'Engine firing! Keep the diamond in the ring' : 'Hold [Space] to fire the engine') : 'Steer the diamond into the ring: W A S D') : null;
+    const burnHint = !aimed && where === 'seat' && junkDanger ? 'Space junk ahead! Steer until its ring turns green' : !aimed && where === 'seat' && !faultOn ? (error <= r.aimRing ? (burning ? 'Engine firing! Keep the diamond in the ring' : 'Hold [Space] to fire the engine') : 'Steer the diamond into the ring: W A S D') : null;
     const promptNow = aimed ? `aim:${aimed}` : burnHint;
     if (promptNow !== promptKey) {
       promptKey = promptNow;
@@ -559,11 +676,27 @@ function run(game, { demo }) {
       g.rotate(Math.PI / 4);
       g.fillRect(-11, -11, 22, 22);
       g.restore();
+      // space junk on the radar: red X = coming at you, green = will miss
+      for (const j of junk) {
+        jLocal.copy(j.piece.dir).applyQuaternion(attInv);
+        const jx = THREE.MathUtils.clamp(jLocal.dot(right) * scale, -150, 150);
+        const jy = THREE.MathUtils.clamp(jLocal.dot(up) * scale, -110, 110);
+        const bad = onCollisionCourse(jLocal.angleTo(world.boresight), r.junk);
+        g.strokeStyle = bad ? '#ff4d5e' : '#5bd98a';
+        g.lineWidth = 5;
+        g.beginPath();
+        g.moveTo(cx + jx - 10, cy - jy - 10);
+        g.lineTo(cx + jx + 10, cy - jy + 10);
+        g.moveTo(cx + jx + 10, cy - jy - 10);
+        g.lineTo(cx + jx - 10, cy - jy + 10);
+        g.stroke();
+      }
       g.fillStyle = '#fff3d6';
       g.font = '26px "Martian Mono", monospace';
       g.fillText(`BURN ${Math.round(progressNow())}%`, 24, 322);
       g.textAlign = 'right';
-      g.fillText(error <= r.aimRing ? 'ON TARGET' : faultOn ? 'JET STUCK' : 'STEER', 488, 322);
+      g.fillStyle = junkDanger ? '#ff4d5e' : '#fff3d6';
+      g.fillText(junkDanger ? 'JUNK!' : error <= r.aimRing ? 'ON TARGET' : faultOn ? 'JET STUCK' : 'STEER', 488, 322);
       g.textAlign = 'left';
       flight.tex.needsUpdate = true;
     }
@@ -629,6 +762,9 @@ function run(game, { demo }) {
   // ---------- done ----------
   function complete() {
     stage = 'done';
+    clearJunk();
+    leaking = false;
+    world.setLeak(false);
     game.ui.cheer({ title: 'COURSE SET FOR THE MOON!', big: true });
     game.ui.prompt(null);
     game.ui.target(false);
@@ -646,7 +782,11 @@ function run(game, { demo }) {
           tone: 'win',
           eyebrow: 'Checkpoint 3 of 4',
           title: 'Pilot Wings!',
-          text: [`You flew the capsule and kept your crew safe from a solar storm, ${game.player.name}. You're a *Pilot*!`, 'A pair of shiny *wings* goes on your suit.'],
+          text: [
+            `You flew the capsule through a junk field and kept your crew safe from a solar storm, ${game.player.name}. You're a *Pilot*!`,
+            `Junk dodged: *${dodged}* · Hits: *${hits}*`,
+            'A pair of shiny *wings* goes on your suit.',
+          ],
           choices: [{ id: 'ok', label: 'Pin them on!' }],
         });
       }

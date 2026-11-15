@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { flareStrength, stormClock, shelterProtection, oxygenStep, flightStep, starsFor, minutesLater, kidDuration } from './sim.js';
+import { flareStrength, stormClock, shelterProtection, oxygenStep, flightStep, starsFor, minutesLater, kidDuration, junkDistance, onCollisionCourse, junkDue, leakStep } from './sim.js';
 import { rulesFor } from '../../core/rules.js';
 
 const r = rulesFor('hera', 'easy');
@@ -116,5 +116,36 @@ describe('kidDuration: real gaps in kid words', () => {
     expect(kidDuration(60)).toBe('1 hour');
     expect(kidDuration(255)).toBe('about 4 hours');
     expect(kidDuration(697)).toBe('almost 12 hours');
+  });
+});
+
+describe('space junk: steer it out of your path', () => {
+  const j = r.junk;
+  it('flies in from far away and arrives after the approach time', () => {
+    expect(junkDistance(0, j)).toBe(j.startDistance);
+    expect(junkDistance(j.approachSeconds / 2, j)).toBeCloseTo(j.startDistance / 2);
+    expect(junkDistance(j.approachSeconds + 1, j)).toBe(0);
+  });
+  it('hits you only if it is still close to your nose when it arrives', () => {
+    expect(onCollisionCourse(0.02, j)).toBe(true);
+    expect(onCollisionCourse(j.hitCone + 0.05, j)).toBe(false);
+  });
+  it('dodging means leaving the ring, so it costs burn time (every choice costs)', () => {
+    expect(j.hitCone).toBeGreaterThan(r.aimRing);
+  });
+  it('only shows up in the junk field, one piece at a time on Easy', () => {
+    expect(junkDue({ sinceLast: 99, progress: 0, active: 0 }, j)).toBe(false);
+    expect(junkDue({ sinceLast: 99, progress: 50, active: 0 }, j)).toBe(true);
+    expect(junkDue({ sinceLast: 99, progress: 50, active: j.maxAtOnce }, j)).toBe(false);
+    expect(junkDue({ sinceLast: 0, progress: 50, active: 0 }, j)).toBe(false);
+  });
+  it('a hull leak keeps costing oxygen until you seal it', () => {
+    expect(leakStep(true, 1, j)).toBeLessThan(0);
+    expect(leakStep(false, 1, j)).toBe(0);
+  });
+  it('Hard sends junk faster and more often', () => {
+    expect(hard.junk.every).toBeLessThan(j.every);
+    expect(hard.junk.approachSeconds).toBeLessThan(j.approachSeconds);
+    expect(hard.junk.maxAtOnce).toBeGreaterThan(j.maxAtOnce);
   });
 });

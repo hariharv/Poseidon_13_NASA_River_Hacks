@@ -55,6 +55,30 @@ export function flightStep(aimError, dt, r) {
   return 0;
 }
 
+// ---------- space junk ----------
+// Old rocket parts and broken satellites race around Earth. A piece of junk flies at the ship
+// from ahead; the ship goes where its nose points, so you dodge by steering the junk out of your path.
+
+// How far away a piece of junk is, `age` seconds after it shows up on the radar (0 = it's here).
+export function junkDistance(age, { startDistance, approachSeconds }) {
+  return Math.max(0, startDistance * (1 - age / approachSeconds));
+}
+
+// Is the junk still on a collision course? (angle between it and the ship's nose, in radians)
+export function onCollisionCourse(angle, { hitCone }) {
+  return angle < hitCone;
+}
+
+// Time for the next piece of junk? Only in the junk field (part of the flight) and never more than a few at once.
+export function junkDue({ sinceLast, progress, active }, junk) {
+  return progress >= junk.fromProgress && progress <= junk.toProgress && active < junk.maxAtOnce && sinceLast >= junk.every;
+}
+
+// Oxygen lost through a hull leak until you seal it.
+export function leakStep(leaking, dt, junk) {
+  return leaking ? -junk.leakPerSec * dt : 0;
+}
+
 export function starsFor({ minOxygen, seconds }, r) {
   let stars = 1;
   if (minOxygen > r.stars.safeAbove) stars++;

@@ -6,6 +6,8 @@ export const MOMENT_TEXT = {
   storm: 'You stayed out of the storm shelter while the storm light was red.',
   'no-air-hose': 'You hid in the shelter without plugging in the air hose.',
   'cabin-air': 'The flight took so long that the cabin air ran low.',
+  'junk-hit': 'Space junk hit the ship because it stayed in your path.',
+  'hull-leak': 'The hull leak kept letting air out because it was never sealed.',
 };
 
 const DEFAULT_MOMENT = {

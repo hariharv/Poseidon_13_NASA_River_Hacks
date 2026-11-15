@@ -210,6 +210,20 @@ export const RULES = {
         // Sim supervisor faults (the trainers throw problems at you)
         faults: [60], // Progress when a thruster gets stuck
         faultSpin: 0.22, // radians per second a stuck thruster turns the ship
+        // Space junk: pieces fly at the ship; steer so they're out of your path when they arrive
+        junk: {
+          fromProgress: 6, // the junk field starts a little way into the flight...
+          toProgress: 94, // ...and ends just before the burn is done
+          every: 7, // seconds between pieces
+          maxAtOnce: 1,
+          approachSeconds: 6, // from first seen on the radar to arriving
+          startDistance: 70, // metres away when first seen
+          hitCone: 0.13, // radians: closer to your nose than this when it arrives = it hits you
+          hitOxygen: 6, // oxygen lost when junk hits
+          leakPerSec: 0.8, // oxygen lost per second through the hole until you seal it
+          fixSeconds: 25, // time to reroute the cut air lines
+          fixGrid: 4, // the repair puzzle is a 4 x 4 grid
+        },
         lowOxygen: 35,
         veryLowOxygen: 18,
         stars: { safeAbove: 40, speedySeconds: 230 },
@@ -231,6 +245,7 @@ export const RULES = {
         burnShake: 0.22,
         faultPuzzleSeconds: 10,
         faultCode: 5,
+        junk: { every: 4.5, maxAtOnce: 2, approachSeconds: 4.5, hitCone: 0.15, hitOxygen: 9, leakPerSec: 1.2, fixSeconds: 22, fixGrid: 5 },
         stars: { safeAbove: 45, speedySeconds: 260 },
       },
       demo: {
@@ -244,6 +259,7 @@ export const RULES = {
         stormDosePerSec: 2.2,
         bags: 2,
         faults: [],
+        junk: { fromProgress: 4, every: 5, approachSeconds: 5.5, fixSeconds: 30 },
         stars: { speedySeconds: 75 },
       },
     },

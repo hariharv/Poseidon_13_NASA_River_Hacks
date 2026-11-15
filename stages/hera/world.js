@@ -529,12 +529,128 @@ export function buildWorld({ suit = 'orange', bags = 3, renderer, hints = 'more'
     specks.push({ sprite: s, life: 0 });
   }
 
+  // ---------- space junk ----------
+  // Junk lives in its own group that turns with the sky (so steering moves it across the window),
+  // centred on your eyes so close pieces look right.
+  const junkGroup = new THREE.Group();
+  junkGroup.position.copy(SEAT_EYE);
+  scene.add(junkGroup);
+  const junkMats = {
+    metal: track(new THREE.MeshStandardMaterial({ color: '#9aa3ad', roughness: 0.45, metalness: 0.7 })),
+    dark: track(new THREE.MeshStandardMaterial({ color: '#3a3f4a', roughness: 0.7, metalness: 0.4 })),
+    foil: track(new THREE.MeshStandardMaterial({ color: '#d9a93a', roughness: 0.35, metalness: 0.8 })),
+    panel: track(new THREE.MeshStandardMaterial({ color: '#1d2a6c', roughness: 0.3, metalness: 0.5, emissive: '#0a1030', emissiveIntensity: 0.4 })),
+  };
+  const junkLight = new THREE.PointLight('#ffffff', 0, 12, 1.5); // the Sun glints off junk as it rushes past
+  junkGroup.add(junkLight);
+  const ringTexFor = (colour) => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    g.strokeStyle = colour;
+    g.lineWidth = 9;
+    g.beginPath();
+    g.arc(64, 64, 52, 0, Math.PI * 2);
+    g.stroke();
+    // little corner brackets, like a targeting box
+    g.lineWidth = 7;
+    for (const [x, y] of [[8, 8], [120, 8], [8, 120], [120, 120]]) {
+      g.beginPath();
+      g.moveTo(x, y + (y < 64 ? 22 : -22));
+      g.lineTo(x, y);
+      g.lineTo(x + (x < 64 ? 22 : -22), y);
+      g.stroke();
+    }
+    const t = track(new THREE.CanvasTexture(c));
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  const dangerTex = ringTexFor('#ff4d5e');
+  const safeTex = ringTexFor('#5bd98a');
+  const junkKinds = [
+    // a broken solar panel
+    () => {
+      const g = new THREE.Group();
+      const p1 = new THREE.Mesh(track(new THREE.BoxGeometry(1.4, 0.04, 0.6)), junkMats.panel);
+      g.add(p1);
+      const strut = new THREE.Mesh(track(new THREE.CylinderGeometry(0.03, 0.03, 0.8, 8)), junkMats.metal);
+      strut.rotation.z = Math.PI / 2;
+      strut.position.set(-0.9, 0, 0);
+      g.add(strut);
+      return g;
+    },
+    // a chunk of an old rocket stage
+    () => {
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(track(new THREE.CylinderGeometry(0.4, 0.45, 1.1, 14, 1, true)), junkMats.metal);
+      g.add(body);
+      const foil = new THREE.Mesh(track(new THREE.CylinderGeometry(0.41, 0.41, 0.3, 14, 1, true)), junkMats.foil);
+      foil.position.y = 0.3;
+      g.add(foil);
+      return g;
+    },
+    // a lost bag of tools and bolts
+    () => {
+      const g = new THREE.Group();
+      const lump = new THREE.Mesh(track(new THREE.DodecahedronGeometry(0.42, 0)), junkMats.dark);
+      g.add(lump);
+      for (let i = 0; i < 4; i++) {
+        const bolt = new THREE.Mesh(track(new THREE.BoxGeometry(0.12, 0.12, 0.3)), junkMats.metal);
+        bolt.position.set(Math.cos(i * 1.6) * 0.5, Math.sin(i * 2.1) * 0.3, Math.sin(i * 1.6) * 0.5);
+        bolt.rotation.set(i, i * 2, 0);
+        g.add(bolt);
+      }
+      return g;
+    },
+    // a dead satellite dish
+    () => {
+      const g = new THREE.Group();
+      const box = new THREE.Mesh(track(new THREE.BoxGeometry(0.5, 0.5, 0.5)), junkMats.foil);
+      g.add(box);
+      const dish = new THREE.Mesh(track(new THREE.SphereGeometry(0.45, 16, 8, 0, Math.PI * 2, 0, Math.PI / 3)), junkMats.metal);
+      dish.material.side = THREE.DoubleSide;
+      dish.position.y = 0.35;
+      g.add(dish);
+      return g;
+    },
+  ];
+  const junkPieces = new Set();
+
+  // ---------- the hull patch kit (for when junk punches a hole) ----------
+  const patch = new THREE.Group();
+  patch.position.set(0.9, 0.98, -0.95);
+  patch.rotation.set(-0.35, -0.55, 0);
+  scene.add(patch);
+  const patchBase = new THREE.Mesh(track(new RoundedBoxGeometry(0.22, 0.2, 0.05, 2, 0.015)), panelMat);
+  patch.add(patchBase);
+  const leakLedMat = track(new THREE.MeshStandardMaterial({ color: '#103040', emissive: '#46b4ff', emissiveIntensity: 0 }));
+  const leakLed = new THREE.Mesh(track(new THREE.SphereGeometry(0.018, 12, 8)), leakLedMat);
+  leakLed.position.set(0, 0.07, 0.03);
+  patch.add(leakLed);
+  const patchLabel = labelMesh(track, 'HULL PATCH', { w: 0.21, h: 0.05, bg: '#1b1846', fg: '#46b4ff' });
+  patchLabel.position.set(0, -0.085, 0.027);
+  patch.add(patchLabel);
+  const patchHit = hitBox(track, 0.32, 0.3, 0.2);
+  patch.add(patchHit);
+  // air hissing out: little puffs of mist by the patch kit
+  const mistMat = track(new THREE.SpriteMaterial({ map: track(glowTexture('#ffffff', '#cfe8ff')), transparent: true, depthWrite: false, opacity: 0 }));
+  const mist = [];
+  for (let i = 0; i < 6; i++) {
+    const m = new THREE.Sprite(mistMat.clone());
+    track(m.material);
+    m.scale.setScalar(0.08);
+    scene.add(m);
+    mist.push({ sprite: m, life: Math.random() });
+  }
+  const mistFrom = new THREE.Vector3(0.95, 1.2, -1.0);
+
   // ---------- things you can use (looked at + E) ----------
   const usable = {
     shelter: { hit: shelterHit, label: 'Float down to the *storm shelter*', glow: handleMat },
     seat: { hit: seatHit, label: 'Float back to your *seat*', glow: handleMat },
     hose: { hit: hoseHit, label: 'Plug in the *air hose*', glow: hoseMat },
     jet: { hit: jetHit, label: 'Flip the *JET RESET* switch', glow: jetLedMat },
+    leak: { hit: patchHit, label: 'Fix the *hull leak*', glow: leakLedMat },
   };
   bagList.forEach((b, i) => {
     const hit = hitBox(track, 0.44, 0.32, 0.26);
@@ -553,6 +669,9 @@ export function buildWorld({ suit = 'orange', bags = 3, renderer, hints = 'more'
   let jetBlink = false;
   let speckRate = 0;
   let stickTilt = new THREE.Vector2();
+  let leaking = false;
+  let impactT = -1;
+  let glint = 0;
 
   function setTargetDirection(dir) {
     target.position.copy(dir).multiplyScalar(300);
@@ -574,6 +693,40 @@ export function buildWorld({ suit = 'orange', bags = 3, renderer, hints = 'more'
       att.copy(q);
       skyInv.copy(q).invert();
       sky.quaternion.copy(skyInv);
+      junkGroup.quaternion.copy(skyInv);
+    },
+    // A new piece of junk, coming from `dirSky` (a direction in sky space). Returns the piece.
+    spawnJunk(dirSky, kind = Math.floor(Math.random() * junkKinds.length)) {
+      const mesh = junkKinds[kind % junkKinds.length]();
+      const marker = new THREE.Sprite(track(new THREE.SpriteMaterial({ map: dangerTex, transparent: true, depthWrite: false, depthTest: false, toneMapped: false })));
+      marker.renderOrder = 7;
+      const piece = { dir: dirSky.clone().normalize(), mesh, marker, spin: new THREE.Vector3(Math.random() * 2, Math.random() * 2, Math.random()) };
+      junkGroup.add(mesh, marker);
+      junkPieces.add(piece);
+      return piece;
+    },
+    // Move a piece to `distance` metres away; `danger` = still on a collision course.
+    setJunk(piece, distance, danger, dt) {
+      piece.mesh.position.copy(piece.dir).multiplyScalar(distance);
+      piece.mesh.rotation.x += piece.spin.x * dt;
+      piece.mesh.rotation.y += piece.spin.y * dt;
+      piece.mesh.rotation.z += piece.spin.z * dt;
+      piece.marker.position.copy(piece.mesh.position);
+      piece.marker.scale.setScalar(Math.max(1.2, distance * 0.09)); // stays about the same size on screen
+      piece.marker.material.map = danger ? dangerTex : safeTex;
+      piece.marker.material.opacity = distance < 6 ? distance / 6 : 0.95;
+      if (distance < 14) glint = Math.max(glint, 1 - distance / 14);
+    },
+    removeJunk(piece) {
+      junkGroup.remove(piece.mesh, piece.marker);
+      junkPieces.delete(piece);
+    },
+    // junk hit the ship: a bang, a shake and a red flash
+    impact() {
+      impactT = 0;
+    },
+    setLeak(on) {
+      leaking = on;
     },
     // Where the target is, seen from the ship (unit vector in ship frame)
     targetInShip(out = new THREE.Vector3()) {
@@ -658,7 +811,7 @@ export function buildWorld({ suit = 'orange', bags = 3, renderer, hints = 'more'
       const pulse = 0.35 + 0.35 * Math.sin(t * 5);
       const mats = new Map();
       for (const [key, u] of Object.entries(usable)) {
-        if (key === 'jet' || !u.glow) continue;
+        if (key === 'jet' || key === 'leak' || !u.glow) continue;
         if (u.bag && u.bag.state !== 'stowed') continue;
         mats.set(u.glow, mats.get(u.glow) || keys.includes(key));
       }
@@ -687,6 +840,31 @@ export function buildWorld({ suit = 'orange', bags = 3, renderer, hints = 'more'
       if (flashT < 0) ceiling.intensity += ((alarmLevel === 2 ? 3.5 : 7) - ceiling.intensity) * Math.min(1, dt * 3);
       // jet reset LED
       jetLedMat.emissiveIntensity = jetBlink ? (Math.sin(t * 9) > 0 ? 2.5 : 0.2) : 0;
+      // hull leak: blinking patch kit and air puffing out
+      leakLedMat.emissiveIntensity = leaking ? (Math.sin(t * 8) > 0 ? 2.5 : 0.3) : 0;
+      for (const m of mist) {
+        m.life += dt * 1.6;
+        if (m.life > 1) m.life = 0;
+        m.sprite.position.copy(mistFrom).add(tmp.set(m.life * 0.25, m.life * 0.12, m.life * 0.3));
+        m.sprite.scale.setScalar(0.05 + m.life * 0.18);
+        m.sprite.material.opacity = leaking ? 0.45 * (1 - m.life) : 0;
+      }
+      // junk rushing past catches the sunlight
+      junkLight.intensity = glint * 25;
+      for (const p of junkPieces) junkLight.position.copy(p.mesh.position).add(tmp.set(1, 1, 1));
+      glint = Math.max(0, glint - dt * 2);
+      // a hit: the cabin shakes and flashes red
+      if (impactT >= 0) {
+        impactT += dt;
+        const k = Math.max(0, 1 - impactT / 0.6);
+        scene.position.set((Math.random() - 0.5) * 0.05 * k, (Math.random() - 0.5) * 0.05 * k, 0);
+        alarm.intensity = Math.max(alarm.intensity, 14 * k);
+        alarm.color.set('#ff3040');
+        if (impactT > 0.6) {
+          impactT = -1;
+          scene.position.set(0, 0, 0);
+        }
+      }
       lever.rotation.x = jetBlink ? 0.6 : -0.6;
       throttle.rotation.x += (-throttleTarget * 0.45 - throttle.rotation.x) * Math.min(1, dt * 10);
       // joystick follows your keys (eased, so it never snaps)

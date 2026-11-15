@@ -22,6 +22,7 @@ const SRC = {
   heraSensor: { source: 'NASA: protecting Artemis II astronauts', url: 'https://science.nasa.gov/missions/artemis/artemis-2/to-protect-artemis-ii-astronauts-nasa-experts-keep-eyes-on-sun/' },
   simulator: { source: 'NASA: Artemis II training', url: 'https://www.nasa.gov/centers-and-facilities/johnson/preparing-for-artemis-ii-training-for-a-mission-around-the-moon/' },
   lightFlash: { source: 'NASA: Apollo light flash investigations', url: 'https://ntrs.nasa.gov/citations/19760005597' },
+  debris: { source: 'NASA Orbital Debris Program Office', url: 'https://orbitaldebris.jsc.nasa.gov/faq/' },
   limit: { source: 'NASA radiation protection brief', url: 'https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf' },
   moon: { source: 'NASA Moon facts', url: 'https://science.nasa.gov/moon/facts/' },
   lunarNight: { source: 'NASA Fission Surface Power', url: 'https://www.nasa.gov/centers-and-facilities/glenn/nasas-fission-surface-power-project-energizes-lunar-exploration/' },
@@ -93,7 +94,7 @@ export const LESSONS = {
     },
   },
   hera: {
-    skill: 'Piloting and space weather: flying the ship and sheltering from solar storms',
+    skill: 'Piloting: dodging space junk, fixing leaks and sheltering from solar storms',
     tip: 'Real crews build their storm shelter as soon as the radiation alarm says to, and stay inside until it is safe.',
     facts: [
       fact('Light from a solar flare reaches us in about 8 minutes.', 'flare'),
@@ -103,6 +104,9 @@ export const LESSONS = {
       fact('The Artemis II crew practised every part of their Moon flight in a simulator, even emergencies.', 'simulator'),
       fact('Apollo astronauts saw tiny flashes of light in the dark: space particles passing through their eyes.', 'lightFlash'),
       fact('NASA keeps a limit on how much radiation an astronaut may get in a whole career.', 'limit'),
+      fact('About 50,000 large pieces of space junk circle Earth, and NASA keeps track of them.', 'debris'),
+      fact('Space junk zooms along at 7 to 8 kilometres every second (up to about 17,900 mph).', 'debris'),
+      fact('The space station has moved out of the way of space junk 41 times since 1999.', 'debris'),
     ],
     quiz: {
       question: 'A solar flare just flashed. What should a crew do?',
