@@ -4,6 +4,7 @@
 import './ui.css';
 import { buoySvg } from './buoy-svg.js';
 import { createSound } from './sound.js';
+import { createPuzzle } from './puzzle.js';
 import { CHECKLIST } from '../core/checklist.js';
 
 const ICONS = {
@@ -30,9 +31,11 @@ export function createUI(container) {
         <div class="hud-storm" hidden data-colour="green"><span class="storm-dot"></span><span class="storm-text">Calm</span></div>
         <button class="real-numbers-btn" type="button" hidden>Real numbers</button>
       </div>
+      <div class="hud-task" hidden><span class="hud-task-label">Task</span><span class="hud-task-text"></span></div>
       <div class="crosshair"></div>
       <div class="hud-prompt" hidden></div>
       <div class="hud-corner">
+        <button class="hud-btn hud-help" type="button" hidden title="What do I do now? (H)"><span aria-hidden="true">?</span><span class="hud-btn-text">Help</span></button>
         <button class="hud-btn hud-sound" type="button" aria-pressed="true" title="Sound on or off (M)"><span aria-hidden="true">♪</span><span class="hud-btn-text">Sound on</span></button>
         <button class="hud-btn hud-menu" type="button" title="Menu"><span aria-hidden="true">☰</span><span class="hud-btn-text">Menu</span></button>
       </div>
@@ -52,6 +55,8 @@ export function createUI(container) {
       <p class="buoy-bubble"><span class="buoy-name">Zeus Jr.</span><span class="buoy-text"></span></p>
     </div>
     <aside class="checklist" hidden aria-label="Judge checklist"></aside>
+    <button class="checklist-open" type="button" hidden>Judge checklist</button>
+    <div class="puzzle-layer" hidden></div>
     <div class="card-layer" hidden></div>
   `;
   container.append(layer);
@@ -72,6 +77,11 @@ export function createUI(container) {
   const cardLayer = $('.card-layer');
   const soundBtn = $('.hud-sound');
   const menuBtn = $('.hud-menu');
+  const helpBtn = $('.hud-help');
+  const taskBox = $('.hud-task');
+  const taskText = $('.hud-task-text');
+  const checklistOpen = $('.checklist-open');
+  const puzzleLayer = $('.puzzle-layer');
 
   const sound = createSound();
   let lowAt = 30;
@@ -112,6 +122,8 @@ export function createUI(container) {
     hide() {
       visor.hidden = true;
       prompt.hidden = true;
+      setTask(null);
+      puzzle.close();
     },
     reset({ low = 30 } = {}) {
       lowAt = low;
@@ -167,13 +179,24 @@ export function createUI(container) {
     prompt.hidden = false;
   }
 
-  // ---------- Buoy ----------
+  // ---------- Zeus Jr. (the helper robot; "buoy" in the code) ----------
+  // Lines queue up and each stays long enough to read. The bubble never vanishes mid-stage:
+  // when Zeus Jr. has nothing new to say, the last line stays, then it switches to the current task.
   const lines = [];
+  const recent = new Map(); // text -> when it was last shown (don't repeat the same line)
   let buoyTimer = null;
+  let restTimer = null;
   let showing = null;
+  let shownAt = 0;
+  let task = null;
+
+  const MIN_READ = 6000;
+  const readTimeFor = (text) => Math.max(MIN_READ, text.split(/\s+/).length * 560);
 
   function buoy(text, { interrupt = false } = {}) {
     if (!text || text === showing || lines.includes(text)) return;
+    const last = recent.get(text);
+    if (!interrupt && last && performance.now() - last < 20000) return;
     if (interrupt) {
       // urgent (safety) or big-moment lines: drop what's waiting and say it now
       lines.length = 0;
@@ -183,50 +206,102 @@ export function createUI(container) {
       return;
     }
     lines.push(text);
-    if (lines.length > 3) lines.splice(0, lines.length - 3); // never fall far behind the action
+    if (lines.length > 4) lines.splice(0, lines.length - 4); // never fall far behind the action
     if (!buoyTimer) nextLine();
     else hurry();
   }
 
-  // When a line is waiting, cut the current one short so Buoy keeps up with
-  // the action (but always leave a few seconds to read it).
-  let shownAt = 0;
+  // A line is waiting: let the current one finish its minimum time, then move on.
   function hurry() {
-    const left = Math.max(0, 3600 - (performance.now() - shownAt));
+    const left = Math.max(0, MIN_READ - (performance.now() - shownAt));
     clearTimeout(buoyTimer);
     buoyTimer = setTimeout(nextLine, left);
+  }
+
+  function say(text, { resting = false } = {}) {
+    clearTimeout(restTimer);
+    showing = resting ? null : text;
+    buoyText.innerHTML = escapeHtml(text).replace(/\*(.+?)\*/g, '<strong>$1</strong>');
+    buoyBox.classList.remove('is-hidden');
+    buoyBox.classList.toggle('is-resting', resting);
+    // a soft fade on the new words only (the bubble itself stays put, so nothing blinks)
+    buoyText.classList.remove('is-new');
+    void buoyText.offsetWidth;
+    buoyText.classList.add('is-new');
   }
 
   function nextLine() {
     const text = lines.shift();
     if (!text) {
-      showing = null;
+      // nothing new to say: keep the last line up, then show the current task
       buoyTimer = null;
-      buoyBox.classList.add('is-hidden');
+      showing = null;
+      buoyBox.classList.add('is-resting');
+      clearTimeout(restTimer);
+      restTimer = setTimeout(showTaskInBubble, 4000);
       return;
     }
-    showing = text;
     sound.play('chirp');
-    buoyText.innerHTML = escapeHtml(text).replace(/\*(.+?)\*/g, '<strong>$1</strong>');
-    buoyBox.classList.remove('is-hidden');
+    say(text);
     shownAt = performance.now();
-    const words = text.split(/\s+/).length;
-    const readTime = Math.max(3400, words * 380);
-    buoyTimer = setTimeout(nextLine, lines.length ? Math.min(readTime, 5200) : readTime);
+    recent.set(text, shownAt);
+    buoyTimer = setTimeout(nextLine, readTimeFor(text));
+  }
+
+  function showTaskInBubble() {
+    if (buoyTimer || !task?.now) return;
+    say(`Your job: *${task.now}*${helpBtn.hidden ? '' : ' (press H for help)'}`, { resting: true });
   }
 
   function clearBuoy() {
     lines.length = 0;
     clearTimeout(buoyTimer);
+    clearTimeout(restTimer);
     buoyTimer = null;
     showing = null;
+    recent.clear();
     buoyBox.classList.add('is-hidden');
+    buoyBox.classList.remove('is-resting');
   }
+
+  // ---------- Task chip + Help ----------
+  // A stage calls ui.task({ now, steps, tips }) whenever the job changes (null clears it).
+  //   now:   what to do right now, in a few words ("Fix panel 2: it's up high")
+  //   steps: [{ text, done }] the whole job, in order (shown in Help)
+  //   tips:  [string] how to do the current step (shown in Help)
+  function setTask(spec) {
+    task = spec && spec.now ? spec : null;
+    taskBox.hidden = !task;
+    helpBtn.hidden = !task;
+    if (task) taskText.innerHTML = rich(task.now);
+    if (task && !buoyTimer && buoyBox.classList.contains('is-resting')) showTaskInBubble();
+  }
+  function openHelp() {
+    if (!task || cardOpenCount() > 0) return;
+    if (document.pointerLockElement) document.exitPointerLock();
+    card({
+      eyebrow: 'Help',
+      title: 'What do I do now?',
+      text: [`*${task.now}*`, ...(task.tips ?? [])],
+      steps: task.steps,
+      choices: [{ id: 'ok', label: 'Back to training' }],
+    });
+  }
+  helpBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sound.play('click');
+    openHelp();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.code !== 'KeyH' || e.repeat || e.target.closest?.('input, textarea') || visor.hidden) return;
+    openHelp();
+  });
 
   // ---------- Cards (queued, one at a time) ----------
   let queue = Promise.resolve();
   let openCards = 0;
 
+  const cardOpenCount = () => openCards;
   function card(options) {
     openCards++;
     const result = queue.then(() => showCard(options));
@@ -234,7 +309,7 @@ export function createUI(container) {
     return result;
   }
 
-  function showCard({ eyebrow, title, text, choices, stars, facts, links, note, tone } = {}) {
+  function showCard({ eyebrow, title, text, choices, stars, facts, links, steps, note, tone } = {}) {
     return new Promise((resolve) => {
       const list = choices?.length ? choices : [{ id: 'ok', label: 'OK' }];
       const box = el('div', 'card');
@@ -248,6 +323,7 @@ export function createUI(container) {
         ${(Array.isArray(text) ? text : text ? [text] : []).map((t) => `<p class="card-text">${rich(t)}</p>`).join('')}
         ${facts?.length ? `<ul class="card-facts">${facts.map(factMarkup).join('')}</ul>` : ''}
         ${links?.length ? `<ul class="card-facts">${links.map(linkMarkup).join('')}</ul>` : ''}
+        ${steps?.length ? `<ol class="card-steps">${steps.map(stepMarkup).join('')}</ol>` : ''}
         ${note ? `<p class="card-note">${escapeHtml(note)}</p>` : ''}
         <div class="card-choices"></div>`;
       const row = box.querySelector('.card-choices');
@@ -285,9 +361,12 @@ export function createUI(container) {
 
   // ---------- Judge checklist ----------
   const done = new Set();
+  let checklistWanted = false;
   function renderChecklist() {
     const groups = [...new Set(CHECKLIST.map((c) => c.group))];
+    checklistOpen.textContent = `Judge checklist · ${done.size}/${CHECKLIST.length}`;
     checklistBox.innerHTML = `
+      <button class="checklist-close" type="button" aria-label="Close the judge checklist" title="Close">×</button>
       <h2>Judge checklist</h2>
       <p class="checklist-count">${done.size} / ${CHECKLIST.length} proven live</p>
       ${groups
@@ -298,13 +377,30 @@ export function createUI(container) {
         )
         .join('')}`;
   }
+  function setChecklistOpen(open) {
+    checklistBox.hidden = !open;
+    checklistOpen.hidden = open || !checklistWanted;
+    document.documentElement.classList.toggle('checklist-closed', !open);
+  }
+  checklistBox.addEventListener('click', (e) => {
+    if (!e.target.closest('.checklist-close')) return;
+    sound.play('click');
+    setChecklistOpen(false);
+  });
+  checklistOpen.addEventListener('click', () => {
+    sound.play('click');
+    setChecklistOpen(true);
+  });
   const checklist = {
     show() {
+      checklistWanted = true;
       renderChecklist();
-      checklistBox.hidden = false;
+      setChecklistOpen(true);
     },
     hide() {
+      checklistWanted = false;
       checklistBox.hidden = true;
+      checklistOpen.hidden = true;
     },
     tick(id) {
       if (!done.has(id)) sound.play('star');
@@ -334,6 +430,8 @@ export function createUI(container) {
     realBtn.onclick = onClick || null;
   }
 
+  const puzzle = createPuzzle(puzzleLayer, sound);
+
   return {
     hud,
     buoy,
@@ -348,6 +446,12 @@ export function createUI(container) {
     pause,
     setRealNumbers,
     sound,
+    task: setTask,
+    help: openHelp,
+    puzzle: (options) => puzzle.open(options),
+    get puzzleOpen() {
+      return puzzle.isOpen;
+    },
     // The engine sets what the Menu button does while a stage is running (null hides it).
     setMenu(fn) {
       menuHandler = fn;
@@ -365,6 +469,11 @@ function barMarkup(kind, label) {
       <div class="hud-track" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="hud-fill"></div></div>
       <span class="hud-num">0</span>
     </div>`;
+}
+
+function stepMarkup(st) {
+  const state = st.done ? 'is-done' : st.now ? 'is-now' : '';
+  return `<li class="${state}">${rich(st.text)}</li>`;
 }
 
 function factMarkup(f) {

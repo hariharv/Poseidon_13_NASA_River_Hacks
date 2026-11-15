@@ -25,6 +25,7 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
         choices: [
           { id: 'resume', label: 'Keep training' },
           { id: 'restart', label: 'Start this stage again' },
+          ...(demo ? [{ id: 'skip', label: 'Skip to the next stage' }] : []),
           { id: 'quit', label: 'Back to the main menu' },
         ],
       });
@@ -33,6 +34,9 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
       if (choice === 'restart') {
         teardown(game);
         attempt();
+      } else if (choice === 'skip') {
+        teardown(game);
+        resolve({ skipped: true });
       } else if (choice === 'quit') {
         teardown(game);
         resolve({ quit: true });
@@ -130,6 +134,7 @@ export async function playStage(id, { mode, ui, root, save, data, web, demo = fa
       ui.setRealNumbers(null);
       ui.hud.target(false);
       ui.setMenu?.(null);
+      ui.task?.(null);
       ui.hud.hide();
     }
 

@@ -95,16 +95,27 @@ async function runJudgeDemo() {
   ui.checklist.show();
   ui.checklist.tick('easy-hard-modes'); // both modes were on the title screen the judge just saw
   ui.checklist.tick('intro-character'); // and the character maker on the homepage before it
-  for (const stage of STAGES) {
-    if (!stage.available) continue;
+  // Judges can start anywhere: play everything in order, or jump straight to one stage.
+  // (During any stage, Menu -> "Skip to the next stage" moves on.)
+  const built = STAGES.filter((s) => s.available);
+  const pick = await ui.card({
+    eyebrow: 'Judge Demo',
+    title: 'Where do you want to start?',
+    text: 'Each stage takes about 30 seconds. You can skip ahead any time from the *Menu* button.',
+    choices: [
+      { id: 'all', label: 'Play them all, in order' },
+      ...built.map((s) => ({ id: s.id, label: `Stage ${STAGES.indexOf(s) + 1} · ${s.name} (${s.place})` })),
+    ],
+  });
+  const from = pick === 'all' ? 0 : Math.max(0, built.findIndex((s) => s.id === pick));
+  for (const stage of built.slice(from)) {
     const result = await playStage(stage.id, { ...ctx, mode: 'demo', demo: true });
     if (result?.quit || result?.crashed) return;
   }
-  const built = STAGES.filter((s) => s.available).length;
   await ui.card({
     eyebrow: 'Judge Demo complete',
     title: `${ui.checklist.count} of 15 proven live`,
-    text: `${built} of ${STAGES.length} stages are in the demo so far. The rest join as each teammate merges.`,
+    text: `${built.length} of ${STAGES.length} stages are in the demo so far. The rest join as each teammate merges.`,
     choices: [{ id: 'ok', label: 'Back to the title screen' }],
   });
 }
