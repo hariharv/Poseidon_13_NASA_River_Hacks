@@ -1,0 +1,232 @@
+/* The graduation ceremony: a cinema frame in gold, a rank at a time, then the Moon finale. */
+
+.ceremony {
+  position: fixed;
+  inset: 0;
+  z-index: 9; /* just under the game's UI layer, so its confetti rains over the ceremony */
+  overflow: hidden;
+  background: var(--night);
+  color: var(--cream);
+  font-family: var(--font-body);
+  transition: opacity 600ms ease;
+  --c: var(--visor-gold);
+}
+.ceremony.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+.ceremony [hidden] {
+  display: none !important;
+}
+.ceremony.is-flat {
+  background:
+    radial-gradient(60% 55% at 30% 62%, rgba(255, 193, 69, 0.14), transparent 60%),
+    radial-gradient(80% 70% at 100% 0%, rgba(43, 39, 112, 0.9), transparent 70%),
+    linear-gradient(180deg, var(--night), var(--twill) 130%);
+}
+.cer-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.cer-fade {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 600ms ease;
+}
+.cer-fade.is-on {
+  opacity: 1;
+}
+
+/* cinema bars with a thin gold edge */
+.cer-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 clamp(16px, 4vw, 56px);
+  background: rgba(0, 0, 0, 0.85);
+}
+.cer-bar.is-top {
+  top: 0;
+  height: clamp(48px, 10vh, 84px);
+  justify-content: center;
+  box-shadow: 0 2px 0 rgba(255, 193, 69, 0.55);
+}
+.cer-bar.is-bottom {
+  bottom: 0;
+  height: clamp(60px, 12vh, 100px);
+  box-shadow: 0 -2px 0 rgba(255, 193, 69, 0.55);
+}
+.cer-eyebrow {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--visor-gold);
+  font-size: clamp(13px, 1.6vw, 19px);
+}
+
+/* the rank being awarded */
+.cer-rank {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(880px, calc(100vw - 32px));
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+}
+.cer-rank.is-on {
+  animation: cer-award 3.8s ease both;
+}
+.cer-stage {
+  margin: 0;
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(13, 11, 38, 0.78);
+  box-shadow: inset 0 0 0 2px var(--c);
+  font-size: clamp(14px, 1.7vw, 19px);
+}
+.cer-title {
+  margin: 14px 0 6px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(44px, 8.5vw, 116px);
+  line-height: 1;
+  color: var(--c);
+  text-shadow:
+    0.035em 0 0 var(--night),
+    -0.035em 0 0 var(--night),
+    0 0.035em 0 var(--night),
+    0 -0.035em 0 var(--night),
+    0.06em 0.08em 0 var(--night),
+    0 0.2em 0.5em rgba(0, 0, 0, 0.55);
+}
+.cer-stars {
+  margin: 0;
+  font-size: clamp(30px, 4.5vw, 56px);
+  letter-spacing: 0.12em;
+  color: var(--visor-gold);
+  text-shadow: 0 3px 0 var(--night), 0 0 18px rgba(255, 193, 69, 0.6);
+}
+
+/* the medals along the bottom, lighting up one by one */
+.cer-medals {
+  display: flex;
+  gap: clamp(8px, 1.4vw, 16px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cer-medals li {
+  display: grid;
+  place-items: center;
+  width: clamp(34px, 5vh, 50px);
+  height: clamp(34px, 5vh, 50px);
+  border-radius: 50%;
+  background: rgba(255, 243, 214, 0.08);
+  box-shadow: inset 0 0 0 2px rgba(255, 243, 214, 0.25);
+  font-family: var(--font-display);
+  color: var(--cream-dim);
+  transition: background 300ms ease, box-shadow 300ms ease, color 300ms ease;
+}
+.cer-medals li.is-won {
+  background: var(--c);
+  box-shadow:
+    inset 0 0 0 3px rgba(13, 11, 38, 0.35),
+    0 0 16px var(--c);
+  color: var(--night);
+  animation: cer-medal 600ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+/* the finale on the Moon */
+.cer-finale {
+  position: absolute;
+  z-index: 3;
+  inset: clamp(48px, 10vh, 84px) 0 clamp(60px, 12vh, 100px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  text-align: center;
+  background: radial-gradient(70% 60% at 50% 50%, rgba(13, 11, 38, 0.55), transparent 75%);
+  animation: cer-rise 1.2s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+.cer-big {
+  margin: 4px 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(40px, 7.5vw, 104px);
+  line-height: 1;
+  color: var(--cream);
+  text-shadow:
+    0.04em 0 0 var(--suit-orange),
+    -0.04em 0 0 var(--suit-orange),
+    0 0.04em 0 var(--suit-orange),
+    0 -0.04em 0 var(--suit-orange),
+    0 0.09em 0 var(--suit-orange-dark),
+    0 0.16em 0.4em rgba(0, 0, 0, 0.6);
+}
+.cer-line {
+  margin: 0;
+  max-width: 680px;
+  font-size: clamp(17px, 2.2vw, 26px);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+}
+.cer-credits {
+  margin: 6px 0 0;
+  color: var(--cream-dim);
+  font-size: clamp(13px, 1.5vw, 16px);
+}
+.cer-done {
+  margin-top: 14px;
+  animation: cer-rise 600ms ease both;
+}
+.ceremony.is-finale .cer-medals li {
+  animation: cer-glow 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes cer-award {
+  0% { opacity: 0; transform: translate(-50%, -40%) scale(0.85); }
+  14% { opacity: 1; transform: translate(-50%, -50%) scale(1.04); }
+  22% { transform: translate(-50%, -50%) scale(1); }
+  85% { opacity: 1; transform: translate(-50%, -50%) scale(1.02); }
+  100% { opacity: 0; transform: translate(-50%, -56%) scale(1.04); }
+}
+@keyframes cer-medal {
+  from { transform: scale(0.4); }
+}
+@keyframes cer-rise {
+  from { opacity: 0; transform: translateY(24px); }
+}
+@keyframes cer-glow {
+  to { box-shadow: inset 0 0 0 3px rgba(13, 11, 38, 0.35), 0 0 26px var(--c); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cer-rank.is-on { animation: none; opacity: 1; }
+  .cer-medals li.is-won,
+  .cer-finale,
+  .cer-done,
+  .ceremony.is-finale .cer-medals li { animation: none; }
+}
+@media (max-height: 500px) {
+  .cer-title { font-size: clamp(34px, 7vw, 70px); }
+  .cer-big { font-size: clamp(30px, 6vw, 60px); }
+}

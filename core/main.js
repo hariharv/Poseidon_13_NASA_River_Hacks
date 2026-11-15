@@ -3,6 +3,7 @@
 //   /?stage=hermes            one stage alone (for stage builders)
 //   /?stage=hermes&mode=demo  that stage's judge version
 //   /?tour                    the presentation tour: the whole game playing by itself, about 3 minutes
+//   /?ceremony                the graduation ceremony (it plays by itself after you pass every stage)
 
 import '../ui/tokens.css';
 import { createUI } from '../ui/index.js';
@@ -29,7 +30,9 @@ const web = createWeb(ui);
 const ctx = { ui, root: stageHost, save, data, web };
 if (import.meta.env?.DEV) window.__ui = ui; // dev only: poke the UI (e.g. the music) from the console
 
-if (params.has('tour')) {
+if (params.has('ceremony')) {
+  graduation().then(() => (location.href = location.pathname));
+} else if (params.has('tour')) {
   // the presentation tour: every part of the game, playing by itself
   import('../intro/tour.js').then(({ runTour }) => runTour({ app, stageHost, ui, data, web }));
 } else if (stageParam) {
@@ -85,15 +88,34 @@ async function runTraining(mode) {
   const built = STAGES.filter((s) => s.available);
   let last = null; // the stage just finished
   let chooser = false; // the Menu's "Back to the level chooser" was pressed
+  const allPassed = () => {
+    const done = save.loadProgress().completed;
+    return built.length > 0 && built.every((s) => done.includes(s.id));
+  };
   for (;;) {
     const done = save.loadProgress().completed;
     const id = done.length || chooser ? await pickStage(built, last) : built[0]?.id;
     if (!id) return;
+    if (id === 'ceremony') {
+      await graduation();
+      chooser = true;
+      last = null;
+      continue;
+    }
+    const graduatedBefore = allPassed();
     const result = await playStage(id, { ...ctx, mode });
     if (result?.quit || result?.crashed) return;
     chooser = Boolean(result?.jumped);
     last = result?.passed ? id : null; // left from the Menu: no "next" to suggest
+    // passed the last stage you hadn't finished: the graduation ceremony
+    if (result?.passed && !graduatedBefore && allPassed()) await graduation();
   }
+}
+
+// The graduation ceremony: about 30 seconds through every stage you passed, ending on the Moon.
+async function graduation() {
+  const { showCeremony } = await import('../intro/ceremony.js');
+  await showCeremony({ root: app, ui, player: save.loadPlayer(), stages: STAGES.filter((s) => s.available), progress: save.loadProgress() });
 }
 
 // "Where to next?": the suggested stage first, then every built stage.
@@ -108,7 +130,9 @@ async function pickStage(built, last) {
       : progress.completed.length
         ? "You've finished a stage, so you can jump to *any* stage you like. The first button is the next one in order."
         : 'Start with *Stage 1*. Finish any stage and every stage opens up.',
-    choices: stageChoices(built, progress, last),
+    choices: allDone
+      ? [...stageChoices(built, progress, last).slice(0, -1), { id: 'ceremony', label: 'Watch your graduation again' }, { id: 'quit', label: 'Back to the title screen' }]
+      : stageChoices(built, progress, last),
   });
   return pick === 'quit' ? null : pick;
 }

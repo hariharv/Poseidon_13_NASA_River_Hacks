@@ -23,7 +23,7 @@ const easeOut = (x) => 1 - (1 - x) ** 3;
 const easeInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2);
 
 // One cutscene per stage: what to build, where the camera goes (k = 0 -> 1 over the scene), the action word and caption.
-const SCENES = [
+export const SCENES = [
   {
     id: 'hermes',
     word: 'Dive!',
